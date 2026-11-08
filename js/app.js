@@ -1695,15 +1695,102 @@
   }
 
   // ==========================================================================
+  // ÖZEL ŞİFRELİ GİRİŞ KAPISI (NARTES+ PRIVATE ACCESS GATE)
+  // ==========================================================================
+  const AUTH_STORAGE_KEY = "nartes_plus_auth_unlocked_v1";
+  const ALLOWED_PASS_HASHES = [
+    "ecf2a0206d7f0",
+    "158d55f281293c",
+    "8645f7c65e238",
+    "e141883f829d6",
+    "d8b84bde7f068"
+  ];
+
+  function hashPass(str) {
+    const s = String(str || "").trim().toLowerCase();
+    let h1 = 0xdeadbeef ^ s.length, h2 = 0x41c6ce57 ^ s.length;
+    for (let i = 0, ch; i < s.length; i++) {
+      ch = s.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+  }
+
+  function initAuthGate(onUnlocked) {
+    const isSaved = localStorage.getItem(AUTH_STORAGE_KEY) === "1" || sessionStorage.getItem(AUTH_STORAGE_KEY) === "1";
+    const form = document.getElementById("authGateForm");
+    const input = document.getElementById("authPasswordInput");
+    const rememberChk = document.getElementById("authRememberChk");
+    const errMsg = document.getElementById("authErrorMsg");
+    const btnLock = document.getElementById("btnLockApp");
+
+    function unlockNow() {
+      document.body.classList.remove("auth-locked");
+      onUnlocked();
+    }
+
+    if (btnLock) {
+      btnLock.addEventListener("click", () => {
+        playTone("click");
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        document.body.classList.add("auth-locked");
+        if (input) {
+          input.value = "";
+          setTimeout(() => input.focus(), 80);
+        }
+      });
+    }
+
+    if (isSaved) {
+      unlockNow();
+      return;
+    }
+
+    if (form) {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const val = input ? input.value : "";
+        if (ALLOWED_PASS_HASHES.includes(hashPass(val))) {
+          if (errMsg) errMsg.hidden = true;
+          if (rememberChk && rememberChk.checked) {
+            try { localStorage.setItem(AUTH_STORAGE_KEY, "1"); } catch (err) {}
+          } else {
+            try { sessionStorage.setItem(AUTH_STORAGE_KEY, "1"); } catch (err) {}
+          }
+          playTone("success");
+          unlockNow();
+        } else {
+          playTone("error");
+          if (errMsg) errMsg.hidden = false;
+          if (input) {
+            input.value = "";
+            input.focus();
+          }
+        }
+      });
+    }
+  }
+
+  // ==========================================================================
   // BAŞLATMA VE OLAY DİNLEYİCİLERİ
   // ==========================================================================
   window.addEventListener("DOMContentLoaded", () => {
-    loadState();
-    applySelectedLogo("logo-2-3d-kup");
-    renderUnitSelector();
-    renderSidebar();
-    renderRoad();
-    renderWindow();
+    let appBooted = false;
+    function bootApp() {
+      if (appBooted) return;
+      appBooted = true;
+      loadState();
+      applySelectedLogo("logo-2-3d-kup");
+      renderUnitSelector();
+      renderSidebar();
+      renderRoad();
+      renderWindow();
+    }
+    initAuthGate(bootApp);
 
     document.getElementById("unitQuickSelect").addEventListener("change", (e) => {
       switchUnit(parseInt(e.target.value, 10));

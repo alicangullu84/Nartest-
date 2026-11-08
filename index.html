@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Nartes+ • 8. Sınıf LGS Matematik (12 Ünite • 360 Etkileşimli Durak)</title>
@@ -15,7 +16,30 @@
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="auth-locked">
+
+  <!-- 0. NARTES+ ÖZEL ŞİFRELİ GİRİŞ EKRANI (Sadece Yetkili Erişim) -->
+  <div class="auth-gate-overlay" id="authGateOverlay">
+    <div class="auth-gate-card">
+      <div class="auth-gate-logo">
+        <img src="assets/logos/nartes_plus_logo_2.svg" alt="Nartes+ Logo" class="auth-logo-img">
+      </div>
+      <div class="auth-gate-badge">🔒 ÖZEL YETKİLİ ERİŞİM</div>
+      <h2 class="auth-gate-title">Nartes+ LGS Matematik Platformu</h2>
+      <p class="auth-gate-desc">Bu çalışma alanı özeldir. İçeriği görüntülemek için erişim şifresini girin.</p>
+      <form id="authGateForm" class="auth-gate-form" autocomplete="off">
+        <div class="auth-input-wrap">
+          <input type="password" id="authPasswordInput" class="auth-password-input" placeholder="Erişim şifresini girin..." required autofocus>
+        </div>
+        <label class="auth-remember-row">
+          <input type="checkbox" id="authRememberChk" checked>
+          <span>Bu cihazda (Mac / PC / Tablet) oturumu açık tut</span>
+        </label>
+        <div class="auth-error-msg" id="authErrorMsg" hidden>Hatalı şifre! Lütfen tekrar deneyin.</div>
+        <button type="submit" class="auth-submit-btn">Şifreyi Doğrula ve Aç →</button>
+      </form>
+    </div>
+  </div>
 
   <!-- 1. ÜST BAR (Nartes+ Kurumsal Üst Menü + 12 LGS Ünitesi Seçici) -->
   <header class="topbar">
@@ -116,6 +140,7 @@
       </button>
       <button class="icon-btn" id="btnToggleSound" title="Ses Efektlerini Aç/Kapat">🔊</button>
       <button class="icon-btn muted" id="btnToggleVoice" title="Sesli Öğretmen Anlatımını Aç/Kapat">🗣️</button>
+      <button class="icon-btn" id="btnLockApp" title="Oturumu Kilitle (Şifre Ekranına Dön)">🔒</button>
     </div>
   </header>
 
