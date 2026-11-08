@@ -62,10 +62,8 @@
     if (document.body) {
       document.body.classList.remove('device-phone', 'device-tablet', 'device-desktop', 'is-portrait', 'is-landscape');
       document.body.classList.add('device-' + device, 'is-' + orientation);
-      document.body.classList.toggle('handheld', isHandheldDevice());
     }
 
-    syncLandscapeGate();
     return { device, orientation };
   }
 
@@ -75,106 +73,6 @@
       if (window.matchMedia('(orientation: landscape)').matches) return 'landscape';
     }
     return window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
-  }
-
-  // Bilgisayar penceresi daraltılınca telefon sayılmaz. Yalnızca telefon ve tablet.
-  function isHandheldDevice() {
-    const ua = navigator.userAgent || '';
-    const touchPoints = navigator.maxTouchPoints || 0;
-    const isTouch = ('ontouchstart' in window) || touchPoints > 0;
-    if (/iPhone|iPod|iPad|Android|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua)) return true;
-    if (isTouch && /Macintosh/i.test(ua) && touchPoints > 1) return true;
-    if (!isTouch || !window.matchMedia) return false;
-    return window.matchMedia('(pointer: coarse)').matches && window.matchMedia('(hover: none)').matches;
-  }
-
-  function handheldNoun() {
-    const ua = navigator.userAgent || '';
-    const touchPoints = navigator.maxTouchPoints || 0;
-    const isTouch = ('ontouchstart' in window) || touchPoints > 0;
-    const isIPad = /iPad/i.test(ua) || (isTouch && /Macintosh/i.test(ua) && touchPoints > 1);
-    const isAndroidTablet = /Android/i.test(ua) && !/Mobile/i.test(ua);
-    if (isIPad || isAndroidTablet) return 'tableti';
-    if (/iPhone|iPod/i.test(ua) || (/Android/i.test(ua) && /Mobile/i.test(ua))) return 'telefonu';
-    const minDim = Math.min(window.innerWidth, window.innerHeight);
-    return minDim >= 600 ? 'tableti' : 'telefonu';
-  }
-
-  function syncLandscapeGate() {
-    const handheld = isHandheldDevice();
-    const orientation = currentOrientation();
-    const show = handheld && orientation === 'portrait';
-    if (document.body) document.body.classList.toggle('needs-landscape', show);
-    const overlay = document.getElementById('rotateOverlay');
-    const title = document.getElementById('rotateTitle');
-    const wasShowing = !!(overlay && !overlay.hidden);
-    if (title) title.textContent = 'Lütfen ' + handheldNoun() + ' yatay çevirin';
-    if (overlay) overlay.hidden = !show;
-    if (!show && wasShowing && document.body && document.body.classList.contains('auth-locked')) {
-      const input = document.getElementById('authPasswordInput');
-      if (input) input.focus();
-    }
-    syncFullscreenButton();
-  }
-
-  function isDocumentFullscreen() {
-    return !!(document.fullscreenElement || document.webkitFullscreenElement);
-  }
-
-  function syncFullscreenButton() {
-    const btn = document.getElementById('btnEnterFullscreen');
-    const fullscreen = isDocumentFullscreen();
-    if (document.body) document.body.classList.toggle('is-fullscreen', fullscreen);
-    if (!btn) return;
-    const show = isHandheldDevice() && currentOrientation() === 'landscape' && !fullscreen;
-    btn.hidden = !show;
-  }
-
-  function requestHandheldFullscreenFromTap() {
-    if (!isHandheldDevice()) return;
-    const root = document.documentElement;
-    const requestFs = root.requestFullscreen || root.webkitRequestFullscreen;
-    if (typeof requestFs === 'function') {
-      try {
-        const pending = requestFs.call(root);
-        if (pending && typeof pending.catch === 'function') pending.catch(function () {});
-      } catch (e) {}
-    }
-    const orientationApi = window.screen && screen.orientation;
-    if (orientationApi && typeof orientationApi.lock === 'function') {
-      try {
-        const lockPending = orientationApi.lock('landscape');
-        if (lockPending && typeof lockPending.catch === 'function') lockPending.catch(function () {});
-      } catch (e) {}
-    }
-  }
-
-  function isQuitIgnoredTarget(target) {
-    if (!target || !target.closest) return true;
-    return !!target.closest(
-      'button, a, input, textarea, select, label, summary, [role="button"], [role="link"], .kazanim-item, .unit-card-item, .modal-backdrop, .auth-gate-overlay, .rotate-overlay, .enter-fullscreen-btn'
-    );
-  }
-
-  function exitLessonToLock() {
-    if (!isDocumentFullscreen()) return;
-    const exitFs = document.exitFullscreen || document.webkitExitFullscreen;
-    if (typeof exitFs === 'function') {
-      try {
-        const pending = exitFs.call(document);
-        if (pending && typeof pending.catch === 'function') pending.catch(function () {});
-      } catch (e) {}
-    }
-    const btnLock = document.getElementById('btnLockApp');
-    if (btnLock) {
-      btnLock.click();
-      return;
-    }
-    try {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      sessionStorage.removeItem(AUTH_STORAGE_KEY);
-    } catch (e) {}
-    document.body.classList.add('auth-locked');
   }
 
   function syncVisualViewport() {
@@ -1952,38 +1850,6 @@
       window.visualViewport.addEventListener("resize", syncVisualViewport);
       window.visualViewport.addEventListener("scroll", syncVisualViewport);
     }
-    document.addEventListener("fullscreenchange", onViewportChange);
-    document.addEventListener("webkitfullscreenchange", onViewportChange);
-    const btnEnterFullscreen = document.getElementById("btnEnterFullscreen");
-    if (btnEnterFullscreen) {
-      btnEnterFullscreen.addEventListener("click", () => {
-        requestHandheldFullscreenFromTap();
-      });
-    }
-    let lastSurfaceTapAt = 0;
-    document.addEventListener("pointerup", (event) => {
-      if (!isHandheldDevice() || !isDocumentFullscreen() || document.body.classList.contains("auth-locked")) {
-        lastSurfaceTapAt = 0;
-        return;
-      }
-      if (event.button !== undefined && event.button !== 0) return;
-      if (isQuitIgnoredTarget(event.target)) {
-        lastSurfaceTapAt = 0;
-        return;
-      }
-      const now = Date.now();
-      if (now - lastSurfaceTapAt > 0 && now - lastSurfaceTapAt <= 350) {
-        lastSurfaceTapAt = 0;
-        exitLessonToLock();
-        return;
-      }
-      lastSurfaceTapAt = now;
-    }, true);
-    document.addEventListener("dblclick", (event) => {
-      if (!isHandheldDevice() || !isDocumentFullscreen() || document.body.classList.contains("auth-locked")) return;
-      if (isQuitIgnoredTarget(event.target)) return;
-      exitLessonToLock();
-    }, true);
     if (window.matchMedia) {
       const portraitQuery = window.matchMedia("(orientation: portrait)");
       const onPortraitChange = () => onViewportChange();
