@@ -377,6 +377,26 @@
   let isPanelOpen = false;
   let bubbleTimer = null;
 
+  function applyPanelVisuals(open) {
+    isPanelOpen = open;
+    const chatPanel = document.getElementById("nartesChatPanel");
+    const bubble = document.getElementById("nartesSpeechBubble");
+    const fabBtn = document.getElementById("nartesFabBtn");
+    const mentorRoot = document.getElementById("nartesMentorRoot");
+    if (chatPanel) chatPanel.hidden = !open;
+    if (bubble && open) bubble.hidden = true;
+    if (mentorRoot) mentorRoot.classList.toggle("nartes-mentor-open", open);
+    if (fabBtn) {
+      fabBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      fabBtn.title = open ? "NarTES'i küçült" : "NarTES Sokratik Rehber'e Sor";
+      const label = fabBtn.querySelector(".nartes-fab-text strong");
+      const sub = fabBtn.querySelector(".nartes-fab-text small");
+      if (label) label.textContent = open ? "NarTES'i Küçült" : "NarTES'e Sor";
+      if (sub) sub.textContent = open ? "Alta küçült, derse dön" : "Sokratik AI Rehber";
+    }
+  }
+
+
   function updateVoiceToggleButtons() {
     const label = mentorVoiceEnabled ? "🔊 Sesli" : "🔇 Sessiz";
     const btnHead = document.getElementById("nartesVoiceToggleBtn");
@@ -510,10 +530,9 @@
     }
 
     function toggleChatPanel(forceState) {
-      isPanelOpen = typeof forceState === "boolean" ? forceState : !isPanelOpen;
-      chatPanel.hidden = !isPanelOpen;
-      if (isPanelOpen) {
-        bubble.hidden = true;
+      const next = typeof forceState === "boolean" ? forceState : !isPanelOpen;
+      applyPanelVisuals(next);
+      if (next) {
         const msgBox = document.getElementById("nartesChatMessages");
         if (msgBox && msgBox.children.length === 0) {
           const stopTitle = (currentContext.stop && currentContext.stop.title) || "Çarpanlar ve Katlar";
@@ -622,11 +641,7 @@
   async function handleStudentQuestion(questionText) {
     initNartesMentorDOM();
     if (!isPanelOpen) {
-      const chatPanel = document.getElementById("nartesChatPanel");
-      const bubble = document.getElementById("nartesSpeechBubble");
-      isPanelOpen = true;
-      if (chatPanel) chatPanel.hidden = false;
-      if (bubble) bubble.hidden = true;
+      applyPanelVisuals(true);
     }
     appendMessage("user", questionText, false);
 
@@ -723,11 +738,7 @@
 
     openWithHint() {
       initNartesMentorDOM();
-      const chatPanel = document.getElementById("nartesChatPanel");
-      const bubble = document.getElementById("nartesSpeechBubble");
-      isPanelOpen = true;
-      if (chatPanel) chatPanel.hidden = false;
-      if (bubble) bubble.hidden = true;
+      applyPanelVisuals(true);
       appendMessage("bot", buildSocraticGuidance(currentContext, "hint"), true);
     }
   };

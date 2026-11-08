@@ -3154,8 +3154,9 @@ body.auth-locked .nartes-mentor-root {
 /* Sohbet Paneli */
 .nartes-chat-panel {
   width: min(375px, calc(100vw - 28px));
-  height: min(470px, calc(100dvh - var(--topbar-h) - var(--road-h) - 90px));
-  min-height: 320px;
+  height: min(420px, calc(100dvh - var(--topbar-h) - var(--road-h) - 150px));
+  min-height: 0;
+  max-height: calc(100dvh - var(--topbar-h) - var(--road-h) - 150px);
   background: #ffffff;
   border: 2px solid #0f172a;
   border-radius: 22px;
@@ -3520,4 +3521,26 @@ body.auth-locked .nartes-mentor-root {
   font-weight: 800;
   font-size: 11.5px;
   cursor: pointer;
+}
+
+
+/* NarTES: hidden gercekten gizlesin; panel ekrani kilitlemesin */
+.nartes-chat-panel[hidden],
+.nartes-speech-bubble[hidden],
+.nartes-ai-settings-drawer[hidden] {
+  display: none !important;
+}
+
+.nartes-chat-close {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.nartes-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
