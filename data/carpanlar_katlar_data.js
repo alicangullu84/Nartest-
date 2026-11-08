@@ -75,10 +75,10 @@ window.MATFLOW_UNIT = {
       subtitle: "Bir tam sayıyı kalansız bölen sayıları bloklarla keşfedelim.",
       barsDemo: true,
       explanation: [
-        "<strong>7 × 3 = 21</strong> bir çarpma işlemidir. Aynı ilişkinin bölme ile yazılışı <strong>21 ÷ 3 = 7</strong> ve <strong>21 ÷ 7 = 3</strong> olur. Bölme, <strong>çarpma işleminin tersi</strong>dir. Her tam sayıyı başka bir tam sayıya kalansız bölemeyiz.",
+        "<strong>6 × 3 = 18</strong> bir çarpma işlemidir. Aynı ilişkinin bölme ile yazılışı <strong>18 ÷ 3 = 6</strong> ve <strong>18 ÷ 6 = 3</strong> olur. Bölme, <strong>çarpma işleminin tersi</strong>dir. Her tam sayıyı başka bir tam sayıya kalansız bölemeyiz.",
         "Bir <strong>A</strong> doğal sayısını bir <strong>B</strong> doğal sayısına kalansız bölebiliyorsak, <strong>B</strong> sayısına <strong>A</strong>'nın <strong>çarpanı (böleni)</strong>, <strong>A</strong> sayısına ise <strong>B</strong>'nin <strong>katı</strong> denir."
       ],
-      sentenceHtml: "<strong>7 × 3 = 21</strong> işleminde <strong>21 ÷ 3 = 7</strong> ve <strong>21 ÷ 7 = 3</strong> elde edilir. Burada <strong>7</strong> sayısı 21'in bir {0}, <strong>21</strong> sayısı 7'nin bir {1} olur. Ayrıca 12 sayısı 3'e {2} bölünür.",
+      sentenceHtml: "<strong>6 × 3 = 18</strong> işleminde <strong>18 ÷ 3 = 6</strong> ve <strong>18 ÷ 6 = 3</strong> elde edilir. Burada <strong>6</strong> sayısı 18'in bir {0}, <strong>18</strong> sayısı 6'nın bir {1} olur. Ayrıca 12 sayısı 3'e {2} bölünür.",
       blanks: [
         { id: 0, correct: "çarpanıdır", choices: ["çarpanıdır", "katıdır", "kalanıdır"] },
         { id: 1, correct: "katıdır", choices: ["bölenidir", "katıdır", "farkıdır"] },
