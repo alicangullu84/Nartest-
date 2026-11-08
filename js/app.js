@@ -581,6 +581,7 @@
       saveState();
     }
     playTone("success");
+    if (window.NartesMentor) window.NartesMentor.onCorrect();
     renderSidebar();
     renderRoad();
 
@@ -685,6 +686,7 @@
     }
 
     applyKaTeX(document.getElementById("windowCard"));
+    if (window.NartesMentor) window.NartesMentor.setContext({ unit: UNIT, kaz, stop });
     speakText(`${stop.title}. ${stop.subtitle}`);
   }
 
@@ -874,6 +876,7 @@
             playTone("error");
             cBtn.style.background = "#fee2e2";
             cBtn.style.borderColor = "#ef4444";
+            if (window.NartesMentor) window.NartesMentor.onWrong("Çarpma ve bölme işleminde bölen sayıya çarpan, bölünen sayıya ise kat denir.");
             showToast("Tekrar düşün! Cümledeki matematiksel ilişkiye dikkat et.");
           }
         });
@@ -915,12 +918,19 @@
     const checkPanel = document.createElement("div");
     checkPanel.className = "video-check-panel";
     checkPanel.innerHTML = `
-      <div>
-        <div style="display:inline-block;font-size:11.5px;font-weight:800;color:#9333ea;background:#f3e8ff;padding:4px 10px;border-radius:999px;margin-bottom:12px;">
-          🎬 Doğrulama Sorusu
+      <div class="vcp-card-inner">
+        <div class="vcp-top-row">
+          <span class="vcp-badge">🎯 Adım Sonu Doğrulama</span>
+          <span class="vcp-step-indicator" id="vcpStepStatus">Adım 1 / ${stop.steps.length}</span>
         </div>
-        <h3 style="font-size:clamp(16px, 1.25vw, 19.5px);font-weight:800;color:#0f172a;margin-bottom:16px;line-height:1.4;">${stop.quickQuestion}</h3>
-        <div id="videoQuickChoices" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <h3 class="vcp-question-title">${stop.quickQuestion}</h3>
+        <p class="vcp-helper-sub" id="vcpHelperSub">Soldaki adımları inceledikten sonra doğru seçeneği işaretle:</p>
+        <div id="videoQuickChoices" class="vcp-choices-list"></div>
+        <div class="vcp-mentor-row">
+          <button type="button" class="vcp-ask-nartes-btn" id="btnAskNartesVideo">
+            <span>🦉</span> <span>Takıldın mı? NarTES'ten Sokratik İpucu İste</span>
+          </button>
+        </div>
       </div>
     `;
 
@@ -928,10 +938,45 @@
     wrap.appendChild(checkPanel);
     container.appendChild(wrap);
 
+    const askVideoBtn = checkPanel.querySelector("#btnAskNartesVideo");
+    if (askVideoBtn) {
+      askVideoBtn.addEventListener("click", () => {
+        playTone("click");
+        if (window.NartesMentor) window.NartesMentor.openWithHint();
+      });
+    }
+
+    function focusQuestionPanel() {
+      checkPanel.classList.remove("vcp-pulse-focus");
+      void checkPanel.offsetWidth;
+      checkPanel.classList.add("vcp-pulse-focus", "vcp-ready-highlight");
+      const helperEl = checkPanel.querySelector("#vcpHelperSub");
+      if (helperEl) {
+        helperEl.innerHTML = "✨ <strong>Tüm adımları tamamladın!</strong> Şimdi aşağıdaki doğru seçeneği işaretleyerek sıradaki durağa geç:";
+        helperEl.classList.add("ready");
+      }
+      const firstChoice = checkPanel.querySelector(".option-btn:not(:disabled)");
+      if (firstChoice) {
+        checkPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        firstChoice.focus({ preventScroll: true });
+      }
+      if (window.NartesMentor) {
+        window.NartesMentor.nudgeQuestionPanel(stop.quickQuestion);
+      }
+    }
+
     function drawVisualStep(stepIdx) {
       const stage = player.querySelector("#videoVisualStage");
       const tabsEl = player.querySelector("#videoStepTabs");
       const step = stop.steps[stepIdx];
+      const isLastStep = stepIdx >= stop.steps.length - 1;
+
+      const stepStatusEl = checkPanel.querySelector("#vcpStepStatus");
+      if (stepStatusEl) {
+        stepStatusEl.textContent = isLastStep ? "✓ Tüm Adımlar İncelendi" : `Adım ${stepIdx + 1} / ${stop.steps.length}`;
+        stepStatusEl.classList.toggle("done", isLastStep);
+      }
+      checkPanel.classList.toggle("vcp-ready-highlight", isLastStep);
 
       tabsEl.innerHTML = stop.steps.map((_, idx) => {
         const active = idx === stepIdx;
@@ -948,9 +993,10 @@
 
       player.querySelector("#videoProgFill").style.width = `${((stepIdx + 1) / stop.steps.length) * 100}%`;
       const btn = player.querySelector("#btnNextVideoStep");
-      btn.textContent = stepIdx < stop.steps.length - 1
+      btn.classList.toggle("to-question-ready", isLastStep);
+      btn.textContent = !isLastStep
         ? `▶ Sonraki Adım (${stepIdx + 1}/${stop.steps.length})`
-        : `↻ Baştan Oynat (${stop.steps.length}/${stop.steps.length})`;
+        : `🎯 Yandaki Soruya Geç (${stop.steps.length}/${stop.steps.length}) →`;
 
       speakText(step.text);
 
@@ -1031,23 +1077,32 @@
 
     player.querySelector("#btnNextVideoStep").addEventListener("click", () => {
       playTone("click");
-      currentStepIdx = (currentStepIdx + 1) % stop.steps.length;
-      drawVisualStep(currentStepIdx);
+      if (currentStepIdx < stop.steps.length - 1) {
+        currentStepIdx++;
+        drawVisualStep(currentStepIdx);
+        if (currentStepIdx === stop.steps.length - 1) {
+          checkPanel.classList.add("vcp-ready-highlight");
+        }
+      } else {
+        focusQuestionPanel();
+      }
     });
 
     const choicesBox = checkPanel.querySelector("#videoQuickChoices");
     const letters = ["A", "B", "C", "D"];
     stop.quickChoices.forEach((ch, idx) => {
       const btn = document.createElement("button");
-      btn.className = "option-btn";
-      btn.innerHTML = `<span class="option-letter">${letters[idx] || "•"}</span><span>${renderOptionMath(ch)}</span>`;
+      btn.className = "option-btn vcp-option-btn";
+      btn.innerHTML = `<span class="option-letter">${letters[idx] || "•"}</span><span class="vcp-option-text">${renderOptionMath(ch)}</span>`;
       btn.addEventListener("click", () => {
         if (String(ch) === String(stop.quickCorrect)) {
+          choicesBox.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
           btn.classList.add("correct");
           completeCurrentStop("Anlatımı ve doğrulama sorusunu başarıyla tamamladın!");
         } else {
           playTone("error");
           btn.classList.add("wrong");
+          if (window.NartesMentor) window.NartesMentor.onWrong("Soldaki animasyon adımlarında oluşan farklı durumların sayısına tekrar dikkat et.");
           showToast("Soldaki animasyon adımlarını kontrol edip tekrar dene!");
         }
       });
@@ -1126,6 +1181,7 @@
             playTone("error");
             chip.classList.add("wrong");
             setTimeout(() => chip.classList.remove("wrong"), 400);
+            if (window.NartesMentor) window.NartesMentor.onWrong(currentTarget.hint);
             showToast(`İpucu: ${currentTarget.hint}`);
           }
         });
@@ -1513,6 +1569,7 @@
         } else {
           playTone("error");
           btn.classList.add("wrong");
+          if (window.NartesMentor) window.NartesMentor.onWrong(stop.hint);
           solArea.innerHTML = `
             <div class="solution-box" style="background:#fffbeb;border-color:#fde68a;color:#92400e;">
               <h4 style="color:#b45309;">💡 İpucu</h4>

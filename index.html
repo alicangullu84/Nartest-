@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=20261109a">
+  <link rel="stylesheet" href="css/style.css?v=20261109b">
 </head>
 <body class="auth-locked">
 
@@ -239,16 +239,16 @@
           <div class="window-body" id="windowBody"></div>
 
           <div class="window-foot">
+            <button class="btn-secondary-prev" id="btnPrevStop" title="Önceki Durağa Dön (Sol Ok)">
+              <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12.5 4.5L7 10l5.5 5.5"/>
+              </svg>
+              <span>Önceki Durak</span>
+            </button>
             <div class="foot-feedback" id="footFeedback">
               👆 Sıradaki durağa geçmek için bu penceredeki etkinliği tamamla.
             </div>
             <div class="foot-actions">
-              <button class="btn-secondary-prev" id="btnPrevStop" title="Önceki Durağa Dön">
-                <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12.5 4.5L7 10l5.5 5.5"/>
-                </svg>
-                <span>Önceki</span>
-              </button>
               <button class="btn-primary-next" id="btnNextStop" disabled>
                 <span>Sonraki Durağa Geç</span>
                 <svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -305,8 +305,9 @@
     <div class="modal-card" id="infoModalContent"></div>
   </div>
 
-  <script src="data/carpanlar_katlar_data.js?v=20261109a"></script>
+  <script src="data/carpanlar_katlar_data.js?v=20261109b"></script>
   <script src="data/lgs_uniteler_2_12.js"></script>
-  <script src="js/app.js?v=20261109a"></script>
+  <script src="js/nartes_mentor.js?v=20261109b"></script>
+  <script src="js/app.js?v=20261109b"></script>
 </body>
 </html>

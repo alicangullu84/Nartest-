@@ -88,7 +88,7 @@ window.MATFLOW_UNIT = {
         "<strong>4 × 6 = 24</strong> bir çarpma işlemidir. Aynı ilişkinin bölme ile yazılışı <strong>24 ÷ 6 = 4</strong> ve <strong>24 ÷ 4 = 6</strong> olur. Bölme, <strong>çarpma işleminin tersi</strong>dir. Her tam sayıyı başka bir tam sayıya kalansız bölemeyiz.",
         "Bir <strong>A</strong> doğal sayısını bir <strong>B</strong> doğal sayısına kalansız bölebiliyorsak, <strong>B</strong> sayısına <strong>A</strong>'nın <strong>çarpanı (böleni)</strong>, <strong>A</strong> sayısına ise <strong>B</strong>'nin <strong>katı</strong> denir. Yandaki <strong>4 × 6 = 24</strong> birimkarelik dikdörtgen modelinde her iki kenar uzunluğu da 24'ün birer çarpanıdır."
       ],
-      sentenceHtml: "<strong>4 × 6 = 24</strong> işleminde <strong>24 ÷ 6 = 4</strong> ve <strong>24 ÷ 4 = 6</strong> elde edilir. Burada <strong>4 ve 6</strong> sayıları 24'ün birer {0}, <strong>24</strong> sayısı 6'nın bir {1} olur. Ayrıca 18 sayısı 3'e {2} bölünür.",
+      sentenceHtml: "<strong>4 × 6 = 24</strong> işleminde <strong>24 ÷ 6 = 4</strong> ve <strong>24 ÷ 4 = 6</strong> elde edilir. Burada <strong>4</strong> sayısı 24'ün bir {0}, <strong>24</strong> sayısı 6'nın bir {1} olur. Ayrıca <strong>24</strong> sayısı 6'ya {2} bölünür.",
       blanks: [
         { id: 0, correct: "çarpanıdır", choices: ["çarpanıdır", "katıdır", "kalanıdır"] },
         { id: 1, correct: "katıdır", choices: ["bölenidir", "katıdır", "farkıdır"] },
