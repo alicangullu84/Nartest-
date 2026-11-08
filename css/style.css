@@ -32,9 +32,13 @@
   --ink-light: #94a3b8;
   --border-subtle: #dbe3ee;
 
-  --topbar-h: 50px;
-  --workspace-head-h: 42px;
-  --road-h: 100px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --topbar-h: 48px;
+  --workspace-head-h: 38px;
+  --road-h: 90px;
   --radius-xl: 18px;
   --radius-lg: 14px;
   --radius-md: 10px;
@@ -903,12 +907,13 @@ body.sidebar-collapsed .sidebar {
 .window-body {
   flex: 1;
   min-height: 0;
-  padding: clamp(14px, 1.8vh, 24px) clamp(56px, 4.4vw, 68px);
+  padding: clamp(10px, 1.4vh, 18px) clamp(36px, 3.5vw, 56px);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: clamp(12px, 1.6vh, 20px);
+  justify-content: flex-start;
+  gap: clamp(10px, 1.4vh, 16px);
 }
 
 /* Pencere Alt Durum ve Otomatik Geçiş Çubuğu */
@@ -1008,25 +1013,24 @@ body.sidebar-collapsed .sidebar {
    6. İÇERİK BİLEŞENLERİ (Tam Ekranı Dolduran Esnek Grid Yapıları)
    ========================================================================== */
 .content-split {
-  flex: 1;
-  min-height: 0;
+  min-height: min-content;
   display: grid;
   grid-template-columns: 1.3fr 0.9fr;
-  gap: clamp(16px, 2vw, 28px);
-  align-items: stretch;
+  gap: clamp(12px, 1.8vw, 22px);
+  align-items: start;
 }
 
 .lead-text {
-  font-size: clamp(14.5px, 1.12vw, 17px);
-  line-height: 1.65;
+  font-size: clamp(13.5px, 1.05vw, 15.5px);
+  line-height: 1.55;
   color: #1e293b;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .lead-text p + p {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 /* Görsel 3B Nartes+ Sahne Kartı (Sade & Estetik Çerçevesiz Görünüm) */
@@ -1048,7 +1052,7 @@ body.sidebar-collapsed .sidebar {
   height: 100%;
   flex: 1;
   min-height: 155px;
-  max-height: clamp(190px, 31vh, 340px);
+  max-height: clamp(150px, 24vh, 260px);
   object-fit: cover;
   display: block;
 }
@@ -1072,41 +1076,48 @@ body.sidebar-collapsed .sidebar {
 .factor-bars-demo {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 12px;
+  gap: clamp(8px, 1.2vw, 12px);
+  margin-top: 8px;
 }
 
 .bar-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 12px 14px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  border-radius: 12px;
+  padding: 8px 10px;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.03);
+  min-width: 0;
 }
 
 .bar-row {
   display: flex;
   gap: 3px;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
+  min-width: 0;
 }
 
 .bar-seg {
-  height: 28px;
+  height: 25px;
   border-radius: 6px;
   color: #ffffff;
   font-weight: 800;
-  font-size: 13px;
+  font-size: clamp(10px, 0.88vw, 12.5px);
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
+  padding: 0 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bar-total {
-  height: 28px;
+  height: 24px;
   border-radius: 6px;
   color: #ffffff;
   font-weight: 800;
-  font-size: 13.5px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1114,40 +1125,43 @@ body.sidebar-collapsed .sidebar {
 
 .bar-caption {
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #475569;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 /* Sade ve Estetik Mavi [ ??? ] Boşluk Doldurma Kutusu */
 .interactive-sentence-box {
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: clamp(14px, 1.8vh, 22px) clamp(18px, 2.2vw, 26px);
-  font-size: clamp(15px, 1.15vw, 17.5px);
-  line-height: 1.95;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: clamp(10px, 1.4vh, 16px) clamp(14px, 1.8vw, 20px);
+  font-size: clamp(14px, 1.05vw, 16px);
+  line-height: 1.8;
   color: #0f172a;
-  box-shadow: 0 6px 20px -6px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 4px 14px -4px rgba(15, 23, 42, 0.05);
   flex-shrink: 0;
+  width: 100%;
 }
 
 .blank-slot {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 78px;
-  padding: 3px 14px;
-  margin: 0 4px;
+  min-width: 66px;
+  height: 31px;
+  padding: 0 12px;
+  margin: 2px 4px;
+  vertical-align: middle;
   background: #2563eb;
   color: #ffffff;
   font-weight: 800;
-  font-size: 14px;
+  font-size: 13.5px;
   border-radius: 999px;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.24);
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.22);
   transition: all 0.18s ease;
 }
 
@@ -1878,20 +1892,23 @@ body.sidebar-collapsed .sidebar {
 @media (max-width: 1080px) {
   :root {
     --sidebar-w: 242px;
+    --topbar-h: 46px;
+    --workspace-head-h: 36px;
+    --road-h: 84px;
   }
   .brand-badge,
   .hide-on-small {
-    display: none;
+    display: none !important;
   }
   .window-body {
-    padding: 14px 48px;
+    padding: 10px 40px;
   }
   .nav-arrow {
-    width: 40px;
-    height: 72px;
+    width: 36px;
+    height: 64px;
   }
-  .nav-arrow-prev { left: 12px; }
-  .nav-arrow-next { right: 12px; }
+  .nav-arrow-prev { left: 8px; }
+  .nav-arrow-next { right: 8px; }
 }
 
 /* Tablet Dikey & Küçük Tabletler (<= 900px): Sol Panel Kayar Çekmece (Drawer) Olur */
@@ -1906,11 +1923,12 @@ body.sidebar-collapsed .sidebar {
     top: var(--topbar-h);
     left: 0;
     bottom: 0;
-    width: 286px;
+    width: 280px;
     box-shadow: 16px 0 40px rgba(0, 0, 0, 0.45);
     transform: translateX(-100%);
     opacity: 1;
     pointer-events: auto;
+    z-index: 100;
   }
 
   body.sidebar-drawer-open .sidebar {
@@ -1922,54 +1940,469 @@ body.sidebar-collapsed .sidebar {
     opacity: 1;
   }
 
+  /* 768px tablet dikey ekranda üst barda taşmayı önle */
+  #navCoursesBtn,
+  .top-pill.lgs-total-pill {
+    display: none !important;
+  }
+
+  /* Dikey ekranda yüzen oklar yazıyı kapatmasın */
+  .nav-arrow {
+    display: none !important;
+  }
+
   .content-split,
   .video-stage-wrap,
   .question-layout {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .flow-visual-box img {
+    max-height: 190px;
   }
 
   .window-body {
-    padding: 14px 44px;
-  }
-
-  .top-pill.lgs-total-pill {
-    display: none;
+    padding: 10px 24px;
   }
 }
 
-/* Küçük Tablet / Büyük Telefon (<= 640px) */
-@media (max-width: 640px) {
-  .toggle-label,
-  .brand-name {
-    display: none;
+/* ==========================================================================
+   📱 9.1 ÖZEL TELEFON (MOBİL) DÜZENİ — SADE, ŞIK, SAYFA SAYFA VE SIFIR TAŞMA
+   ========================================================================== */
+@media (max-width: 640px), (max-width: 767px) and (orientation: portrait), (max-height: 520px) and (orientation: landscape) {
+  :root {
+    --topbar-h: 46px;
+    --workspace-head-h: 34px;
+    --road-h: 64px;
+  }
+
+  /* 1. ÜST BAR: Sade, taşmasız, tek satır */
+  .topbar {
+    height: var(--topbar-h);
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .topbar-left {
+    gap: 6px;
+    flex-shrink: 0;
+    min-width: 0;
+  }
+
+  .sidebar-toggle-btn {
+    height: 32px;
+    padding: 0 8px;
+    border-radius: 8px;
+  }
+  .toggle-label {
+    display: none !important;
+  }
+
+  .brand {
+    gap: 4px;
+  }
+  .nartes-logo-mount {
+    height: 28px;
+  }
+  .nartes-svg-logo {
+    height: 24px;
+    max-width: 96px;
+    width: auto;
+  }
+  .brand-badge {
+    display: none !important;
+  }
+
+  /* Orta: Hızlı Ünite Değiştirici Açılır Menü */
+  .topnav {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+  }
+  #navCoursesBtn,
+  #navPolypadBtn,
+  .hide-on-small {
+    display: none !important;
   }
   .unit-select-dropdown {
-    max-width: 155px;
+    width: 100%;
+    max-width: 145px;
+    min-width: 85px;
+    height: 30px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 7px;
   }
-  .window-head {
-    padding: 10px 16px;
+
+  /* Sağ: Sade Kilit ve Ses Düğmeleri */
+  .topbar-right {
+    gap: 5px;
+    flex-shrink: 0;
   }
-  .window-body {
-    padding: 12px 16px;
+  .top-pill,
+  .lgs-total-pill,
+  #btnFullscreen,
+  #btnToggleVoice {
+    display: none !important;
   }
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+    border-radius: 7px;
+    padding: 0;
+  }
+
+  /* 2. ÇALIŞMA ALANI VE BREADCRUMB */
+  .workspace {
+    height: calc(100vh - var(--topbar-h));
+    height: calc(100dvh - var(--topbar-h));
+  }
+
+  .workspace-header {
+    height: var(--workspace-head-h);
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .step-crumb {
+    padding: 2px 8px;
+    gap: 5px;
+    font-size: 11px;
+    max-width: 78%;
+  }
+
+  /* Çift ok hatasını kökten önler: Kazanım adı ve yanındaki ayraç telefonda gizlenir */
+  .crumb-kaz,
+  .crumb-sep-kaz {
+    display: none !important;
+  }
+
+  .crumb-unit {
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .crumb-stop {
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .crumb-badge {
+    padding: 1.5px 6px;
+    font-size: 10px;
+    max-width: 85px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Durum hapı telefonda minimal ve derli toplu */
+  .step-status-pill {
+    padding: 2px 7px;
+    font-size: 11px;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .step-status-pill .pill-txt {
+    font-size: 10px;
+  }
+
+  /* 3. SAHNE VE PENCERE KARTI */
+  .stage-viewport {
+    padding: 2px 4px 4px;
+  }
+
   .nav-arrow {
-    display: none; /* Küçük ekranda alt bardaki Önceki / Sonraki butonları ve parmak kaydırma kullanılır */
+    display: none !important;
   }
-  .options-grid,
+
+  .window-card {
+    border-radius: 12px;
+    border-width: 1px;
+  }
+
+  .window-head {
+    padding: 8px 12px 6px;
+  }
+  .window-title-wrap h1 {
+    font-size: 16px;
+    letter-spacing: -0.2px;
+    line-height: 1.25;
+  }
+  .window-subtitle {
+    font-size: 11px;
+    margin-top: 1px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* 4. PENCERE GÖVDESİ — TEK SÜTUN, AKICI, ASLA ÜST ÜSTE BİNMEZ */
+  .window-body {
+    padding: 8px 10px;
+    gap: 10px;
+    justify-content: flex-start !important;
+  }
+
+  /* Tek sütun akış */
+  .content-split,
+  .video-stage-wrap,
+  .question-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: 100% !important;
+    flex: none !important;
+    min-height: min-content !important;
+  }
+
+  /* Telefonda büyük dekoratif kapak görseli gizlenir, ders metni doğrudan öne çıkar */
+  .flow-visual-box {
+    display: none !important;
+  }
+
+  .lead-text {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .lead-text p + p {
+    margin-top: 6px;
+  }
+
+  /* Sayı blokları telefonda tek sütun ve ferah */
   .factor-bars-demo {
-    grid-template-columns: 1fr;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    margin-top: 6px !important;
+    width: 100% !important;
   }
+  .bar-card {
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+  .bar-seg {
+    height: 24px;
+    font-size: 11.5px;
+  }
+  .bar-total {
+    height: 22px;
+    font-size: 11px;
+  }
+  .bar-caption {
+    font-size: 10.5px;
+    margin-top: 3px;
+  }
+
+  /* Boşluk doldurma kutusu */
+  .interactive-sentence-box {
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.8;
+    border-radius: 12px;
+    width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .blank-slot {
+    min-width: 58px;
+    height: 30px;
+    padding: 0 10px;
+    font-size: 13px;
+    margin: 2px 3px;
+  }
+
+  .slot-picker {
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+  .slot-picker-label {
+    font-size: 11px;
+    width: 100%;
+    margin-bottom: 2px;
+  }
+  .slot-choice-btn {
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    border-radius: 999px;
+    touch-action: manipulation;
+  }
+
+  /* Soru ve Şıklar Düzeni (Durak 5 vb.) */
+  .question-left-col,
+  .question-right-col {
+    width: 100% !important;
+  }
+  .options-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    margin-top: 10px !important;
+  }
+  .option-btn {
+    min-height: 42px;
+    padding: 8px 12px;
+    font-size: 13.5px;
+  }
+
+  /* Animasyon Sahnesi */
+  .canvas-player {
+    padding: 10px;
+    border-radius: 12px;
+    min-height: 190px;
+  }
+  .video-canvas-area {
+    min-height: 110px;
+  }
+  .btn-video-play {
+    padding: 7px 12px;
+    font-size: 11.5px;
+  }
+  .video-check-panel {
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  /* Etkileşimli Tahta / Oyun */
+  .interactive-board {
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  /* 5. PENCERE ALTI (Önceki / Sonraki Düğmeleri: 2 Satır, Kesintisiz ve Dokunulabilir) */
   .window-foot {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 10px 16px;
+    padding: 8px 10px;
+    gap: 6px;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .foot-feedback {
+    font-size: 11px;
+    line-height: 1.25;
+    max-width: 100% !important;
+    text-align: center;
+    justify-content: center;
+    -webkit-line-clamp: unset !important;
+    white-space: normal;
   }
   .foot-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
     justify-content: space-between;
+  }
+  .btn-secondary-prev {
+    flex: 1;
+    max-width: 105px;
+    height: 38px;
+    padding: 0 10px;
+    font-size: 12.5px;
+    border-radius: 9px;
+  }
+  .btn-primary-next {
+    flex: 2;
+    height: 38px;
+    padding: 0 14px;
+    font-size: 13px;
+    border-radius: 9px;
+  }
+
+  /* 6. ALT DURAK ŞERİDİ (Journey Road Bar) */
+  .journey-bar {
+    height: var(--road-h);
+    padding: 2px 6px calc(2px + env(safe-area-inset-bottom, 0px));
+  }
+  .journey-top-meta {
+    font-size: 9.5px;
+    margin-bottom: 2px;
+  }
+  .journey-title-wrap {
+    max-width: 55%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .journey-summary {
+    font-size: 9.5px;
+    white-space: nowrap;
+  }
+
+  .road-scroll-wrap {
+    gap: 3px;
+  }
+  .road-scroll-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+  }
+  .road-scroll-btn svg {
+    width: 13px;
+    height: 13px;
+  }
+  .stop-circle {
+    width: 26px;
+    height: 26px;
+    font-size: 10.5px;
+  }
+  .stop-label {
+    font-size: 8px;
+  }
+  .road-connector {
+    min-width: 6px;
+    height: 3px;
+  }
+
+  /* Sol Çekmece Genişliği */
+  .sidebar {
+    width: 270px;
   }
 }
 
+/* Yatay Telefon (Landscape) Özel Desteği */
+@media (max-width: 950px) and (max-height: 520px) and (orientation: landscape) {
+  :root {
+    --topbar-h: 38px;
+    --workspace-head-h: 28px;
+    --road-h: 52px;
+  }
+  .nav-arrow,
+  #navCoursesBtn,
+  #navPolypadBtn,
+  .top-pill,
+  .lgs-total-pill {
+    display: none !important;
+  }
+  .window-head {
+    padding: 4px 10px;
+  }
+  .window-title-wrap h1 {
+    font-size: 14px;
+  }
+  .window-body {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+  .stop-circle {
+    width: 22px;
+    height: 22px;
+    font-size: 9.5px;
+  }
+  .stop-label {
+    display: none;
+  }
+  .window-foot {
+    padding: 4px 8px;
+  }
+  .btn-secondary-prev,
+  .btn-primary-next {
+    height: 30px;
+    font-size: 11px;
+  }
+}
 /* ==========================================================================
    10. KATEX MATEMATİKSEL İFADE DİZGİ UYUMU
    ========================================================================== */

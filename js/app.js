@@ -33,6 +33,40 @@
     return state.unitProgress[u.id];
   }
 
+  // ==========================================================================
+  // CİHAZ ALGILAMA VE DUYARLI DÜZEN MODU (Telefon / Tablet / Bilgisayar)
+  // ==========================================================================
+  function updateDeviceMode() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const minDim = Math.min(w, h);
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const ua = navigator.userAgent || '';
+    const isMobileUA = /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const isIPad = /iPad/i.test(ua) || (isTouch && /Macintosh/i.test(ua) && minDim >= 600);
+
+    let device = 'desktop';
+    if ((isMobileUA && !isIPad) || (isTouch && minDim <= 520) || w <= 640) {
+      device = 'phone';
+    } else if (isIPad || (isTouch && minDim > 520) || (w > 640 && w <= 1080)) {
+      device = 'tablet';
+    } else {
+      device = 'desktop';
+    }
+
+    const orientation = h > w ? 'portrait' : 'landscape';
+
+    document.documentElement.setAttribute('data-device', device);
+    document.documentElement.setAttribute('data-orientation', orientation);
+
+    if (document.body) {
+      document.body.classList.remove('device-phone', 'device-tablet', 'device-desktop', 'is-portrait', 'is-landscape');
+      document.body.classList.add('device-' + device, 'is-' + orientation);
+    }
+
+    return { device, orientation };
+  }
+
   // Web Audio API ile Temiz Ses Efektleri
   let audioCtx = null;
   function playTone(type) {
@@ -486,6 +520,9 @@
       return;
     }
 
+    if (document.body.classList.contains("sidebar-drawer-open")) {
+      document.body.classList.remove("sidebar-drawer-open");
+    }
     const dir = direction || (stopId >= uState.currentStopId ? "next" : "prev");
     uState.currentStopId = stopId;
     saveState();
@@ -566,12 +603,14 @@
     document.getElementById("crumbStopNo").textContent = `Durak ${stop.id} / ${UNIT.stops.length}`;
 
     const statusPill = document.getElementById("stepStatusPill");
-    if (done) {
-      statusPill.className = "step-status-pill done";
-      statusPill.innerHTML = "✓ Tamamlandı (Yeşil)";
-    } else {
-      statusPill.className = "step-status-pill todo";
-      statusPill.innerHTML = "🟠 Devam Ediyor (Turuncu)";
+    if (statusPill) {
+      if (done) {
+        statusPill.className = "step-status-pill done";
+        statusPill.innerHTML = '<span class="pill-dot">✓</span> <span class="pill-txt">Tamamlandı</span>';
+      } else {
+        statusPill.className = "step-status-pill todo";
+        statusPill.innerHTML = '<span class="pill-dot">🟠</span> <span class="pill-txt">Devam Ediyor</span>';
+      }
     }
 
     document.getElementById("windowTitle").textContent = stop.title;
@@ -646,7 +685,7 @@
           <div class="bar-row">
             <div class="bar-seg" style="flex:4;background:#16a34a">4</div>
             <div class="bar-seg" style="flex:4;background:#16a34a">4</div>
-            <div class="bar-seg" style="flex:4;background:#16a34a;opacity:0.45">4 (Taştı)</div>
+            <div class="bar-seg bar-seg-overflow" style="flex:4;background:#16a34a;opacity:0.45">4 (Taştı)</div>
           </div>
           <div class="bar-total" style="background:#2563eb;width:83%">10</div>
           <div class="bar-caption">✗ 10 sayısı 4'e kalansız bölünemez (Kalan: 2)</div>
@@ -1780,9 +1819,14 @@
   // ==========================================================================
   window.addEventListener("DOMContentLoaded", () => {
     let appBooted = false;
+    window.addEventListener("resize", updateDeviceMode);
+    window.addEventListener("orientationchange", updateDeviceMode);
+    updateDeviceMode();
+
     function bootApp() {
       if (appBooted) return;
       appBooted = true;
+      updateDeviceMode();
       loadState();
       applySelectedLogo("logo-2-3d-kup");
       renderUnitSelector();
