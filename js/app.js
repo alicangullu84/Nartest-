@@ -705,22 +705,24 @@
       bars.innerHTML = `
         <div class="bar-card">
           <div class="bar-row">
-            <div class="bar-seg" style="flex:3;background:#f97316">3</div>
-            <div class="bar-seg" style="flex:3;background:#f97316">3</div>
-            <div class="bar-seg" style="flex:3;background:#f97316">3</div>
-            <div class="bar-seg" style="flex:3;background:#f97316">3</div>
+            <div class="bar-seg" style="flex:6;background:#f97316">6</div>
+            <div class="bar-seg" style="flex:6;background:#f97316">6</div>
+            <div class="bar-seg" style="flex:6;background:#f97316">6</div>
+            <div class="bar-seg" style="flex:6;background:#f97316">6</div>
           </div>
-          <div class="bar-total" style="background:#a21caf">12</div>
-          <div class="bar-caption">✓ 12 sayısı 3'e tam bölünür (4 × 3 = 12)</div>
+          <div class="bar-total" style="background:#a21caf">24</div>
+          <div class="bar-caption">✓ 24 sayısı 6'ya tam bölünür (4 × 6 = 24)</div>
         </div>
         <div class="bar-card">
           <div class="bar-row">
-            <div class="bar-seg" style="flex:4;background:#16a34a">4</div>
-            <div class="bar-seg" style="flex:4;background:#16a34a">4</div>
-            <div class="bar-seg bar-seg-overflow" style="flex:4;background:#16a34a;opacity:0.45">4 (Taştı)</div>
+            <div class="bar-seg" style="flex:5;background:#16a34a">5</div>
+            <div class="bar-seg" style="flex:5;background:#16a34a">5</div>
+            <div class="bar-seg" style="flex:5;background:#16a34a">5</div>
+            <div class="bar-seg" style="flex:5;background:#16a34a">5</div>
+            <div class="bar-seg bar-seg-overflow" style="flex:5;background:#16a34a;opacity:0.45">5 (Taştı)</div>
           </div>
-          <div class="bar-total" style="background:#2563eb;width:83%">10</div>
-          <div class="bar-caption">✗ 10 sayısı 4'e kalansız bölünemez (Kalan: 2)</div>
+          <div class="bar-total" style="background:#2563eb;width:92%">24</div>
+          <div class="bar-caption">✗ 24 sayısı 5'e kalansız bölünemez (Kalan: 4)</div>
         </div>
       `;
       leftCol.appendChild(bars);
@@ -739,12 +741,74 @@
     }
 
     const rightCol = document.createElement("div");
-    rightCol.className = "flow-visual-box";
-    const imgPath = kaz.visual || UNIT.coverImage;
-    rightCol.innerHTML = `
-      <img src="${imgPath}" onerror="this.src='assets/flow/kapak_carpanlar_katlar.jpg'" alt="${kaz.title}">
-      <div class="flow-visual-caption">${kaz.title}</div>
-    `;
+    if (stop.gridModel) {
+      rightCol.className = "flow-visual-box factor-grid-showcase";
+      const gm = stop.gridModel;
+      let activeIdx = gm.defaultPairIdx || 0;
+      const palette = [
+        "linear-gradient(135deg, #38bdf8, #2563eb)",
+        "linear-gradient(135deg, #4ade80, #16a34a)",
+        "linear-gradient(135deg, #fb923c, #ea580c)",
+        "linear-gradient(135deg, #facc15, #ca8a04)",
+        "linear-gradient(135deg, #c084fc, #9333ea)",
+        "linear-gradient(135deg, #f472b6, #db2777)"
+      ];
+
+      function renderGridModel() {
+        const pair = gm.pairs[activeIdx];
+        let cellsHtml = "";
+        for (let r = 0; r < pair.rows; r++) {
+          for (let c = 0; c < pair.cols; c++) {
+            const idx = r * pair.cols + c + 1;
+            const bg = palette[(r + c) % palette.length];
+            cellsHtml += `<div class="fg-unit-cell" style="background:${bg};" title="${idx}. birimkare">${pair.cols <= 12 ? idx : ""}</div>`;
+          }
+        }
+
+        const tabsHtml = gm.pairs.map((p, i) => `
+          <button type="button" class="fg-pair-tab ${i === activeIdx ? "active" : ""}" data-pidx="${i}">
+            ${p.rows} × ${p.cols}
+          </button>
+        `).join("");
+
+        rightCol.innerHTML = `
+          <div class="fg-header">
+            <span class="fg-badge">📐 Birimkare Çarpan Modeli</span>
+            <span class="fg-total-pill">Alan = ${gm.total} br²</span>
+          </div>
+          <div class="fg-stage">
+            <div class="fg-dim-top">${pair.cols} birim (sütun)</div>
+            <div class="fg-middle-row">
+              <div class="fg-dim-left">${pair.rows} br (satır)</div>
+              <div class="fg-grid-board" style="grid-template-columns: repeat(${pair.cols}, minmax(0, 1fr));" data-cols="${pair.cols}">
+                ${cellsHtml}
+              </div>
+            </div>
+            <div class="fg-equation-Readout">${pair.rows} satır × ${pair.cols} sütun = <strong>${gm.total} birimkare</strong></div>
+          </div>
+          <div class="fg-tabs-row" role="tablist" aria-label="24 sayısının çarpan dikdörtgenleri">
+            ${tabsHtml}
+          </div>
+        `;
+
+        rightCol.querySelectorAll(".fg-pair-tab").forEach(btn => {
+          btn.addEventListener("click", () => {
+            playTone("click");
+            activeIdx = parseInt(btn.getAttribute("data-pidx"), 10);
+            renderGridModel();
+          });
+        });
+      }
+
+      renderGridModel();
+    } else {
+      rightCol.className = "flow-visual-box";
+      const imgPath = kaz.visual || UNIT.coverImage;
+      rightCol.innerHTML = `
+        <img src="${imgPath}" onerror="this.src='assets/flow/kapak_carpanlar_katlar.jpg'" alt="${kaz.title}">
+        <div class="flow-visual-caption">${kaz.title}</div>
+      `;
+    }
 
     topSplit.appendChild(leftCol);
     topSplit.appendChild(rightCol);
@@ -890,21 +954,23 @@
 
       speakText(step.text);
 
-      if (stop.videoScene === "rectangles_18") {
+      if (stop.videoScene === "rectangles_24" || stop.videoScene === "rectangles_18") {
         const configs = [
-          { r: 1, c: 18, color: "#38bdf8", label: "1 × 18 = 18 br²" },
-          { r: 2, c: 9,  color: "#22c55e", label: "2 × 9 = 18 br²" },
-          { r: 3, c: 6,  color: "#f97316", label: "3 × 6 = 18 br²" },
-          { r: 0, c: 0,  color: "#eab308", label: "Çarpanlar: 1, 2, 3, 6, 9, 18" }
+          { r: 1, c: 24, color: "#38bdf8", label: "1 × 24 = 24 br²" },
+          { r: 2, c: 12, color: "#22c55e", label: "2 × 12 = 24 br²" },
+          { r: 3, c: 8,  color: "#f97316", label: "3 × 8 = 24 br²" },
+          { r: 4, c: 6,  color: "#a855f7", label: "4 × 6 = 24 br²" },
+          { r: 0, c: 0,  color: "#eab308", label: "Çarpanlar: 1, 2, 3, 4, 6, 8, 12, 24" }
         ];
-        const cfg = configs[stepIdx];
+        const cfg = configs[stepIdx] || configs[0];
         if (cfg.r > 0) {
+          const cellSize = cfg.c > 12 ? 17 : 22;
           let cells = "";
           for (let i = 0; i < cfg.r * cfg.c; i++) {
-            cells += `<div style="width:22px;height:22px;background:${cfg.color};border-radius:4px;"></div>`;
+            cells += `<div style="width:${cellSize}px;height:${cellSize}px;background:${cfg.color};border-radius:4px;"></div>`;
           }
           stage.innerHTML = `
-            <div style="display:grid;grid-template-columns:repeat(${cfg.c}, 22px);gap:4px;padding:14px;background:rgba(255,255,255,0.06);border-radius:12px;">
+            <div style="display:grid;grid-template-columns:repeat(${cfg.c}, ${cellSize}px);gap:4px;padding:14px;background:rgba(255,255,255,0.06);border-radius:12px;max-width:100%;overflow-x:auto;">
               ${cells}
             </div>
             <div style="margin-top:12px;font-weight:800;font-size:18px;color:#fde047;">${cfg.label}</div>
@@ -913,9 +979,9 @@
         } else {
           stage.innerHTML = `
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;">
-              ${[1, 2, 3, 6, 9, 18].map(n => `<div style="width:46px;height:46px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;">${n}</div>`).join("")}
+              ${[1, 2, 3, 4, 6, 8, 12, 24].map(n => `<div style="width:44px;height:44px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;">${n}</div>`).join("")}
             </div>
-            <div style="margin-top:12px;font-weight:800;font-size:16px;color:#86efac;">Baştan ve sondan çarpımlar: 1×18 = 2×9 = 3×6 = 18</div>
+            <div style="margin-top:12px;font-weight:800;font-size:16px;color:#86efac;">Baştan ve sondan çarpımlar: 1×24 = 2×12 = 3×8 = 4×6 = 24</div>
             <div style="margin-top:8px;font-size:14.5px;color:#e2e8f0;text-align:center;">${step.text}</div>
           `;
         }

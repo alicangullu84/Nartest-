@@ -72,13 +72,23 @@ window.MATFLOW_UNIT = {
       icon: "💡",
       typeLabel: "Örnek & Keşif",
       title: "Çarpanlar ve Katlar",
-      subtitle: "Bir tam sayıyı kalansız bölen sayıları bloklarla keşfedelim.",
+      subtitle: "Bir tam sayıyı kalansız bölen sayıları bloklarla ve 4 × 6'lık birimkare modeliyle keşfedelim.",
       barsDemo: true,
+      gridModel: {
+        total: 24,
+        defaultPairIdx: 0,
+        pairs: [
+          { rows: 4, cols: 6, label: "4 × 6 = 24" },
+          { rows: 3, cols: 8, label: "3 × 8 = 24" },
+          { rows: 2, cols: 12, label: "2 × 12 = 24" },
+          { rows: 1, cols: 24, label: "1 × 24 = 24" }
+        ]
+      },
       explanation: [
-        "<strong>6 × 3 = 18</strong> bir çarpma işlemidir. Aynı ilişkinin bölme ile yazılışı <strong>18 ÷ 3 = 6</strong> ve <strong>18 ÷ 6 = 3</strong> olur. Bölme, <strong>çarpma işleminin tersi</strong>dir. Her tam sayıyı başka bir tam sayıya kalansız bölemeyiz.",
-        "Bir <strong>A</strong> doğal sayısını bir <strong>B</strong> doğal sayısına kalansız bölebiliyorsak, <strong>B</strong> sayısına <strong>A</strong>'nın <strong>çarpanı (böleni)</strong>, <strong>A</strong> sayısına ise <strong>B</strong>'nin <strong>katı</strong> denir."
+        "<strong>4 × 6 = 24</strong> bir çarpma işlemidir. Aynı ilişkinin bölme ile yazılışı <strong>24 ÷ 6 = 4</strong> ve <strong>24 ÷ 4 = 6</strong> olur. Bölme, <strong>çarpma işleminin tersi</strong>dir. Her tam sayıyı başka bir tam sayıya kalansız bölemeyiz.",
+        "Bir <strong>A</strong> doğal sayısını bir <strong>B</strong> doğal sayısına kalansız bölebiliyorsak, <strong>B</strong> sayısına <strong>A</strong>'nın <strong>çarpanı (böleni)</strong>, <strong>A</strong> sayısına ise <strong>B</strong>'nin <strong>katı</strong> denir. Yandaki <strong>4 × 6 = 24</strong> birimkarelik dikdörtgen modelinde her iki kenar uzunluğu da 24'ün birer çarpanıdır."
       ],
-      sentenceHtml: "<strong>6 × 3 = 18</strong> işleminde <strong>18 ÷ 3 = 6</strong> ve <strong>18 ÷ 6 = 3</strong> elde edilir. Burada <strong>6</strong> sayısı 18'in bir {0}, <strong>18</strong> sayısı 6'nın bir {1} olur. Ayrıca 12 sayısı 3'e {2} bölünür.",
+      sentenceHtml: "<strong>4 × 6 = 24</strong> işleminde <strong>24 ÷ 6 = 4</strong> ve <strong>24 ÷ 4 = 6</strong> elde edilir. Burada <strong>4 ve 6</strong> sayıları 24'ün birer {0}, <strong>24</strong> sayısı 6'nın bir {1} olur. Ayrıca 18 sayısı 3'e {2} bölünür.",
       blanks: [
         { id: 0, correct: "çarpanıdır", choices: ["çarpanıdır", "katıdır", "kalanıdır"] },
         { id: 1, correct: "katıdır", choices: ["bölenidir", "katıdır", "farkıdır"] },
@@ -92,17 +102,18 @@ window.MATFLOW_UNIT = {
       icon: "🎬",
       typeLabel: "Animasyonlu Anlatım",
       title: "Dikdörtgen Alanı ve Çarpan Çiftleri",
-      subtitle: "Alanı 18 birimkare olan dikdörtgenlerin kenar uzunlukları bize ne anlatır?",
-      videoScene: "rectangles_18",
+      subtitle: "Alanı 24 birimkare olan dikdörtgenlerin kenar uzunlukları bize ne anlatır?",
+      videoScene: "rectangles_24",
       steps: [
-        { text: "1. Adım: Alanı 18 br² olan bir dikdörtgenin kenarları 1 br ve 18 br olabilir (1 × 18 = 18).", draw: "rect_1_18" },
-        { text: "2. Adım: Aynı alanı 2 satır ve 9 sütunluk bloklarla da kurabiliriz (2 × 9 = 18).", draw: "rect_2_9" },
-        { text: "3. Adım: Veya 3 satır ve 6 sütun halinde dizebiliriz (3 × 6 = 18).", draw: "rect_3_6" },
-        { text: "Sonuç: 18'in tüm pozitif çarpanları küçükten büyüğe: 1, 2, 3, 6, 9 ve 18'dir!" , draw: "rainbow_18" }
+        { text: "1. Adım: Alanı 24 br² olan bir dikdörtgenin kenarları 1 br ve 24 br olabilir (1 × 24 = 24).", draw: "rect_1_24" },
+        { text: "2. Adım: Aynı alanı 2 satır ve 12 sütunluk bloklarla da kurabiliriz (2 × 12 = 24).", draw: "rect_2_12" },
+        { text: "3. Adım: Veya 3 satır ve 8 sütun halinde dizebiliriz (3 × 8 = 24).", draw: "rect_3_8" },
+        { text: "4. Adım: Ya da 4 satır ve 6 sütunluk birimkarelerle modelleyebiliriz (4 × 6 = 24).", draw: "rect_4_6" },
+        { text: "Sonuç: 24'ün tüm pozitif çarpanları küçükten büyüğe: 1, 2, 3, 4, 6, 8, 12 ve 24'tür!", draw: "rainbow_24" }
       ],
-      quickQuestion: "Alanı 18 br² ve kenarları tam sayı olan kaç farklı dikdörtgen oluşturabildik?",
-      quickChoices: ["2 farklı dikdörtgen", "3 farklı dikdörtgen", "6 farklı dikdörtgen"],
-      quickCorrect: "3 farklı dikdörtgen"
+      quickQuestion: "Alanı 24 br² ve kenarları tam sayı olan kaç farklı dikdörtgen oluşturabildik?",
+      quickChoices: ["3 farklı dikdörtgen", "4 farklı dikdörtgen", "8 farklı dikdörtgen"],
+      quickCorrect: "4 farklı dikdörtgen"
     },
     {
       id: 3,
@@ -131,8 +142,8 @@ window.MATFLOW_UNIT = {
       subtitle: "Verilen hedef sayıyı kalansız bölen TÜM çarpan bloklarını seç! Tuzak sayılara dikkat et.",
       gameType: "factor_hunter",
       levels: [
-        { target: 18, options: [1, 2, 3, 4, 6, 8, 9, 12, 18], divisors: [1, 2, 3, 6, 9, 18] },
-        { target: 28, options: [1, 2, 3, 4, 6, 7, 14, 21, 28], divisors: [1, 2, 4, 7, 14, 28] }
+        { target: 24, options: [1, 2, 3, 4, 5, 6, 8, 9, 12, 16, 24], divisors: [1, 2, 3, 4, 6, 8, 12, 24] },
+        { target: 18, options: [1, 2, 3, 4, 6, 8, 9, 12, 18], divisors: [1, 2, 3, 6, 9, 18] }
       ]
     },
     {
