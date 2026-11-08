@@ -62,6 +62,7 @@
     if (document.body) {
       document.body.classList.remove('device-phone', 'device-tablet', 'device-desktop', 'is-portrait', 'is-landscape');
       document.body.classList.add('device-' + device, 'is-' + orientation);
+      document.body.classList.toggle('handheld', isHandheldDevice());
     }
 
     syncLandscapeGate();
@@ -99,8 +100,13 @@
     return minDim >= 600 ? 'tableti' : 'telefonu';
   }
 
+  let handheldOrientation = null;
+  let fullscreenRequest = null;
+
   function syncLandscapeGate() {
-    const show = isHandheldDevice() && currentOrientation() === 'portrait';
+    const handheld = isHandheldDevice();
+    const orientation = currentOrientation();
+    const show = handheld && orientation === 'portrait';
     if (document.body) document.body.classList.toggle('needs-landscape', show);
     const overlay = document.getElementById('rotateOverlay');
     const title = document.getElementById('rotateTitle');
@@ -119,6 +125,9 @@
       const input = document.getElementById('authPasswordInput');
       if (input) input.focus();
     }
+    const enteredLandscape = handheld && orientation === 'landscape' && handheldOrientation !== 'landscape';
+    handheldOrientation = handheld ? orientation : null;
+    if (enteredLandscape) enterHandheldFullscreen();
   }
 
   function setRotateHint(text) {
@@ -128,61 +137,54 @@
     hint.textContent = text || '';
   }
 
-  function lockRequiresFullscreen(err) {
-    const name = err && err.name ? String(err.name) : '';
-    const msg = err && err.message ? String(err.message) : '';
-    if (/full[ -]?screen/i.test(msg)) return true;
-    const alreadyFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
-    return name === 'SecurityError' && !alreadyFullscreen;
+  function isDocumentFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
   }
 
-  async function exitFullscreenIf(enteredHere) {
-    if (!enteredHere) return;
-    const exitFs = document.exitFullscreen || document.webkitExitFullscreen;
-    if (!exitFs) return;
-    try { await exitFs.call(document); } catch (e) {}
+  function syncVisualViewport() {
+    const root = document.documentElement;
+    const vv = window.visualViewport;
+    const height = vv ? vv.height : window.innerHeight;
+    const width = vv ? vv.width : window.innerWidth;
+    const offsetTop = vv ? vv.offsetTop : 0;
+    const offsetLeft = vv ? vv.offsetLeft : 0;
+    root.style.setProperty('--app-height', Math.round(height) + 'px');
+    root.style.setProperty('--app-width', Math.round(width) + 'px');
+    root.style.setProperty('--vv-offset-top', Math.round(offsetTop) + 'px');
+    root.style.setProperty('--vv-offset-left', Math.round(offsetLeft) + 'px');
   }
 
-  // iOS Safari fiziksel olarak çeviremez; örtü asıl deneyimdir.
-  // Android Chrome kilidi çoğu zaman tam ekrandan sonra kabul eder.
-  async function requestLandscapeLock() {
-    const orientationApi = window.screen && screen.orientation;
-    if (!orientationApi || typeof orientationApi.lock !== 'function') {
-      setRotateHint('Telefonu veya tableti yan çevirdiğinizde devam edebilirsiniz.');
-      return;
-    }
-
-    try {
-      await orientationApi.lock('landscape');
-      setRotateHint('');
-      syncLandscapeGate();
-      return;
-    } catch (firstErr) {
-      if (!lockRequiresFullscreen(firstErr)) {
-        setRotateHint('Telefonu veya tableti yan çevirdiğinizde devam edebilirsiniz.');
-        return;
-      }
-    }
-
+  // Tam ekran isteği kullanıcı jestinde senkron başlar. Kilit başarısız olsa da çıkılmaz.
+  function enterHandheldFullscreen() {
+    if (!isHandheldDevice()) return Promise.resolve(false);
+    if (isDocumentFullscreen()) return Promise.resolve(true);
+    if (fullscreenRequest) return fullscreenRequest;
     const root = document.documentElement;
     const requestFs = root.requestFullscreen || root.webkitRequestFullscreen;
-    if (!requestFs) {
-      setRotateHint('Telefonu veya tableti yan çevirdiğinizde devam edebilirsiniz.');
-      return;
-    }
-
-    const alreadyFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
-    let enteredHere = false;
+    if (typeof requestFs !== 'function') return Promise.resolve(false);
     try {
-      if (!alreadyFullscreen) {
-        await requestFs.call(root);
-        enteredHere = true;
-      }
-      await orientationApi.lock('landscape');
-      setRotateHint('');
-      syncLandscapeGate();
-    } catch (err) {
-      await exitFullscreenIf(enteredHere);
+      const pending = requestFs.call(root);
+      const done = pending && typeof pending.then === 'function' ? pending : Promise.resolve();
+      fullscreenRequest = done.then(() => true).catch(() => false).finally(() => {
+        fullscreenRequest = null;
+      });
+      return fullscreenRequest;
+    } catch (e) {
+      return Promise.resolve(false);
+    }
+  }
+
+  async function requestLandscapeLock() {
+    if (!isHandheldDevice()) return;
+    const fullscreenOk = await enterHandheldFullscreen();
+    const orientationApi = window.screen && screen.orientation;
+    if (orientationApi && typeof orientationApi.lock === 'function') {
+      try {
+        await orientationApi.lock('landscape');
+      } catch (e) {}
+    }
+    syncLandscapeGate();
+    if (!fullscreenOk && currentOrientation() === 'portrait') {
       setRotateHint('Telefonu veya tableti yan çevirdiğinizde devam edebilirsiniz.');
     }
   }
@@ -1939,16 +1941,32 @@
   // ==========================================================================
   window.addEventListener("DOMContentLoaded", () => {
     let appBooted = false;
-    window.addEventListener("resize", updateDeviceMode);
-    window.addEventListener("orientationchange", updateDeviceMode);
+    const onViewportChange = () => {
+      syncVisualViewport();
+      updateDeviceMode();
+    };
+    window.addEventListener("resize", onViewportChange);
+    window.addEventListener("orientationchange", onViewportChange);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncVisualViewport);
+      window.visualViewport.addEventListener("scroll", syncVisualViewport);
+    }
+    document.addEventListener("fullscreenchange", onViewportChange);
+    document.addEventListener("webkitfullscreenchange", onViewportChange);
+    document.addEventListener("pointerdown", (event) => {
+      if (!isHandheldDevice() || currentOrientation() !== "landscape" || isDocumentFullscreen()) return;
+      const target = event.target;
+      if (target && target.closest && target.closest("#btnFullscreen, #btnLockLandscape")) return;
+      enterHandheldFullscreen();
+    }, true);
     if (window.matchMedia) {
       const portraitQuery = window.matchMedia("(orientation: portrait)");
-      const onPortraitChange = () => updateDeviceMode();
+      const onPortraitChange = () => onViewportChange();
       if (portraitQuery.addEventListener) portraitQuery.addEventListener("change", onPortraitChange);
       else if (portraitQuery.addListener) portraitQuery.addListener(onPortraitChange);
     }
     if (window.screen && screen.orientation && screen.orientation.addEventListener) {
-      screen.orientation.addEventListener("change", updateDeviceMode);
+      screen.orientation.addEventListener("change", onViewportChange);
     }
     const btnLockLandscape = document.getElementById("btnLockLandscape");
     if (btnLockLandscape) {
@@ -1956,6 +1974,7 @@
         requestLandscapeLock();
       });
     }
+    syncVisualViewport();
     updateDeviceMode();
 
     function bootApp() {
