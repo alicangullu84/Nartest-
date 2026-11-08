@@ -54,7 +54,7 @@
       device = 'desktop';
     }
 
-    const orientation = h > w ? 'portrait' : 'landscape';
+    const orientation = currentOrientation();
 
     document.documentElement.setAttribute('data-device', device);
     document.documentElement.setAttribute('data-orientation', orientation);
@@ -64,7 +64,127 @@
       document.body.classList.add('device-' + device, 'is-' + orientation);
     }
 
+    syncLandscapeGate();
     return { device, orientation };
+  }
+
+  function currentOrientation() {
+    if (window.matchMedia) {
+      if (window.matchMedia('(orientation: portrait)').matches) return 'portrait';
+      if (window.matchMedia('(orientation: landscape)').matches) return 'landscape';
+    }
+    return window.innerHeight > window.innerWidth ? 'portrait' : 'landscape';
+  }
+
+  // Bilgisayar penceresi daraltılınca telefon sayılmaz. Yalnızca telefon ve tablet.
+  function isHandheldDevice() {
+    const ua = navigator.userAgent || '';
+    const touchPoints = navigator.maxTouchPoints || 0;
+    const isTouch = ('ontouchstart' in window) || touchPoints > 0;
+    if (/iPhone|iPod|iPad|Android|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua)) return true;
+    if (isTouch && /Macintosh/i.test(ua) && touchPoints > 1) return true;
+    if (!isTouch || !window.matchMedia) return false;
+    return window.matchMedia('(pointer: coarse)').matches && window.matchMedia('(hover: none)').matches;
+  }
+
+  function handheldNoun() {
+    const ua = navigator.userAgent || '';
+    const touchPoints = navigator.maxTouchPoints || 0;
+    const isTouch = ('ontouchstart' in window) || touchPoints > 0;
+    const isIPad = /iPad/i.test(ua) || (isTouch && /Macintosh/i.test(ua) && touchPoints > 1);
+    const isAndroidTablet = /Android/i.test(ua) && !/Mobile/i.test(ua);
+    if (isIPad || isAndroidTablet) return 'tableti';
+    if (/iPhone|iPod/i.test(ua) || (/Android/i.test(ua) && /Mobile/i.test(ua))) return 'telefonu';
+    const minDim = Math.min(window.innerWidth, window.innerHeight);
+    return minDim >= 600 ? 'tableti' : 'telefonu';
+  }
+
+  function syncLandscapeGate() {
+    const show = isHandheldDevice() && currentOrientation() === 'portrait';
+    if (document.body) document.body.classList.toggle('needs-landscape', show);
+    const overlay = document.getElementById('rotateOverlay');
+    const title = document.getElementById('rotateTitle');
+    const hint = document.getElementById('rotateHint');
+    const wasShowing = !!(overlay && !overlay.hidden);
+    if (title) title.textContent = 'Lütfen ' + handheldNoun() + ' yatay çevirin';
+    if (overlay) overlay.hidden = !show;
+    if (!show && hint) {
+      hint.hidden = true;
+      hint.textContent = '';
+    }
+    if (show && !wasShowing) {
+      const btn = document.getElementById('btnLockLandscape');
+      if (btn) btn.focus();
+    } else if (!show && wasShowing && document.body && document.body.classList.contains('auth-locked')) {
+      const input = document.getElementById('authPasswordInput');
+      if (input) input.focus();
+    }
+  }
+
+  function setRotateHint(text) {
+    const hint = document.getElementById('rotateHint');
+    if (!hint) return;
+    hint.hidden = !text;
+    hint.textContent = text || '';
+  }
+
+  function lockRequiresFullscreen(err) {
+    const name = err && err.name ? String(err.name) : '';
+    const msg = err && err.message ? String(err.message) : '';
+    if (/full[ -]?screen/i.test(msg)) return true;
+    const alreadyFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    return name === 'SecurityError' && !alreadyFullscreen;
+  }
+
+  async function exitFullscreenIf(enteredHere) {
+    if (!enteredHere) return;
+    const exitFs = document.exitFullscreen || document.webkitExitFullscreen;
+    if (!exitFs) return;
+    try { await exitFs.call(document); } catch (e) {}
+  }
+
+  // iOS Safari fiziksel olarak çeviremez; örtü asıl deneyimdir.
+  // Android Chrome kilidi çoğu zaman tam ekrandan sonra kabul eder.
+  async function requestLandscapeLock() {
+    const orientationApi = window.screen && screen.orientation;
+    if (!orientationApi || typeof orientationApi.lock !== 'function') {
+      setRotateHint('Telefonu veya tableti yan çevirdiğinizde devam edebilirsiniz.');
+      return;
+    }
+
+    try {
+      await orientationApi.lock('landscape');
+      setRotateHint('');
+      syncLandscapeGate();
+      return;
+    } catch (firstErr) {
+      if (!lockRequiresFullscreen(firstErr)) {
+        setRotateHint('Telefonu veya tableti yan çevirdiğinizde devam edebilirsiniz.');
+        return;
+      }
+    }
+
+    const root = document.documentElement;
+    const requestFs = root.requestFullscreen || root.webkitRequestFullscreen;
+    if (!requestFs) {
+      setRotateHint('Telefonu veya tableti yan çevirdiğinizde devam edebilirsiniz.');
+      return;
+    }
+
+    const alreadyFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    let enteredHere = false;
+    try {
+      if (!alreadyFullscreen) {
+        await requestFs.call(root);
+        enteredHere = true;
+      }
+      await orientationApi.lock('landscape');
+      setRotateHint('');
+      syncLandscapeGate();
+    } catch (err) {
+      await exitFullscreenIf(enteredHere);
+      setRotateHint('Telefonu veya tableti yan çevirdiğinizde devam edebilirsiniz.');
+    }
   }
 
   // Web Audio API ile Temiz Ses Efektleri
@@ -1821,6 +1941,21 @@
     let appBooted = false;
     window.addEventListener("resize", updateDeviceMode);
     window.addEventListener("orientationchange", updateDeviceMode);
+    if (window.matchMedia) {
+      const portraitQuery = window.matchMedia("(orientation: portrait)");
+      const onPortraitChange = () => updateDeviceMode();
+      if (portraitQuery.addEventListener) portraitQuery.addEventListener("change", onPortraitChange);
+      else if (portraitQuery.addListener) portraitQuery.addListener(onPortraitChange);
+    }
+    if (window.screen && screen.orientation && screen.orientation.addEventListener) {
+      screen.orientation.addEventListener("change", updateDeviceMode);
+    }
+    const btnLockLandscape = document.getElementById("btnLockLandscape");
+    if (btnLockLandscape) {
+      btnLockLandscape.addEventListener("click", () => {
+        requestLandscapeLock();
+      });
+    }
     updateDeviceMode();
 
     function bootApp() {
@@ -1877,7 +2012,7 @@
     if (btnToggleSidebar) {
       btnToggleSidebar.addEventListener("click", () => {
         playTone("click");
-        if (window.innerWidth <= 900) {
+        if (window.innerWidth <= 950) {
           document.body.classList.toggle("sidebar-drawer-open");
         } else {
           document.body.classList.toggle("sidebar-collapsed");

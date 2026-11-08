@@ -1,0 +1,20 @@
+{
+  "name": "Nartes+ LGS Matematik",
+  "short_name": "Nartes+",
+  "description": "8. Sınıf LGS Matematik — 12 ünite, 360 etkileşimli durak",
+  "lang": "tr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0f172a",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "assets/logos/nartes_plus_logo_2.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

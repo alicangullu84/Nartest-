@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
   <title>Nartes+ • 8. Sınıf LGS Matematik (12 Ünite • 360 Etkileşimli Durak)</title>
   <link rel="icon" type="image/svg+xml" href="assets/logos/nartes_plus_logo_2.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +16,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=20261108b">
+  <link rel="stylesheet" href="css/style.css?v=20261108c">
 </head>
 <body class="auth-locked">
 
@@ -295,6 +297,19 @@
     </main>
   </div>
 
+  <!-- Telefon / tablet dikey ekranda yatay kullanıma davet -->
+  <div class="rotate-overlay" id="rotateOverlay" hidden>
+    <div class="rotate-card" role="dialog" aria-modal="true" aria-labelledby="rotateTitle">
+      <div class="rotate-icon" aria-hidden="true">
+        <span class="rotate-phone-glyph"></span>
+      </div>
+      <h2 id="rotateTitle">Lütfen telefonu yatay çevirin</h2>
+      <p class="rotate-desc">Nartes+ yatay ekranda kullanılır.</p>
+      <button type="button" class="rotate-lock-btn" id="btnLockLandscape">Yataya geç</button>
+      <p class="rotate-hint" id="rotateHint" hidden></p>
+    </div>
+  </div>
+
   <!-- Sıralı İlerleme Uyarı Balonu -->
   <div class="toast-msg" id="toastMsg"></div>
 
@@ -305,6 +320,6 @@
 
   <script src="data/carpanlar_katlar_data.js"></script>
   <script src="data/lgs_uniteler_2_12.js"></script>
-  <script src="js/app.js?v=20261108b"></script>
+  <script src="js/app.js?v=20261108c"></script>
 </body>
 </html>

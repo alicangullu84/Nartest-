@@ -1911,8 +1911,9 @@ body.sidebar-collapsed .sidebar {
   .nav-arrow-next { right: 8px; }
 }
 
-/* Tablet Dikey & Küçük Tabletler (<= 900px): Sol Panel Kayar Çekmece (Drawer) Olur */
-@media (max-width: 900px) {
+/* Tablet dikey, küçük tablet ve yatay telefon (<= 950px): sol panel kayar çekmece olur.
+   950px, iPhone 14 Pro Max yatay genişliğini (~932px) de kapsar. */
+@media (max-width: 950px) {
   .app-shell,
   body.sidebar-collapsed .app-shell {
     grid-template-columns: minmax(0, 1fr);
@@ -2557,6 +2558,114 @@ body:not(.auth-locked) .auth-gate-overlay {
 .auth-submit-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 26px rgba(22, 163, 74, 0.48);
+}
+
+/* ==========================================================================
+   12. TELEFON / TABLET — DİKEY EKRANDA YATAY KULLANIM DAVETİ
+   ========================================================================== */
+.rotate-overlay[hidden] {
+  display: none !important;
+}
+
+.rotate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    calc(24px + env(safe-area-inset-top, 0px))
+    calc(24px + env(safe-area-inset-right, 0px))
+    calc(24px + env(safe-area-inset-bottom, 0px))
+    calc(24px + env(safe-area-inset-left, 0px));
+  background: radial-gradient(circle at 20% 15%, #1e293b 0%, #0f172a 55%, #020617 100%);
+  color: #f8fafc;
+}
+
+.rotate-card {
+  width: min(420px, 100%);
+  text-align: center;
+}
+
+.rotate-icon {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 18px;
+  border-radius: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.rotate-phone-glyph {
+  width: 34px;
+  height: 56px;
+  border: 3px solid #e2e8f0;
+  border-radius: 8px;
+  position: relative;
+  transform-origin: center center;
+  animation: rotateHint 1.8s ease-in-out infinite;
+}
+
+.rotate-phone-glyph::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 10px;
+  height: 3px;
+  border-radius: 999px;
+  background: #94a3b8;
+  transform: translateX(-50%);
+}
+
+@keyframes rotateHint {
+  0%, 20% { transform: rotate(0deg); }
+  55%, 100% { transform: rotate(-90deg); }
+}
+
+#rotateTitle {
+  font-size: clamp(22px, 6vw, 28px);
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+  margin-bottom: 10px;
+}
+
+.rotate-desc {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #94a3b8;
+  margin-bottom: 22px;
+}
+
+.rotate-lock-btn {
+  width: min(280px, 100%);
+  padding: 14px 18px;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 800;
+  font-family: inherit;
+  color: #ffffff;
+  background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(22, 163, 74, 0.35);
+}
+
+.rotate-lock-btn:hover {
+  transform: translateY(-1px);
+}
+
+.rotate-hint {
+  margin-top: 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #fde68a;
 }
 
 
