@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Nartes+ • 8. Sınıf LGS Matematik (12 Ünite • 360 Etkileşimli Durak)</title>
+  <link rel="icon" type="image/svg+xml" href="assets/logos/nartes_plus_logo_2.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+  <!-- KaTeX Matematiksel Dizgi Motoru -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- 1. ÜST BAR (Nartes+ Kurumsal Üst Menü + 12 LGS Ünitesi Seçici) -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle-btn" id="btnToggleSidebar" title="Sol Kazanım Panelini Aç / Daralt">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+          <line x1="9" y1="3" x2="9" y2="21"></line>
+        </svg>
+        <span class="toggle-label">Kazanımlar</span>
+      </button>
+
+      <!-- NARTES+ LOGOSU (Logo 2: 3B Renkli NARTES Harfleri + Eğimli Parlayan '+' Oyun Küpü) -->
+      <div class="brand" id="brandHomeBtn" title="NARTES+ • 12 Ünite LGS Kampüs Haritası">
+        <div id="brandLogoMount" class="nartes-logo-mount">
+          <svg class="nartes-svg-logo" viewBox="0 0 212 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="gradN" x1="0" y1="6" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#60A5FA"/>
+                <stop offset="100%" stop-color="#2563EB"/>
+              </linearGradient>
+              <linearGradient id="gradA" x1="0" y1="6" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#4ADE80"/>
+                <stop offset="100%" stop-color="#16A34A"/>
+              </linearGradient>
+              <linearGradient id="gradR" x1="0" y1="6" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#FDE047"/>
+                <stop offset="100%" stop-color="#CA8A04"/>
+              </linearGradient>
+              <linearGradient id="gradT" x1="0" y1="6" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#34D399"/>
+                <stop offset="100%" stop-color="#059669"/>
+              </linearGradient>
+              <linearGradient id="gradE" x1="0" y1="6" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#BEF264"/>
+                <stop offset="100%" stop-color="#65A30D"/>
+              </linearGradient>
+              <linearGradient id="gradS" x1="0" y1="6" x2="0" y2="36" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#FB923C"/>
+                <stop offset="100%" stop-color="#EA580C"/>
+              </linearGradient>
+              <linearGradient id="cubeBody" x1="0" y1="0" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#F97316"/>
+                <stop offset="48%" stop-color="#F59E0B"/>
+                <stop offset="100%" stop-color="#10B981"/>
+              </linearGradient>
+              <linearGradient id="plusInner" x1="6" y1="6" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#EA580C"/>
+                <stop offset="100%" stop-color="#059669"/>
+              </linearGradient>
+            </defs>
+            <g font-family="'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-weight="900" font-size="28" letter-spacing="0.4">
+              <text x="2"   y="32" fill="url(#gradN)">N</text>
+              <text x="25"  y="32" fill="url(#gradA)">A</text>
+              <text x="48"  y="32" fill="url(#gradR)">R</text>
+              <text x="70"  y="32" fill="url(#gradT)">T</text>
+              <text x="90"  y="32" fill="url(#gradE)">E</text>
+              <text x="110" y="32" fill="url(#gradS)">S</text>
+            </g>
+            <g transform="translate(133, 4) rotate(10 17 17)">
+              <rect x="2" y="3" width="32" height="32" rx="8.5" fill="#064E3B" opacity="0.65"/>
+              <rect x="1" y="1" width="32" height="32" rx="8.5" fill="url(#cubeBody)" stroke="#FDE68A" stroke-width="1.3"/>
+              <path d="M17 8V26M8 17H26" stroke="#FFFFFF" stroke-width="6.6" stroke-linecap="round"/>
+              <path d="M17 8V26M8 17H26" stroke="url(#plusInner)" stroke-width="4" stroke-linecap="round"/>
+            </g>
+          </svg>
+        </div>
+        <span class="brand-badge">LGS • 12 Ünite</span>
+      </div>
+    </div>
+
+    <nav class="topnav">
+      <button class="topnav-btn active" id="navCoursesBtn">
+        <span>📚</span> <span id="navCoursesLabel">12 Ünite</span>
+      </button>
+
+      <!-- Hızlı Ünite Değiştirici -->
+      <select id="unitQuickSelect" class="unit-select-dropdown" title="8. Sınıf LGS Ünitesi Seç"></select>
+
+      <button class="topnav-btn" id="navPolypadBtn">
+        <span>🧮</span> <span class="hide-on-small">Hesaplama Tahtası</span>
+      </button>
+    </nav>
+
+    <div class="topbar-right">
+      <div class="top-pill" title="Mevcut Ünite Durak İlerlemesi">
+        <span class="dot-green"></span>
+        <span id="topProgressText">0 / 30 (%0)</span>
+      </div>
+      <div class="top-pill lgs-total-pill" title="12 Ünite Genel LGS İlerlemesi">
+        <span>🏆</span>
+        <span id="topTotalLgsText">LGS: 0 / 360</span>
+      </div>
+      <button class="icon-btn" id="btnFullscreen" title="Tam Ekran Modu (Mac / PC / Tablet)">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btnToggleSound" title="Ses Efektlerini Aç/Kapat">🔊</button>
+      <button class="icon-btn muted" id="btnToggleVoice" title="Sesli Öğretmen Anlatımını Aç/Kapat">🗣️</button>
+    </div>
+  </header>
+
+  <!-- 2. ANA UYGULAMA KABUĞU -->
+  <div class="app-shell" id="appShell">
+
+    <!-- Tablet / Mobil İçin Sol Panel Arka Plan Örtüsü -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- SOL PANEL: 3B Kapak + Yeşil/Turuncu Kazanım Akışı -->
+    <aside class="sidebar" id="leftSidebar">
+      <div class="sidebar-hero" id="sidebarHero">
+        <div class="hero-top-row">
+          <div class="hero-grid-badge" id="heroGridBadge">
+            <span>1</span><span>2</span><span>3</span><span>4</span>
+            <span>5</span><span>6</span><span>7</span><span>8</span>
+            <span>9</span><span>10</span><span>11</span><span>12</span>
+          </div>
+          <button class="hero-switch-btn" id="btnOpenUnitsHero" title="12 Ünite Arasında Geçiş Yap">
+            12 Ünite ▾
+          </button>
+        </div>
+        <div class="hero-unit-tag" id="heroUnitTag">8. Sınıf • 1. Ünite</div>
+        <div class="hero-title" id="heroUnitTitle">Çarpanlar ve Katlar</div>
+      </div>
+
+      <div class="sidebar-legend">
+        <div class="legend-item">
+          <span class="legend-dot green"></span>
+          <span id="legendDoneCount">0 Tamamlandı</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot orange"></span>
+          <span id="legendTodoCount">6 Kaldı</span>
+        </div>
+      </div>
+
+      <!-- Dikey Bağlı Kazanım Zinciri -->
+      <div class="kazanim-list" id="kazanimList"></div>
+
+      <!-- Sol Alt Araç Çubuğu -->
+      <div class="sidebar-footer">
+        <button class="footer-action" id="btnTeacherMode" title="Öğretmen testi için kilitleri aç/kapat">
+          🔒 Sıralı Öğrenci Modu
+        </button>
+        <button class="footer-action" id="btnResetProgress" title="Bu Ünitenin İlerlemesini Sıfırla">
+          🗑️ Sıfırla
+        </button>
+      </div>
+    </aside>
+
+    <!-- SAĞ ÇALIŞMA ALANI: Orta Yatay Pencere Sahnesi + Alt 30 Duraklı Yol -->
+    <main class="workspace">
+
+      <!-- Üst Bilgi Şeridi -->
+      <div class="workspace-header">
+        <div class="step-crumb">
+          <span id="crumbUnitBadge" class="crumb-unit">1. Ünite</span>
+          <span class="crumb-sep">›</span>
+          <span id="crumbKazanim" class="crumb-kaz">1. Çarpanlar ve Katlar</span>
+          <span class="crumb-sep">›</span>
+          <span id="crumbStopNo" class="crumb-stop">Durak 1 / 30</span>
+          <span class="crumb-badge type-concept" id="crumbType">💡 Örnek &amp; Keşif</span>
+        </div>
+
+        <div class="workspace-header-right">
+          <div class="step-status-pill todo" id="stepStatusPill">
+            🟠 Devam Ediyor
+          </div>
+        </div>
+      </div>
+
+      <!-- ORTA SAHNE: Tam Ekran Kaplayan Yatay Pencere-Pencere Akış Alanı -->
+      <div class="stage-viewport" id="stageViewport">
+
+        <!-- Estetik Sol Geçiş Oku (SVG Çift Katmanlı Kapsül) -->
+        <button class="nav-arrow nav-arrow-prev" id="arrowPrev" title="Önceki Durak (Sol Ok Tuşu)">
+          <span class="nav-arrow-glow"></span>
+          <svg class="nav-arrow-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path class="chev-back" d="M16.5 5L9.5 12L16.5 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+            <path class="chev-main" d="M12.5 5L5.5 12L12.5 19" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="nav-arrow-label">Önceki</span>
+        </button>
+
+        <section class="window-card" id="windowCard">
+          <div class="window-head">
+            <div class="window-title-wrap">
+              <h1 id="windowTitle">Çarpanlar ve Katlar</h1>
+              <div class="window-subtitle" id="windowSubtitle">Bir tam sayıyı kalansız bölen sayıları bloklarla keşfedelim.</div>
+            </div>
+          </div>
+
+          <div class="window-body" id="windowBody"></div>
+
+          <div class="window-foot">
+            <div class="foot-feedback" id="footFeedback">
+              👆 Sıradaki durağa geçmek için bu penceredeki etkinliği tamamla.
+            </div>
+            <div class="foot-actions">
+              <button class="btn-secondary-prev" id="btnPrevStop" title="Önceki Durağa Dön">
+                <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12.5 4.5L7 10l5.5 5.5"/>
+                </svg>
+                <span>Önceki</span>
+              </button>
+              <button class="btn-primary-next" id="btnNextStop" disabled>
+                <span>Sonraki Durağa Geç</span>
+                <svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4.5 10h11M10.5 5l5 5-5 5"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Estetik Sağ Geçiş Oku (SVG Çift Katmanlı Kapsül) -->
+        <button class="nav-arrow nav-arrow-next" id="arrowNext" title="Sonraki Durak (Sağ Ok Tuşu)" disabled>
+          <span class="nav-arrow-glow"></span>
+          <svg class="nav-arrow-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path class="chev-back" d="M7.5 5L14.5 12L7.5 19" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.38"/>
+            <path class="chev-main" d="M11.5 5L18.5 12L11.5 19" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="nav-arrow-label">Sonraki</span>
+        </button>
+      </div>
+
+      <!-- ALT KISIM: 30 DURAKLI GÖRSEL YOL HARİTASI -->
+      <footer class="journey-bar">
+        <div class="journey-top-meta">
+          <span class="journey-title-wrap">🛣️ <strong id="roadUnitTitleLabel">1. Ünite Yol Haritası (30 Durak)</strong> — Tamamlananlar <strong style="color:#16a34a;">Yeşil</strong>, Bekleyenler <strong style="color:#f97316;">Turuncu</strong></span>
+          <span id="roadStatusSummary" class="journey-summary">Aktif: 1. Durak • Açık: 1/30</span>
+        </div>
+
+        <div class="journey-scroll-wrap">
+          <button class="road-scroll-btn" id="roadScrollLeft" title="Yolu Sola Kaydır" aria-label="Sola Kaydır">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.5 4.5L7 10l5.5 5.5"/>
+            </svg>
+          </button>
+          <div class="road-track-viewport" id="roadViewport">
+            <div class="road-stops" id="roadStops"></div>
+          </div>
+          <button class="road-scroll-btn" id="roadScrollRight" title="Yolu Sağa Kaydır" aria-label="Sağa Kaydır">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7.5 4.5L13 10l-5.5 5.5"/>
+            </svg>
+          </button>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- Sıralı İlerleme Uyarı Balonu -->
+  <div class="toast-msg" id="toastMsg"></div>
+
+  <!-- 12 Ünite LGS Kampüs Haritası & Logo Seçici Modalı -->
+  <div class="modal-backdrop" id="infoModal" hidden>
+    <div class="modal-card" id="infoModalContent"></div>
+  </div>
+
+  <script src="data/carpanlar_katlar_data.js"></script>
+  <script src="data/lgs_uniteler_2_12.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
