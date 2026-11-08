@@ -203,29 +203,40 @@
     return upgradeInlineMathInText(str);
   }
 
-  // Metin İçindeki Matematiksel İfadeleri $...$ İle Sarıp KaTeX'e Hazırlama
+  // Metin içindeki matematiksel ifadeleri KaTeX HTML'ine çevirir.
+  // Üretilen HTML ikinci taramaya girmez; aksi halde MathML kaynağı yeniden dizilir.
   function upgradeInlineMathInText(text) {
     if (!window.katex) return text;
-    let out = String(text);
+    const source = String(text);
+    if (source.includes("katex") || source.includes("<")) return source;
 
-    // 1) EBOB(...) = ... veya EKOK(...) = ... veya EBOB(...)
-    out = out.replace(/\b(EBOB|EKOK)\([0-9a-zA-Z,\s+-]+\)(\s*=\s*[0-9a-zA-Z·×^{}+-]+)?/g, (m) => {
+    const shields = [];
+    const shield = (html) => {
+      const token = "\u0000KATEX" + shields.length + "\u0000";
+      shields.push(html);
+      return token;
+    };
+    const renderPiece = (raw) => {
       try {
-        return window.katex.renderToString(unicodeMathToLatex(m), { throwOnError: false });
-      } catch (e) { return m; }
-    });
+        return shield(window.katex.renderToString(unicodeMathToLatex(raw), { throwOnError: false, displayMode: false }));
+      } catch (e) {
+        return raw;
+      }
+    };
 
-    // 2) Denklemler, eşitsizlikler, üslü/köklü/işlemli ifadeler
+    let out = source;
+    out = out.replace(/\b(EBOB|EKOK)\([0-9a-zA-Z,\s+-]+\)(\s*=\s*[0-9a-zA-Z·×^{}+-]+)?/g, (m) => renderPiece(m));
+
     const mathPattern = /(?:[0-9a-zA-Z()]+\s*[×·÷+\-*/=≤≥<>]\s*)+[0-9a-zA-Z√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺().,/]+|[0-9a-zA-Z()]*[√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺π°][0-9a-zA-Z√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺().,+\-*/=·×]*/g;
     out = out.replace(mathPattern, (match) => {
+      if (match.indexOf("\u0000") !== -1) return match;
       if (!/[0-9√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺≤≥≠×÷·π°=]/.test(match)) return match;
-      try {
-        return window.katex.renderToString(unicodeMathToLatex(match), { throwOnError: false });
-      } catch (e) {
-        return match;
-      }
+      return renderPiece(match);
     });
 
+    shields.forEach((html, index) => {
+      out = out.split("\u0000KATEX" + index + "\u0000").join(html);
+    });
     return out;
   }
 
@@ -823,6 +834,10 @@
     const player = document.createElement("div");
     player.className = "canvas-player";
     player.innerHTML = `
+      <div class="video-slot" role="img" aria-label="Buraya video gelecek">
+        <span class="video-slot-play" aria-hidden="true">▶</span>
+        <span class="video-slot-label">Buraya video gelecek</span>
+      </div>
       <div id="videoStepTabs" style="display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0;"></div>
       <div class="video-canvas-area" id="videoVisualStage"></div>
       <div class="video-controls">

@@ -2175,35 +2175,59 @@ body.sidebar-collapsed .sidebar {
   .window-body > * {
     flex: 0 0 auto;
     min-height: min-content;
+    width: 100%;
+    max-width: 100%;
   }
 
   .content-split,
   .video-stage-wrap,
   .question-layout,
-  .factor-bars-demo,
-  .lead-text {
+  .factor-bars-demo {
     display: flex !important;
     flex-direction: column !important;
+    align-items: stretch !important;
     gap: 12px !important;
     width: 100% !important;
     min-width: 0 !important;
     height: auto !important;
     min-height: min-content !important;
-    overflow: visible;
   }
 
-  .lead-text,
+  .content-split > *,
+  .video-stage-wrap > *,
+  .question-layout > * {
+    flex: 0 0 auto;
+    min-height: min-content;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .lead-text {
+    display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .lead-text p {
+    display: block;
+    margin: 0 0 12px;
+    line-height: 1.55;
+  }
+
+  .lead-text p:last-child {
+    margin-bottom: 0;
+  }
+
   .interactive-sentence-box,
   .option-btn,
   .window-title-wrap h1,
   .foot-feedback,
-  .bar-caption {
-    overflow-wrap: anywhere;
-  }
-
+  .bar-caption,
   .lead-text {
-    font-size: 16px;
-    line-height: 1.5;
+    overflow-wrap: break-word;
   }
 
   .bar-card,
@@ -2270,6 +2294,14 @@ body.sidebar-collapsed .sidebar {
   .canvas-player,
   .interactive-board {
     overflow-x: auto;
+  }
+
+  .canvas-player,
+  .video-canvas-area {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    flex: 0 0 auto;
   }
 
   .window-foot {
@@ -2423,6 +2455,60 @@ body.sidebar-collapsed .sidebar {
 .katex {
   font-size: 1.07em !important;
   line-height: 1.25;
+  white-space: nowrap;
+  text-indent: 0;
+}
+
+.katex,
+.katex * {
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.katex .katex-mathml {
+  position: absolute !important;
+  clip: rect(1px, 1px, 1px, 1px) !important;
+  clip-path: inset(50%) !important;
+  height: 1px !important;
+  width: 1px !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+.video-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 92px;
+  margin-bottom: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1.5px dashed rgba(253, 224, 71, 0.85);
+  background: rgba(15, 23, 42, 0.55);
+  color: #fde047;
+  text-align: center;
+}
+
+.video-slot-play {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f97316;
+  color: #ffffff;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.video-slot-label {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: 0.1px;
 }
 
 .option-btn .katex,
