@@ -75,8 +75,8 @@ window.MATFLOW_UNIT = {
       subtitle: "Bir tam sayıyı kalansız bölen sayıları bloklarla keşfedelim.",
       barsDemo: true,
       explanation: [
-        "Şimdiye kadar tam sayılarda toplama, çıkarma ve çarpma işlemlerinde rahattınız. Bölme biraz daha farklıdır; çünkü her tam sayıyı başka bir tam sayıya kalansız bölemezsiniz.",
-        "Bir <strong>A</strong> sayısını bir <strong>B</strong> sayısına kalansız bölebiliyorsanız, <strong>B</strong> sayısına <strong>A</strong>'nın <strong>çarpanı (böleni)</strong>, <strong>A</strong> sayısına ise <strong>B</strong>'nin <strong>katı</strong> denir."
+        "Şu ana kadar tam sayılarda toplama, çıkarma ve çarpma işlemlerini öğrendik. Bölme işlemi çarpmaya göre biraz daha dikkat gerektirir; ancak bölmeyi <strong>çarpma işleminin tersi</strong> olarak düşünebiliriz. Her tam sayıyı başka bir tam sayıya kalansız bölemeyiz.",
+        "Bir <strong>A</strong> doğal sayısını bir <strong>B</strong> doğal sayısına kalansız bölebiliyorsak, <strong>B</strong> sayısına <strong>A</strong>'nın <strong>çarpanı (böleni)</strong>, <strong>A</strong> sayısına ise <strong>B</strong>'nin <strong>katı</strong> denir."
       ],
       sentenceHtml: "Örneğin <strong>7 × 3 = 21</strong> işleminde; <strong>7</strong> sayısı 21'in bir {0}, <strong>21</strong> sayısı 7'nin bir {1} olur. Ayrıca 12 sayısı 3'e {2} bölünür.",
       blanks: [
