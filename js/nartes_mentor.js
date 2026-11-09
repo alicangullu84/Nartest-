@@ -2,14 +2,15 @@
   "use strict";
 
   // ==========================================================================
-  // NARTES — SOKRATES TARZI SOKRATİK YAPAY ZEKA REHBERİ (Canlı AI + Sesli/Sessiz + 3B Karakter)
-  // - Mathigon'un tilkisi (Archie) gibi Nartes+ platformunun bilge karakteri.
-  // - Google Flow (Imagen) ile üretilmiş 3B NarTES Sokrates karakter görseli.
-  // - Sesli (🔊) ve Sessiz (🔇) konuşma seçeneği.
-  // - Canlı LLM (Yapay Zeka API: Gemini / OpenAI / Yerel Ollama qwen2.5) + Anlık Sokratik Motor hibriti.
-  // - Asla sorunun doğrudan cevabını söylemez; Sokratik sorularla yönlendirir.
-  // - Ders dışı, argo, küfürlü veya uygunsuz ifadeleri nazikçe reddeder.
-  // - Doğru ve yanlış denemelerde kendini tekrar etmeyen zengin geri bildirim verir.
+  // NARTES — KİŞİYE ÖZEL SOKRATİK YAPAY ZEKA REHBERİ & 2. YANLIŞTA BİLGİ KİLİDİ
+  // - Öğrencinin yaptığı her doğru/yanlış seçimi, seçtiği hatalı şıkkı ve soruyu takip eder.
+  // - Standart kalıp yanıtlar yerine öğrencinin o anki sorusuna, seçtiği yanlış cevaba
+  //   ve durağın sayılarına göre kişiye özel (dinamik) Sokratik yanıtlar üretir.
+  // - 1. yanlışta: Seçilen yanlış değere özel ipucu verir ve o yanlış şıkkı kilitler.
+  // - 2. yanlışta (ve sonrasında): Ekrandaki seçenekleri geçici olarak kilitler,
+  //   o konuyla ilgili "Konu Bilgi & İpucu Kartı"nı açar; öğrenci "✓ Anladım, Tekrar Deneyeyim"
+  //   kutusunu tikleyip onaylayana kadar rastgele şık işaretlemesine izin vermez.
+  // - Ses efektleri (hata, ipucu, bilgi kartı açılışı ve "Anladım" onay sesi) içerir.
   // ==========================================================================
 
   const NARTES_AVATAR_IMG_PATH = "assets/flow/nartes_sokrates_avatar.jpg";
@@ -39,17 +40,6 @@
     "İşte bu! Çarpan ve kat ilişkisini zihninde çok net canlandırdın."
   ];
 
-  // Zengin ve tekrarsız Sokratik hata geri bildirim havuzu (asla aynı cümleyi üst üste kurmaz)
-  const ENCOURAGE_POOL = [
-    "Çok yaklaştın ama küçük bir detayı gözden kaçırmış olabiliriz. Sayılar arasındaki çarpma-bölme ilişkisine bir kez daha bakalım mı?",
-    "Acele etmeyelim; Sokrates'in dediği gibi 'Sorgulanmamış adım eksik kalır.' Verilen sayıları tam bölüp bölmediğini tekrar kontrol eder misin?",
-    "Bu seçim tam uymadı. Kendimize şu soruyu soralım: Aradığımız sayı bütünü bölen bir çarpan mı, yoksa bütünün katı mı?",
-    "Güzel bir denemeydi! Ancak işlemde kalan olup olmadığına dikkat etmeliyiz. Bir adım geri çekilip ipucunu birlikte düşünelim.",
-    "Henüz doğru seçenek bu değil. Sayıları küçükten büyüğe eşleştirirken baştan ve sondan çarpımların eşit olduğunu hatırlıyor musun?",
-    "Takılman çok doğal, öğrenme tam da burada başlıyor! Sorunun kökündeki anahtar kelimeye ('en az', 'en fazla', 'kalansız') tekrar odaklanalım mı?",
-    "Biraz daha dikkatli incelersek doğru yolu bulacağız. Verilen örnekle kendi seçtiğin sayıyı sağlamasını yaparak karşılaştırır mısın?"
-  ];
-
   // Uygunsuz / Küfür / Argo filtre kelimeleri
   const PROFANITY_LIST = [
     "aptal", "salak", "gerizekalı", "mal", "öküz", "ahmak", "dangalak",
@@ -77,9 +67,19 @@
   ];
 
   let lastPraiseIdx = -1;
-  let lastEncourageIdx = -1;
-  let wrongStreak = 0;
   let mentorVoiceEnabled = false;
+
+  // Öğrencinin aktif duraktaki kişisel öğrenme durumu
+  let currentContext = { unit: null, kaz: null, stop: null };
+  let studentTrace = {
+    wrongCount: 0,
+    wrongChoices: [],
+    lastWrongValue: null,
+    lastTargetLabel: null,
+    chatTurnCount: 0,
+    lastBotAngles: [],
+    remediationLocked: false
+  };
 
   try {
     const savedVoice = localStorage.getItem(VOICE_PREF_KEY);
@@ -88,13 +88,65 @@
     }
   } catch (e) {}
 
+  // Web Audio API ile NarTES'e özel ses efektleri (Bilgi kartı açılışı, Anladım onayı, İpucu sesi)
+  let mentorAudioCtx = null;
+  function playMentorSound(kind) {
+    try {
+      if (window.MATFLOW_SOUND_MUTED) return;
+      if (!mentorAudioCtx) {
+        mentorAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      const now = mentorAudioCtx.currentTime;
+      if (kind === "hint") {
+        [440, 554.37].forEach((freq, i) => {
+          const osc = mentorAudioCtx.createOscillator();
+          const gain = mentorAudioCtx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now + i * 0.08);
+          gain.gain.setValueAtTime(0.08, now + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.16);
+          osc.connect(gain);
+          gain.connect(mentorAudioCtx.destination);
+          osc.start(now + i * 0.08);
+          osc.stop(now + i * 0.08 + 0.16);
+        });
+      } else if (kind === "study_gate") {
+        [330, 293.66, 392].forEach((freq, i) => {
+          const osc = mentorAudioCtx.createOscillator();
+          const gain = mentorAudioCtx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(freq, now + i * 0.09);
+          gain.gain.setValueAtTime(0.1, now + i * 0.09);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.22);
+          osc.connect(gain);
+          gain.connect(mentorAudioCtx.destination);
+          osc.start(now + i * 0.09);
+          osc.stop(now + i * 0.09 + 0.22);
+        });
+      } else if (kind === "understood") {
+        [523.25, 659.25, 880].forEach((freq, i) => {
+          const osc = mentorAudioCtx.createOscillator();
+          const gain = mentorAudioCtx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(freq, now + i * 0.065);
+          gain.gain.setValueAtTime(0.11, now + i * 0.065);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.065 + 0.2);
+          osc.connect(gain);
+          gain.connect(mentorAudioCtx.destination);
+          osc.start(now + i * 0.065);
+          osc.stop(now + i * 0.065 + 0.2);
+        });
+      }
+    } catch (e) {}
+  }
+
   function getAiConfig() {
     try {
       const raw = localStorage.getItem(AI_CONFIG_KEY);
       if (raw) return JSON.parse(raw);
     } catch (e) {}
     return {
-      provider: "auto", // auto: yerel Ollama (127.0.0.1:11434) veya varsa Gemini/OpenAI API, yoksa yerleşik Sokratik AI
+      provider: "auto",
       apiKey: "",
       model: "gemini-2.5-flash"
     };
@@ -121,20 +173,23 @@
     return (tmp.textContent || tmp.innerText || "").replace(/\s+/g, " ").trim();
   }
 
-  // Sesli Okuma (TTS): Sesli mod açıksa NarTES mesajını Türkçe seslendirir
+  // Sesli Okuma (TTS)
   function speakMentorMessage(rawText) {
     if (!mentorVoiceEnabled) return;
     if (!("speechSynthesis" in window)) return;
     try {
       window.speechSynthesis.cancel();
       const clean = String(rawText || "")
+        .replace(/<[^>]+>/g, " ")
         .replace(/\*\*(.+?)\*\*/g, "$1")
         .replace(/\*(.+?)\*/g, "$1")
         .replace(/\\times/g, " çarpı ")
         .replace(/\\div/g, " bölü ")
+        .replace(/\\cdot/g, " çarpı ")
         .replace(/\\text\{([^}]+)\}/g, "$1")
         .replace(/\$/g, "")
-        .replace(/[🦉✨🎉💡🧭📘🎯👉💪]/g, "")
+        .replace(/[🦉✨🎉💡🧭📘🎯👉💪🔒✓]/g, "")
+        .replace(/\s+/g, " ")
         .trim();
       if (!clean) return;
       const utter = new SpeechSynthesisUtterance(clean);
@@ -164,72 +219,327 @@
         }
       }
     }
+    if (stop && stop.quickCorrect) {
+      const rawQuick = stripHtml(stop.quickCorrect).trim();
+      if (rawQuick && clean.includes(rawQuick)) {
+        clean = clean.replace(rawQuick, "doğru seçenek");
+      }
+    }
     return clean;
   }
 
-  // Aktif durağa göre Sokratik yönlendirme soruları üretir (asla cevabı vermez!)
-  function buildSocraticGuidance(ctx, mode) {
+  // ==========================================================================
+  // SEÇİLEN YANLIŞ CEVABA ÖZEL (KİŞİSELLEŞTİRİLMİŞ) TANI VE İPUCU ÜRETİCİ
+  // ==========================================================================
+  function diagnoseSpecificWrongAttempt(detail, ctx) {
+    const stop = (ctx && ctx.stop) || {};
+    const kaz = (ctx && ctx.kaz) || {};
+    const wrongVal = detail && detail.wrongValue !== undefined ? String(detail.wrongValue).trim() : "";
+    const targetInfo = detail && detail.targetLabel ? String(detail.targetLabel).trim() : "";
+    const customHint = detail && detail.customHint ? sanitizeHintWithoutAnswer(detail.customHint, stop) : "";
+
+    // 1. Durak Türü: Concept (Boşluk Doldurma)
+    if (stop.type === "concept") {
+      if (wrongVal === "katıdır") {
+        return `Az önce **"katıdır"** seçeneğini denedin. Ancak dikkat et: Küçük sayı ($4$ veya $6$) büyük sayıyı ($24$'ü) kalansız böldüğünde ona **kat** değil, **bölen (çarpan)** diyoruz. Kat, çarpım sonucunda oluşan büyük sayıdır ($24$ gibi). Şimdi tekrar düşünür müsün?`;
+      }
+      if (wrongVal === "çarpanıdır" || wrongVal === "bölenidir") {
+        return `Az önce **"${wrongVal}"** seçtin fakat cümlede **$24$ sayısının $6$'ya göre durumu** soruluyor. $24 = 4 \\times 6$ olduğuna göre $24$, $6$'nın böleni mi yoksa $4$ **katı** mıdır?`;
+      }
+      if (wrongVal === "kalanıdır" || wrongVal === "farkıdır") {
+        return `**"${wrongVal}"** kavramı çıkarma veya kalanlı bölme ile ilgilidir. Oysa $4 \\times 6 = 24$ tam bir çarpma-bölme ilişkisidir ($24 \\div 6 = 4$, kalan $0$). Bölen ve kat kavramlarından hangisi buraya uyar?`;
+      }
+      if (wrongVal === "kalanlı" || wrongVal === "ondalıklı") {
+        return `**"${wrongVal}"** seçtin ama $24 \\div 6 = 4$ işleminde hiç artan (kalan) yok! Bir bölme işleminde kalan $0$ ise o bölünmeye ne ad veririz?`;
+      }
+      if (wrongVal === "1") {
+        return `**$1$** sayısını seçtin ama unutma: Asal sayılar $1$'den büyük olmak zorundadır ($1$'in kendisinden başka böleni yoktur). En küçük asal sayımız çift olan hangi sayıydı?`;
+      }
+    }
+
+    // 2. Durak Türü: Video Doğrulama Sorusu
+    if (stop.type === "video") {
+      if (wrongVal.includes("8 farklı") || wrongVal.includes("6 farklı")) {
+        return `**"${wrongVal}"** seçeneğini işaretledin. Sanırım toplam çarpan sayısı ile **dikdörtgen (çarpan çifti) sayısını** karıştırdın! Her dikdörtgen $2$ çarpanın eşleşmesiyle oluşur: $(1\\times 24), (2\\times 12), (3\\times 8), (4\\times 6)$. Bu durumda kaç farklı dikdörtgen kurmuş olduk?`;
+      }
+      if (wrongVal.includes("3 farklı") || wrongVal.includes("2 farklı")) {
+        return `**"${wrongVal}"** seçtin ama soldaki animasyonda $1.\\text{ Adım}$'dan son adıma kadar çizdiğimiz dikdörtgenleri tek tek sayalım: $(1\\times 24)$, $(2\\times 12)$, $(3\\times 8)$ ve $(4\\times 6)$. Bir tanesini atlamış olabilir misin?`;
+      }
+    }
+
+    // 3. Durak Türü: Etkinlik (Gökkuşağı Çarpan Kuşağı, Çarpan Ağacı, EBOB-EKOK Ayrımı)
+    if (stop.type === "activity") {
+      if (stop.activityMode === "rainbow_pairs" && stop.targetNumber) {
+        const num = parseInt(wrongVal, 10);
+        if (!isNaN(num)) {
+          const rem = stop.targetNumber % num;
+          if (rem !== 0) {
+            return `Seçtiğin **$${num}$** sayısı **$${stop.targetNumber}$** sayısını kalansız bölemez ($${stop.targetNumber} \\div ${num}$ işleminde kalan $${rem}$ olur). ${customHint ? `İpucu: *${customHint}*` : `Çarpımı $${stop.targetNumber}$ veren çarpan çiftini düşün!`}`;
+          }
+          return `Seçtiğin **$${num}$** sayısı $${stop.targetNumber}$'ün bir çarpanı, ancak şu an seçili olan kutunun sırasına uymuyor! ${customHint ? `*${customHint}*` : "Küçükten büyüğe sıralamaya ve baştan-sondan eşleşmeye dikkat et."}`;
+        }
+      }
+      if (stop.activityMode === "factor_tree") {
+        return `Çarpan ağacında **${targetInfo || "bu dal"}** için **${wrongVal}** seçtin. Dalın üstündeki sayıyı yanındaki asal çarpana böldüğünde kaç çıktığını kontrol eder misin?`;
+      }
+      if (stop.activityMode === "ebob_ekok_sort" || stop.activityMode === "coprime_check") {
+        return `**"${targetInfo}"** durumu için **"${wrongVal}"** seçtin. Kendimize şu soruyu soralım: Büyük bir bütünü eş parçalara mı bölüyoruz (EBOB), yoksa küçük parçaları katlayarak ortak bir noktada mı buluşturuyoruz (EKOK)?`;
+      }
+    }
+
+    // 4. Durak Türü: Oyun (Çarpan Avcısı vb.)
+    if (stop.type === "game") {
+      if (stop.gameType === "factor_hunter" && detail && detail.targetNumber) {
+        const t = detail.targetNumber;
+        const n = parseInt(wrongVal, 10);
+        const rem = !isNaN(n) ? (t % n) : null;
+        return `Seçtiğin **$${wrongVal}$** sayısı tuzak bir sayıydı! Çünkü **$${t} \\div ${wrongVal}$** işleminde kalan **$${rem !== null ? rem : "sıfırdan farklı"}$** olur, yani tam bölünmez. $${t}$ sayısını kalansız bölen başka bir sayı dener misin?`;
+      }
+      return `Az önce **${wrongVal}** değerini denedin ama bu adımın kuralını tam sağlamadı. ${customHint || "Sayıların ortak bölen veya ortak kat ilişkisini bir kez daha hesaplayalım!"}`;
+    }
+
+    // 5. Durak Türü: Çoktan Seçmeli Soru
+    if (stop.type === "question") {
+      const cleanH = sanitizeHintWithoutAnswer(stop.hint, stop);
+      return `Seçtiğin **${wrongVal}** şıkkı doğru sonuç değil. Gel nerede takılmış olabileceğimize bakalım:\n💡 *${cleanH || "Soruda verilen sayıların çarpanlarını veya ortak bölen/katlarını adım adım yazarak tekrar kontrol edelim."}*`;
+    }
+
+    return customHint
+      ? `Az önce **${wrongVal || "bu seçeneği"}** denedin. Şu ipucuna dikkat ederek tekrar düşünelim: *${customHint}*`
+      : `Az önce **${wrongVal || "bu seçeneği"}** denedin ama tam uymadı. Verilen sayılar arasındaki çarpma-bölme ilişkisini bir kez daha kontrol edelim!`;
+  }
+
+  // ==========================================================================
+  // 2. YANLIŞTA AÇILAN "KONU BİLGİ & KURAL KARTI" İÇERİĞİ ÜRETİCİ
+  // ==========================================================================
+  function buildConceptReviewCardData(ctx, detail) {
     const stop = (ctx && ctx.stop) || {};
     const kaz = (ctx && ctx.kaz) || {};
     const unit = (ctx && ctx.unit) || {};
-    const title = stop.title || kaz.title || unit.title || "bu konu";
+    const cleanHint = sanitizeHintWithoutAnswer((detail && detail.customHint) || stop.hint, stop);
 
-    if (unit.unitNo === 1 && stop.id === 1) {
-      if (mode === "method") {
-        return `Şu an **24** sayısının çarpanlarını ve katlarını inceliyoruz. Kendine şu soruyu sor: **$4 \\times 6 = 24$** işleminde $24$'ü kalansız bölen $4$ ve $6$'ya ne ad veriyoruz? Peki $24$ sayısı $6$'nın kaç katıdır? Yandaki $4 \\times 6$ birimkare modelini sayarak kontrol edebilirsin!`;
-      }
-      return `İpucu ister misin? Bir $A$ sayısını kalansız bölen sayıya **çarpan (bölen)**, $A$ sayısına ise o bölenin **katı** diyoruz. Örneğin $24 \\div 6 = 4$ işleminde kalan $0$ olduğu için $24$ sayısı $6$'ya nasıl bölünür?`;
-    }
+    let title = `${kaz.title || stop.title || "Konu"} — Hatırlatma Bilgisi`;
+    let bullets = [];
 
-    if (unit.unitNo === 1 && stop.id === 2) {
-      return `Sol taraftaki animasyonda alanı **$24\\text{ br}^2$** olan dikdörtgenleri adım adım oluşturduk: $(1 \\times 24)$, $(2 \\times 12)$, $(3 \\times 8)$ ve $(4 \\times 6)$. Şimdi düşün bakalım: Kenarları tam sayı olan kaç farklı dikdörtgen çizmiş olduk?`;
-    }
-
-    if (unit.unitNo === 1 && stop.id === 3) {
-      return `**Gökkuşağı Çarpan Kuşağı**'nda kuralımız şu: Küçükten büyüğe dizilen çarpanlarda baştan ve sondan eşit uzaklıktaki sayıların çarpımı daima hedef sayıyı ($24$'ü) verir! $1 \\times 24 = 24$ ve $2 \\times 12 = 24$ olduğuna göre, $2$ ile $4$ arasındaki sayı kaç olmalı ki eşiyle çarpımı $24$ etsin?`;
-    }
-
-    if (stop.type === "concept") {
-      return `**${title}** durağında kavramı keşfediyoruz. Üstteki örnek açıklamayı dikkatle oku: Hangi sayı bölen (çarpan), hangi sayı kat veya sonuç? Cümledeki boşluğun solundaki ve sağındaki kelimeler sana hangi matematiksel kavramı işaret ediyor?`;
-    }
-
-    if (stop.type === "video") {
-      const stepCount = (stop.steps && stop.steps.length) || 3;
-      return `Animasyondaki **${stepCount} adımı** sırayla inceledin mi? Son adımda ortaya çıkan kurala dikkat et ve sağdaki doğrulama sorusunu o kurala göre kendi cümlelerinle yanıtlamaya çalış. Sence adımlarda kaç farklı durum oluştu?`;
-    }
-
-    if (stop.type === "activity") {
-      if (stop.missingTargets && stop.missingTargets.length) {
-        const firstHint = sanitizeHintWithoutAnswer(stop.missingTargets[0].hint, stop);
-        return `Bu etkinlikte eksik kutuyu bulmak için sayılar arasındaki örüntüye bakalım. Küçük bir Sokratik ipucu: *${firstHint || "Eşleşen iki sayının çarpımının veya ortak böleninin hedef sayıya eşit olması gerektiğini düşün."}* Sence havuzdaki hangi sayı bu kuralı sağlar?`;
-      }
-      return `Etkinlikteki her bir ifadeyi tek tek ele alalım: Bütünü küçük eş parçalara mı ayırıyoruz (EBOB), yoksa küçük parçaları birleştirip ortak bir katta mı buluşuyoruz (EKOK)?`;
-    }
-
-    if (stop.type === "game") {
-      return `Oyun etabındayız! Hedef sayıyı kalansız bölen (veya kuralı sağlayan) sayıları seçerken şunu test et: Seçeceğin sayı ile başka bir tam sayıyı çarptığında tam olarak hedef sayıya ulaşıyor musun? Tuzak sayılara dikkat!`;
-    }
-
-    if (stop.type === "question") {
-      const cleanHint = sanitizeHintWithoutAnswer(stop.hint, stop);
-      if (mode === "method") {
-        return `Bu soruyu çözmek için birlikte 3 adımlı Sokratik plan yapalım:\n1. Soruda bize verilen sayılar bir **bütün** mü yoksa **küçük parçalar** mı?\n2. Aradığımız değer "en az / en büyük" dediğine göre hangi ortak işlemi kullanmalıyız?\n3. ${cleanHint ? `İpucu yönlendirmesi: *${cleanHint}*` : "Bulduğun ilk sayı cevabın kendisi mi, yoksa parça/şişe/kesim sayısına mı geçmelisin?"}`;
-      }
-      if (cleanHint) {
-        return `Cevabı doğrudan söylemem senin keşfetme heyecanını alır 😊 Ama sana yol gösterecek şu soruyu bırakıyorum:\n💡 *${cleanHint}*\nBu işlemi yaptığında hangi sonuca yaklaşıyorsun?`;
+    // Durağın kendi konu açıklaması varsa al
+    if (stop.explanation && Array.isArray(stop.explanation) && stop.explanation.length > 0) {
+      bullets = stop.explanation.map(p => stripHtml(p));
+    } else if (unit && Array.isArray(unit.stops)) {
+      // Aynı kazanımdaki "concept" (Örnek & Keşif) durağının bilgisini bul
+      const conceptStop = unit.stops.find(s => s.kazanimId === stop.kazanimId && s.type === "concept");
+      if (conceptStop && Array.isArray(conceptStop.explanation)) {
+        title = `📘 ${conceptStop.title} — Temel Bilgi`;
+        bullets = conceptStop.explanation.map(p => stripHtml(p));
       }
     }
 
-    return `**${title}** konusunda ilerlerken önce verilen sayıları ve bizden tam olarak ne istendiğini belirleyelim. Hangi adımda takıldığını yazarsan sana o adımla ilgili yol gösterici bir soru sorabilirim!`;
+    // Video durağıysa adımları özetle
+    if (stop.type === "video" && Array.isArray(stop.steps)) {
+      bullets = stop.steps.map(st => stripHtml(st.text));
+    }
+
+    if (bullets.length === 0) {
+      bullets = [
+        "Bir doğal sayıyı kalansız bölen sayılara o sayının çarpanı (böleni), çarpım sonucuna ise katı denir.",
+        "Soru kökünde bütünden küçük eş parçalara gidiliyorsa EBOB, küçük parçalardan bütüne veya ortak buluşmaya gidiliyorsa EKOK kullanılır."
+      ];
+    }
+
+    const specificDiag = diagnoseSpecificWrongAttempt(detail, ctx);
+
+    return {
+      title,
+      bullets,
+      specificDiag,
+      hint: cleanHint || "Yukarıdaki temel bilgiyi okuduktan sonra kalan seçenekler arasından kurala uyanı seç."
+    };
   }
 
-  // Ön Güvenlik Katmanı (Küfür, Ders Dışı ve Doğrudan Cevap İsteme Kontrolleri)
+  // ==========================================================================
+  // 2. YANLIŞTA EKRANI KİLİTLEYEN VE "ANLADIM" TİKİ İSTEYEN MODAL / KART
+  // ==========================================================================
+  function showStudyGateModal(ctx, detail, onUnderstoodCallback) {
+    initNartesMentorDOM();
+    studentTrace.remediationLocked = true;
+    playMentorSound("study_gate");
+
+    let gateEl = document.getElementById("nartesStudyGateOverlay");
+    if (!gateEl) {
+      gateEl = document.createElement("div");
+      gateEl.id = "nartesStudyGateOverlay";
+      gateEl.className = "nartes-study-gate-overlay";
+      document.body.appendChild(gateEl);
+    }
+
+    const info = buildConceptReviewCardData(ctx, detail);
+    const wrongHistoryText = studentTrace.wrongChoices.length > 0
+      ? `Denediğin hatalı seçimler: <strong>${studentTrace.wrongChoices.slice(-3).join(", ")}</strong>`
+      : "Üst üste 2 kez hatalı deneme yaptın.";
+
+    gateEl.innerHTML = `
+      <div class="nartes-study-gate-card" role="dialog" aria-modal="true" aria-labelledby="nartesGateTitle">
+        <div class="nsg-header">
+          <div class="nsg-avatar-wrap">${getAvatarHtml("nartes-avatar-md")}</div>
+          <div class="nsg-head-meta">
+            <span class="nsg-badge">🦉 NarTES • Önce Bilgiyi Hatırlayalım</span>
+            <h3 id="nartesGateTitle">${info.title}</h3>
+          </div>
+        </div>
+
+        <div class="nsg-wrong-summary">
+          <span>⏸️ Rastgele işaretleme yapmamak için kısa bir mola! ${wrongHistoryText}</span>
+        </div>
+
+        <div class="nsg-diag-box">
+          <strong>🔎 Senin Seçimin Neden Olmadı?</strong>
+          <p>${formatMarkdownAndMath(info.specificDiag)}</p>
+        </div>
+
+        <div class="nsg-knowledge-box">
+          <div class="nsg-knowledge-title">📚 Konu Özeti ve Kural Bilgisi</div>
+          <ul class="nsg-knowledge-list">
+            ${info.bullets.map(b => `<li>${formatMarkdownAndMath(b)}</li>`).join("")}
+          </ul>
+          <div class="nsg-hint-strip">
+            <strong>💡 Çözüm İpucu:</strong> ${formatMarkdownAndMath(info.hint)}
+          </div>
+        </div>
+
+        <label class="nsg-confirm-row" for="nsgUnderstoodChk">
+          <input type="checkbox" id="nsgUnderstoodChk" class="nsg-checkbox" />
+          <span>Yukarıdaki konu bilgisini ve ipucunu dikkatle okudum, <strong>anladım</strong>.</span>
+        </label>
+
+        <div class="nsg-actions">
+          <button type="button" id="nsgContinueBtn" class="nsg-continue-btn" disabled>
+            ✓ Anladım, Tekrar Cevap Hakkı Ver →
+          </button>
+        </div>
+      </div>
+    `;
+
+    gateEl.hidden = false;
+    renderMathInside(gateEl);
+    speakMentorMessage(`Dur bakalım genç matematikçi! Üst üste iki yanlış yaptık. Rastgele tıklamak yerine gel önce bu konunun kuralını hatırlayalım. Bilgiyi okuyup Anladım kutusunu işaretlediğinde sana yeni cevap hakkı vereceğim.`);
+
+    const chk = document.getElementById("nsgUnderstoodChk");
+    const btn = document.getElementById("nsgContinueBtn");
+
+    chk.addEventListener("change", () => {
+      playMentorSound("hint");
+      btn.disabled = !chk.checked;
+      btn.classList.toggle("ready", chk.checked);
+    });
+
+    btn.addEventListener("click", () => {
+      if (!chk.checked) return;
+      playMentorSound("understood");
+      studentTrace.remediationLocked = false;
+      gateEl.hidden = true;
+      if (typeof onUnderstoodCallback === "function") {
+        onUnderstoodCallback();
+      }
+      showSpeechBubble(
+        "Harika! Bilgiyi gözden geçirdiğine göre şimdi kalan seçenekler arasından doğru olanı dikkatle seçebilirsin. Sana güveniyorum! 💪",
+        "guide",
+        5000
+      );
+    });
+  }
+
+  // ==========================================================================
+  // ÖĞRENCİYE ÖZEL (DİNAMİK & KİŞİSELLEŞTİRİLMİŞ) SOHBET YANITI ÜRETİCİ
+  // ==========================================================================
+  function generatePersonalizedSocraticReply(rawText, ctx) {
+    const text = String(rawText || "").trim();
+    const lower = text.toLowerCase();
+    const stop = (ctx && ctx.stop) || {};
+    const kaz = (ctx && ctx.kaz) || {};
+    const unit = (ctx && ctx.unit) || {};
+
+    studentTrace.chatTurnCount++;
+
+    // Öğrencinin kendi mesajında yazdığı sayıları yakala (ör. "8 olur mu?", "neden 18 değil?")
+    const userNumbers = (text.match(/\d+/g) || []).map(n => parseInt(n, 10));
+
+    // A) Öğrenci mesajında belirli bir sayı sorduysa ("6 olur mu", "neden 5 bölmez", "3 ve 8" vb.)
+    if (userNumbers.length > 0) {
+      const askedNum = userNumbers[0];
+      const targetNum = stop.targetNumber || (stop.gridModel && stop.gridModel.total) || (stop.unitNo === 1 ? 24 : null);
+
+      if (targetNum && (lower.includes("olur mu") || lower.includes("böl") || lower.includes("çarpan") || lower.includes("neden") || lower.includes("mi"))) {
+        if (targetNum % askedNum === 0) {
+          const pair = targetNum / askedNum;
+          return `Sorduğun **$${askedNum}$** sayısını birlikte test edelim! **$${targetNum} \\div ${askedNum} = ${pair}$** işleminde kalan $0$'dır. Yani evet, **$${askedNum}$** sayısı $${targetNum}$'ün tam bir çarpanıdır ve eşleştiği çarpan **$${pair}$**'dir ($${askedNum} \\times ${pair} = ${targetNum}$). Peki soruda bizden tam olarak hangi kutuyu veya durumu istiyor?`;
+        } else {
+          const rem = targetNum % askedNum;
+          return `Sorduğun **$${askedNum}$** sayısını hemen deneyelim: **$${targetNum} \\div ${askedNum}$** işlemini yaptığımızda **$${rem}$ kalanı** çıkıyor! Kalansız bölünmediği için **$${askedNum}$**, $${targetNum}$ sayısının bir çarpanı olamaz. Kalansız bölen başka bir sayı düşünelim mi?`;
+        }
+      }
+    }
+
+    // B) Öğrenci az önce bir hata yaptıysa ve "neden yanlış", "anlamadım", "ipucu", "nasıl" diye soruyorsa -> KİŞİSEL HATA GEÇMİŞİNİ KULLAN
+    if (studentTrace.wrongCount > 0 && (lower.includes("neden") || lower.includes("yanlış") || lower.includes("anlamadım") || lower.includes("ipucu") || lower.includes("nasıl") || lower.includes("takıldım") || lower.includes("yardım"))) {
+      const lastWrong = studentTrace.lastWrongValue;
+      const diag = diagnoseSpecificWrongAttempt({
+        wrongValue: lastWrong,
+        targetLabel: studentTrace.lastTargetLabel,
+        customHint: stop.hint
+      }, ctx);
+      return `Senin bu duraktaki adımlarını takip ediyorum 👀 Az önce **${lastWrong || "bir seçenek"}** denemiştin (${studentTrace.wrongCount}. denemen).\n\n${diag}`;
+    }
+
+    // C) Selamlaşma / Kimsin (Kişisel ilerleme bilgisiyle yanıt verir)
+    if (/^(merhaba|selam|hey|günaydın|iyi akşamlar|nasılsın|kimsin|sen kimsin)/i.test(lower)) {
+      const statusNote = studentTrace.wrongCount > 0
+        ? `Bu durakta şu ana kadar ${studentTrace.wrongCount} deneme yaptığını gördüm (${studentTrace.wrongChoices.join(", ")}). Birlikte adım adım doğru sonuca ulaşacağız!`
+        : `Şu an **${unit.unitNo || 1}. Ünite • Durak ${stop.id || 1} (${stop.title || kaz.title})** üzerindeyiz ve gayet iyi gidiyorsun!`;
+      return `Merhaba! Ben **NarTES** ✨ Senin kişisel Sokratik matematik rehberinim. ${statusNote} Bana sorudaki bir sayıyı, neden yanlış olduğunu veya hangi adımı merak ettiğini kendi cümlelerinle sorabilirsin.`;
+    }
+
+    // D) Farklı açılardan (Açıklama / Adım Adım / Sokratik Soru) kişiselleştirilmiş rehberlik — her soruşta farklı bir pedagojik açı sunar!
+    const cleanHint = sanitizeHintWithoutAnswer(stop.hint, stop);
+    const stemText = stripHtml(stop.stem || stop.quickQuestion || stop.sentenceHtml || stop.subtitle || "");
+    const angle = studentTrace.chatTurnCount % 3;
+
+    if (lower.includes("kavram") || lower.includes("nedir") || lower.includes("kural")) {
+      const review = buildConceptReviewCardData(ctx, {});
+      return `**${review.title}** için en önemli kuralımız şu:\n• ${review.bullets.join("\n• ")}\n\nŞimdi bu kuralı elimizdeki *"${stemText.slice(0, 95)}..."* sorusuna uygularsak ilk adımda ne yapmalıyız?`;
+    }
+
+    if (angle === 1) {
+      // 1. Açı: Sorunun içindeki somut verileri ayrıştırma
+      if (stop.type === "question") {
+        return `Gel bu soruyu seninle parçalara ayıralım:\n📌 **Soruda ne verilmiş?** *${stemText.slice(0, 120)}...*\n🧭 **İlk adımımız:** ${cleanHint || "Verilen sayıların ortak bölenini mi yoksa ortak katını mı aradığımızı belirleyelim."}\nSence burada bütünü eş parçalara mı ayırıyoruz, yoksa parçaları mı birleştiriyoruz?`;
+      }
+      if (stop.type === "video") {
+        const lastStep = stop.steps && stop.steps[stop.steps.length - 1] ? stripHtml(stop.steps[stop.steps.length - 1].text) : "";
+        return `Soldaki animasyonun son adımına birlikte bakalım: *"${lastStep}"*\nŞimdi sağdaki **"${stripHtml(stop.quickQuestion)}"** sorusunu bu son adımdaki bilgiyle eşleştirdiğinde hangi seçenek öne çıkıyor?`;
+      }
+      if (stop.type === "activity" && stop.missingTargets && stop.missingTargets.length > 0) {
+        const hints = stop.missingTargets.map(m => sanitizeHintWithoutAnswer(m.hint, stop)).filter(Boolean);
+        return `Bu etkinlikte eksik kutuları bulmak için şu ipucunu kullanabilirsin:\n💡 *${hints[0] || "Baştan ve sondan eşleşen sayıların çarpımını kontrol et."}*\nAlttaki sayı havuzundan hangisi bu eşitliği doğru tamamlar?`;
+      }
+    } else if (angle === 2) {
+      // 2. Açı: Öğrencinin durumuna göre stratejik yöntem sorusu
+      const wrongNote = studentTrace.wrongChoices.length > 0
+        ? `Az önce elediğimiz **${studentTrace.wrongChoices.join(", ")}** dışında kalan seçeneklere odaklanalım. `
+        : "";
+      return `${wrongNote}**"${stop.title}"** durağında doğru cevaba ulaşmak için kendine şu kontrol sorusunu sor:\n👉 *${cleanHint || "Seçeceğim sayı işlemde kalansız bölünme şartını sağlıyor mu?"}*\nAklından geçen sayıyı buraya yazarsan birlikte sağlamasını yapabiliriz!`;
+    }
+
+    // 3. Açı: Somut örnek üzerinden benzetme (Analoji)
+    const review = buildConceptReviewCardData(ctx, {});
+    return `Sana özel küçük bir yöntem: ${review.bullets[0]}\n${cleanHint ? `💡 **Soru İpucu:** *${cleanHint}*` : ""}\nHangi şık veya sayı arasında kararsız kaldığını bana yaz, ikisini karşılaştıralım!`;
+  }
+
+  // Ön Güvenlik Katmanı
   function checkGuardrails(rawText, ctx) {
     const text = String(rawText || "").trim();
     const lower = text.toLowerCase();
 
     if (!text) {
-      return "Seni dinliyorum! Takıldığın yeri yazabilir veya üstteki hızlı soru butonlarından birine tıklayabilirsin.";
+      return "Seni dinliyorum! Takıldığın sayıyı veya şıkkı yazabilirsin.";
     }
 
     const hasProfanity = PROFANITY_LIST.some(w => {
@@ -248,13 +558,13 @@
 
     const wantsDirectAnswer = GIVE_ANSWER_PATTERNS.some(re => re.test(lower));
     if (wantsDirectAnswer) {
-      return `Sokrates'in ünlü ilkesini hatırla: *"Ben kimseye bir şey öğretemem, sadece onların kendi kendilerine düşünmelerini sağlarım."* Doğrudan cevabı veya şıkkı söylersem öğrenme fırsatını kaçırırız! 💪\n\nBunun yerine gel şöyle düşünelim:\n${buildSocraticGuidance(ctx, "hint")}`;
+      return `Sokrates'in ünlü ilkesini hatırla: *"Ben kimseye bir şey öğretemem, sadece onların kendi kendilerine düşünmelerini sağlarım."* Doğrudan cevabı veya şıkkı söylersem öğrenme fırsatını kaçırırız! 💪\n\nAma senin için sorunun en kritik ipucunu açıyorum:\n${generatePersonalizedSocraticReply("ipucu", ctx)}`;
     }
 
-    return null; // Güvenlikten geçti
+    return null;
   }
 
-  // Canlı LLM Çağrısı (Gemini API / OpenAI API / Yerel Ollama 127.0.0.1:11434)
+  // Canlı LLM Çağrısı (Öğrencinin kişisel hata geçmişini de modele gönderir)
   async function queryLiveSocraticLLM(questionText, ctx) {
     const stop = (ctx && ctx.stop) || {};
     const unit = (ctx && ctx.unit) || {};
@@ -264,23 +574,23 @@
       stop.stem ? `Soru Kökü: ${stripHtml(stop.stem)}` : "",
       stop.quickQuestion ? `Doğrulama Sorusu: ${stripHtml(stop.quickQuestion)}` : "",
       stop.sentenceHtml ? `Etkinlik Cümlesi: ${stripHtml(stop.sentenceHtml)}` : "",
-      stop.hint ? `Öğretmen İpucu (Cevabı söylemeden kullan): ${ sanitizeHintWithoutAnswer(stop.hint, stop) }` : ""
+      stop.hint ? `Öğretmen İpucu (Cevabı söylemeden kullan): ${sanitizeHintWithoutAnswer(stop.hint, stop)}` : "",
+      studentTrace.wrongChoices.length > 0 ? `Öğrencinin bu soruda yaptığı yanlış seçimler: ${studentTrace.wrongChoices.join(", ")}` : "Öğrenci henüz yanlış seçim yapmadı."
     ].filter(Boolean).join("\n");
 
     const systemPrompt = [
       "Sen 'NarTES' adında, 8. sınıf LGS Matematik öğrencilerine rehberlik eden bilge, sevecen ve Sokrates tarzında bir yapay zeka öğretmensin.",
       "KESİN KURALLAR:",
       "1. Öğrenciye ASLA sorunun nihai cevabını, doğru şıkkını veya doğrudan işlem sonucunu söyleme!",
-      "2. Sokratik yöntem kullan: Öğrencinin kendi başına doğru cevabı bulmasını sağlayacak kısa, net, yol gösterici 1-2 soru veya küçük bir ipucu ver.",
-      "3. Ders dışı, oyun, futbol, sohbet veya uygunsuz konulara kesinlikle girme; nazikçe eldeki matematik sorusuna yönlendir.",
-      "4. Yanıtın Türkçe, sıcak, motive edici ve en fazla 3-4 cümle olsun.",
-      "--- AKTİF DURAK BİLGİSİ ---",
+      "2. Standart kalıp cümleler kurma! Öğrencinin sorduğu ifadeye ve varsa yaptığı yanlış seçimlere (hatalı şıklara) özel, kişiselleştirilmiş Sokratik bir açıklama ve yönlendirici soru sor.",
+      "3. Ders dışı, oyun, futbol, sohbet veya uygunsuz konulara kesinlikle girme.",
+      "4. Yanıtın Türkçe, samimi ve en fazla 3-4 cümle olsun.",
+      "--- AKTİF DURAK VE ÖĞRENCİ DURUMU ---",
       stopSummary
     ].join("\n");
 
     const cfg = getAiConfig();
 
-    // A) Gemini API (Anahtar girilmişse)
     if (cfg.apiKey && (cfg.provider === "gemini" || cfg.provider === "auto")) {
       try {
         const modelName = cfg.model || "gemini-2.5-flash";
@@ -291,7 +601,7 @@
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: [{ role: "user", parts: [{ text: questionText }] }],
-            generationConfig: { temperature: 0.45, maxOutputTokens: 240 }
+            generationConfig: { temperature: 0.55, maxOutputTokens: 250 }
           })
         });
         if (resp.ok) {
@@ -302,7 +612,6 @@
       } catch (e) {}
     }
 
-    // B) Yerel Ollama (128 Sunucusu / Localhost üzerinde açıksa otomatik bağlanır)
     if (cfg.provider === "ollama" || cfg.provider === "auto") {
       try {
         const ctrl = new AbortController();
@@ -318,7 +627,7 @@
               { role: "system", content: systemPrompt },
               { role: "user", content: questionText }
             ],
-            options: { temperature: 0.4, num_predict: 180 }
+            options: { temperature: 0.5, num_predict: 190 }
           })
         });
         clearTimeout(timer);
@@ -334,46 +643,9 @@
     return null;
   }
 
-  // Yerleşik Sokratik Motor (Anlık geri dönüş)
-  function generateLocalSocraticReply(rawText, ctx) {
-    const text = String(rawText || "").trim();
-    const lower = text.toLowerCase();
-
-    if (/^(merhaba|selam|hey|günaydın|iyi akşamlar|nasılsın|kimsin|sen kimsin)/i.test(lower)) {
-      const stopTitle = (ctx && ctx.stop && ctx.stop.title) || "Çarpanlar ve Katlar";
-      return `Merhaba genç matematikçi! Ben **NarTES** ✨ Nartest'in Sokrates tarzı bilge yapay zeka rehberiyim. Sana hazır cevaplar vermem ama doğru soruları sorarak **"${stopTitle}"** durağındaki tüm engelleri kendi zekanla aşmanı sağlarım. Takıldığın bir yer mi var?`;
-    }
-
-    if (lower.includes("çarpan") || lower.includes("bölen")) {
-      return `Harika bir kavram sorusu! Bir doğal sayıyı **kalansız** bölebilen pozitif tam sayılara o sayının **çarpanı (böleni)** denir. Örneğin $4 \\times 6 = 24$ işleminde hem $4$ hem de $6$, $24$'ü kalansız böldüğü için $24$'ün birer çarpanıdır. Peki sence $24$ sayısının en küçük ve en büyük çarpanı kaçtır?`;
-    }
-    if (lower.includes("kat") && !lower.includes("ekok")) {
-      return `Bir sayıyı $1, 2, 3, 4...$ gibi pozitif tam sayılarla çarptığımızda elde ettiğimiz sonuçlara o sayının **katları** deriz. Örneğin $6$'nın katları $6, 12, 18, 24...$ diye gider. Dikkat ettin mi, $24$ sayısı hem $4$'ün hem de $6$'nın bir katıdır!`;
-    }
-    if (lower.includes("asal") && !lower.includes("aralarında")) {
-      return `**Asal sayılar**, yalnızca $1$'e ve kendisine kalansız bölünebilen $1$'den büyük doğal sayılardır ($2, 3, 5, 7, 11...$). Sence çift sayılar içinde asal olan tek sayı hangisidir ve neden başka çift asal sayı yoktur?`;
-    }
-    if (lower.includes("aralarında asal")) {
-      return `İki doğal sayının **aralarında asal** olması için $1$'den başka ortak bölenlerinin olmaması gerekir. Sayıların kendilerinin asal olması şart değildir! Örneğin $8$ ve $15$ asal değildir ama ortak bölenleri yalnız $1$ olduğu için aralarında asaldır.`;
-    }
-    if (lower.includes("ebob")) {
-      return `**EBOB (En Büyük Ortak Bölen)**, iki veya daha fazla sayıyı aynı anda kalansız bölebilen en büyük sayıdır. Bütünden küçük eş parçalara giderken (çuvalları poşetlere bölerken, çubukları keserken) EBOB kullanırız. Elindeki soruda bütünü parçalara mı ayırıyoruz?`;
-    }
-    if (lower.includes("ekok")) {
-      return `**EKOK (En Küçük Ortak Kat)**, iki veya daha fazla sayının ortak katlarından en küçüğüdür. Küçük parçalardan büyük bir bütün oluştururken veya nöbet/zil/sefer buluşmalarında EKOK kullanırız.`;
-    }
-
-    if (lower.includes("anlamadım") || lower.includes("zor") || lower.includes("nasıl") || lower.includes("ipucu") || lower.includes("yardım") || lower.includes("takıldım")) {
-      return buildSocraticGuidance(ctx, "method");
-    }
-
-    return buildSocraticGuidance(ctx, "hint");
-  }
-
   // ==========================================================================
   // ARAYÜZ (DOM) OLUŞTURMA VE GÜNCELLEME
   // ==========================================================================
-  let currentContext = { unit: null, kaz: null, stop: null };
   let isPanelOpen = false;
   let bubbleTimer = null;
 
@@ -395,7 +667,6 @@
       if (sub) sub.textContent = open ? "Alta küçült, derse dön" : "Sokratik AI Rehber";
     }
   }
-
 
   function updateVoiceToggleButtons() {
     const label = mentorVoiceEnabled ? "🔊 Sesli" : "🔇 Sessiz";
@@ -432,19 +703,19 @@
     root.id = "nartesMentorRoot";
     root.className = "nartes-mentor-root";
     root.innerHTML = `
-      <!-- Konuşma Balonu (Kısa Bildirim / Sokratik Dürtme) -->
+      <!-- Konuşma Balonu (Kişiselleştirilmiş İpucu / Sokratik Dürtme) -->
       <div class="nartes-speech-bubble" id="nartesSpeechBubble" hidden>
         <button class="nartes-bubble-close" id="nartesBubbleClose" title="Kapat" aria-label="Kapat">✕</button>
         <div class="nartes-bubble-header">
           <div class="nartes-bubble-head-left">
             ${getAvatarHtml("nartes-avatar-xs")}
-            <span class="nartes-bubble-badge">NarTES • Sokratik Rehber</span>
+            <span class="nartes-bubble-badge">NarTES • Kişisel Sokratik Rehber</span>
           </div>
           <button type="button" class="nartes-voice-pill" id="nartesBubbleVoiceBtn" title="Sesli / Sessiz Modu Değiştir"></button>
         </div>
         <div class="nartes-bubble-text" id="nartesBubbleText"></div>
         <div class="nartes-bubble-foot">
-          <button class="nartes-bubble-action" id="nartesBubbleOpenChat">NarTES'e Sor →</button>
+          <button class="nartes-bubble-action" id="nartesBubbleOpenChat">NarTES ile Konuş →</button>
         </div>
       </div>
 
@@ -454,8 +725,8 @@
           <div class="nartes-chat-head-left">
             <div class="nartes-head-avatar">${getAvatarHtml("nartes-avatar-md")}</div>
             <div>
-              <div class="nartes-head-title">NarTES <span class="nartes-head-tag">Sokratik AI</span></div>
-              <div class="nartes-head-sub" id="nartesContextSub">Cevabı vermez, düşündürerek buldurur</div>
+              <div class="nartes-head-title">NarTES <span class="nartes-head-tag">Kişisel AI</span></div>
+              <div class="nartes-head-sub" id="nartesContextSub">Adımlarını takip eder, Sokratik yönlendirir</div>
             </div>
           </div>
           <div class="nartes-head-actions">
@@ -465,10 +736,9 @@
           </div>
         </header>
 
-        <!-- İsteğe Bağlı Canlı AI API Ayar Çekmecesi (Öğretmen / Yönetici İçin) -->
         <div class="nartes-ai-settings-drawer" id="nartesAiSettingsDrawer" hidden>
           <div class="nartes-ai-settings-title">🤖 Canlı Yapay Zeka (Gemini API / Yerel Ollama) Bağlantısı</div>
-          <p class="nartes-ai-settings-desc">NarTES yerleşik Sokratik motoruyla anında çalışır. İsterseniz canlı Gemini API anahtarı girebilir veya yerel Ollama modelini kullanabilirsiniz:</p>
+          <p class="nartes-ai-settings-desc">NarTES yerleşik kişisel Sokratik motoruyla anında çalışır. İsterseniz canlı Gemini API anahtarı girebilir veya yerel Ollama modelini kullanabilirsiniz:</p>
           <div class="nartes-ai-settings-row">
             <input type="password" id="nartesApiKeyInput" class="nartes-ai-key-input" placeholder="Gemini API Anahtarı (İsteğe bağlı: AIza...)" />
             <button type="button" id="nartesSaveAiKeyBtn" class="nartes-ai-save-btn">Kaydet</button>
@@ -478,9 +748,9 @@
         <div class="nartes-chat-messages" id="nartesChatMessages"></div>
 
         <div class="nartes-quick-prompts" id="nartesQuickPrompts">
-          <button type="button" class="nartes-prompt-chip" data-prompt="Bu soruda bana Sokratik bir ipucu verir misin?">💡 İpucu ver</button>
-          <button type="button" class="nartes-prompt-chip" data-prompt="Bu durağı çözmek için nasıl düşünmeliyim?">🧭 Nasıl düşünmeliyim?</button>
-          <button type="button" class="nartes-prompt-chip" data-prompt="Buradaki temel matematiksel kavram nedir?">📘 Kavramı hatırlat</button>
+          <button type="button" class="nartes-prompt-chip" data-prompt="Son denemem neden yanlış oldu, ipucu verir misin?">🔎 Neden yanlış oldu?</button>
+          <button type="button" class="nartes-prompt-chip" data-prompt="Bu soruyu çözmek için nasıl düşünmeliyim?">🧭 Nasıl düşünmeliyim?</button>
+          <button type="button" class="nartes-prompt-chip" data-prompt="Bu durağın temel kuralını ve kavramını hatırlatır mısın?">📘 Kuralı hatırlat</button>
         </div>
 
         <form class="nartes-chat-form" id="nartesChatForm" autocomplete="off">
@@ -488,14 +758,14 @@
             type="text"
             id="nartesChatInput"
             class="nartes-chat-input"
-            placeholder="Takıldığın yeri NarTES'e sor..."
+            placeholder="Örn: '8 olur mu?', 'Neden yanlış oldu?' yaz..."
             maxlength="240"
           />
           <button type="submit" class="nartes-chat-send" title="Gönder">Gönder</button>
         </form>
       </section>
 
-      <!-- Sağ Alt Yüzen Karakter Düğmesi (Google Flow 3B Sokrates Karakteri) -->
+      <!-- Sağ Alt Yüzen Karakter Düğmesi -->
       <button type="button" class="nartes-fab-btn" id="nartesFabBtn" title="NarTES Sokratik Rehber'e Sor">
         <span class="nartes-fab-avatar">${getAvatarHtml("nartes-avatar-lg")}</span>
         <span class="nartes-fab-text">
@@ -509,7 +779,6 @@
     updateVoiceToggleButtons();
 
     const fabBtn = document.getElementById("nartesFabBtn");
-    const chatPanel = document.getElementById("nartesChatPanel");
     const closeBtn = document.getElementById("nartesChatCloseBtn");
     const voiceBtnHead = document.getElementById("nartesVoiceToggleBtn");
     const voiceBtnBubble = document.getElementById("nartesBubbleVoiceBtn");
@@ -536,7 +805,7 @@
         const msgBox = document.getElementById("nartesChatMessages");
         if (msgBox && msgBox.children.length === 0) {
           const stopTitle = (currentContext.stop && currentContext.stop.title) || "Çarpanlar ve Katlar";
-          const welcome = `Merhaba! Ben **NarTES** ✨ Şu an **"${stopTitle}"** durağındayız. Unutma, ben soruları senin yerine çözmem; ama Sokrates gibi doğru soruları sorarak cevabı kendi zekanla bulmanı sağlarım. İstersen üstten **🔊 Sesli / 🔇 Sessiz** seçeneğini de değiştirebilirsin!`;
+          const welcome = `Merhaba! Ben **NarTES** ✨ Şu an **"${stopTitle}"** durağındaki adımlarını takip ediyorum. Takıldığın bir sayıyı (örneğin *"8 olur mu?"*) veya *"Son denemem neden yanlış oldu?"* diye bana sorabilirsin!`;
           appendMessage("bot", welcome, true);
         }
         setTimeout(() => input && input.focus(), 60);
@@ -564,8 +833,8 @@
       });
       aiDrawer.hidden = true;
       appendMessage("bot", keyVal
-        ? "✅ Canlı Gemini AI bağlantısı kaydedildi! Artık sorularına hem Sokratik kurallarımla hem de canlı yapay zeka modeliyle yanıt vereceğim."
-        : "ℹ️ Yerleşik Sokratik AI + Yerel Ollama otomatik moduna geçildi.", false);
+        ? "✅ Canlı Gemini AI bağlantısı kaydedildi! Artık sorularına hem senin kişisel hata geçmişine göre hem de canlı yapay zeka modeliyle yanıt vereceğim."
+        : "ℹ️ Kişiselleştirilmiş Sokratik AI + Yerel Ollama otomatik moduna geçildi.", false);
     });
 
     bubbleClose.addEventListener("click", (e) => {
@@ -644,21 +913,19 @@
       applyPanelVisuals(true);
     }
     appendMessage("user", questionText, false);
+    playMentorSound("hint");
 
-    // 1. Önce güvenlik / küfür / ders dışı / doğrudan cevap isteme filtresini çalıştır
     const guardrailReply = checkGuardrails(questionText, currentContext);
     if (guardrailReply) {
       setTimeout(() => appendMessage("bot", guardrailReply, true), 150);
       return;
     }
 
-    // 2. Düşünüyor göstergesi
-    const thinkingEl = appendMessage("bot", "*NarTES Sokratik ipucunu hazırlıyor...*", false);
+    const thinkingEl = appendMessage("bot", "*NarTES senin adımlarına göre Sokratik yanıt hazırlıyor...*", false);
 
-    // 3. Varsa canlı LLM'i dene, yoksa veya gecikirse anında yerleşik Sokratik motoru kullan
     let finalReply = await queryLiveSocraticLLM(questionText, currentContext);
     if (!finalReply) {
-      finalReply = generateLocalSocraticReply(questionText, currentContext);
+      finalReply = generatePersonalizedSocraticReply(questionText, currentContext);
     }
 
     if (thinkingEl && thinkingEl.parentNode) {
@@ -686,15 +953,30 @@
     clearTimeout(bubbleTimer);
     bubbleTimer = setTimeout(() => {
       bubble.hidden = true;
-    }, durationMs || 6500);
+    }, durationMs || 7000);
   }
 
   // Dışarıya açılan API (app.js içinden çağrılır)
   window.NartesMentor = {
+    isRemediationLocked() {
+      return Boolean(studentTrace.remediationLocked);
+    },
+
     setContext(ctx) {
       initNartesMentorDOM();
       currentContext = ctx || { unit: null, kaz: null, stop: null };
-      wrongStreak = 0;
+      studentTrace = {
+        wrongCount: 0,
+        wrongChoices: [],
+        lastWrongValue: null,
+        lastTargetLabel: null,
+        chatTurnCount: 0,
+        lastBotAngles: [],
+        remediationLocked: false
+      };
+      const gateEl = document.getElementById("nartesStudyGateOverlay");
+      if (gateEl) gateEl.hidden = true;
+
       const subEl = document.getElementById("nartesContextSub");
       if (subEl && currentContext.stop) {
         subEl.textContent = `Durak ${currentContext.stop.id}: ${currentContext.stop.title}`;
@@ -705,30 +987,59 @@
 
     onCorrect() {
       initNartesMentorDOM();
-      wrongStreak = 0;
+      studentTrace.wrongCount = 0;
+      studentTrace.remediationLocked = false;
       const picked = pickNonRepeating(PRAISE_POOL, lastPraiseIdx);
       lastPraiseIdx = picked.idx;
       showSpeechBubble(`🎉 ${picked.text}`, "praise", 5200);
     },
 
-    onWrong(customHint) {
+    /**
+     * Öğrenci yanlış yaptığında çağrılır:
+     * - Her yanlışta seçilen hatalı değere özel ipucu verir.
+     * - 1. yanlışta: Kısa Sokratik ipucu balonu gösterir + ses efekti çalar.
+     * - 2. yanlışta (ve sonraki her 2 yanlışta): Konu Bilgi Kartını (Study Gate) açar,
+     *   seçenekleri kilitler, öğrenci "Anladım" diye tikleyip onaylayana kadar yeni cevap hakkı vermez!
+     */
+    onWrong(detailOrHint, onUnlockAfterReview) {
       initNartesMentorDOM();
-      wrongStreak++;
-      const picked = pickNonRepeating(ENCOURAGE_POOL, lastEncourageIdx);
-      lastEncourageIdx = picked.idx;
+      const detail = typeof detailOrHint === "string"
+        ? { customHint: detailOrHint }
+        : (detailOrHint || {});
 
-      let msg = picked.text;
-      if (wrongStreak >= 2) {
-        const cleanHint = sanitizeHintWithoutAnswer(customHint || (currentContext.stop && currentContext.stop.hint), currentContext.stop);
-        if (cleanHint) {
-          msg += `\n\n💡 **Sokratik İpucu:** *${cleanHint}*`;
+      studentTrace.wrongCount++;
+      if (detail.wrongValue !== undefined && detail.wrongValue !== null) {
+        const wStr = String(detail.wrongValue).trim();
+        studentTrace.lastWrongValue = wStr;
+        if (wStr && !studentTrace.wrongChoices.includes(wStr)) {
+          studentTrace.wrongChoices.push(wStr);
         }
       }
-      showSpeechBubble(msg, "encourage", 7500);
+      if (detail.targetLabel) {
+        studentTrace.lastTargetLabel = detail.targetLabel;
+      }
+
+      const specificHint = diagnoseSpecificWrongAttempt(detail, currentContext);
+
+      // 2. yanlışta (veya 4., 6. yanlışta) Konu Bilgi Kartını göster ve "Anladım" tiki iste
+      if (studentTrace.wrongCount >= 2 && studentTrace.wrongCount % 2 === 0) {
+        showStudyGateModal(currentContext, detail, onUnlockAfterReview);
+        return { lockedForReview: true, wrongCount: studentTrace.wrongCount };
+      }
+
+      // 1. yanlışta: Seçilen yanlış cevaba özel ipucu + ses efekti
+      playMentorSound("hint");
+      showSpeechBubble(
+        `💡 **1. İpucu:** ${specificHint}`,
+        "encourage",
+        8000
+      );
+      return { lockedForReview: false, wrongCount: studentTrace.wrongCount };
     },
 
     nudgeQuestionPanel(questionText) {
       initNartesMentorDOM();
+      playMentorSound("hint");
       showSpeechBubble(
         `Harika! Soldaki tüm adımları inceledin. Şimdi sağ taraftaki **"${stripHtml(questionText || "Doğrulama Sorusu")}"** kartını yanıtlayarak sıradaki durağın kilidini açabilirsin! 👉`,
         "guide",
@@ -739,7 +1050,8 @@
     openWithHint() {
       initNartesMentorDOM();
       applyPanelVisuals(true);
-      appendMessage("bot", buildSocraticGuidance(currentContext, "hint"), true);
+      playMentorSound("hint");
+      appendMessage("bot", generatePersonalizedSocraticReply("ipucu", currentContext), true);
     }
   };
 })();

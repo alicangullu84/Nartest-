@@ -865,6 +865,7 @@
         cBtn.className = "slot-choice-btn";
         cBtn.innerHTML = renderOptionMath(choice);
         cBtn.addEventListener("click", () => {
+          if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
           if (String(choice) === String(targetBlank.correct)) {
             playTone("click");
             filledState[targetBlank.id] = choice;
@@ -874,10 +875,18 @@
             }
           } else {
             playTone("error");
+            cBtn.classList.add("wrong-disabled");
+            cBtn.disabled = true;
             cBtn.style.background = "#fee2e2";
             cBtn.style.borderColor = "#ef4444";
-            if (window.NartesMentor) window.NartesMentor.onWrong("Çarpma ve bölme işleminde bölen sayıya çarpan, bölünen sayıya ise kat denir.");
-            showToast("Tekrar düşün! Cümledeki matematiksel ilişkiye dikkat et.");
+            if (window.NartesMentor) {
+              window.NartesMentor.onWrong({
+                wrongValue: choice,
+                targetLabel: "Kavram cümlesindeki boşluk",
+                customHint: "Çarpma ve bölme işleminde kalansız bölen sayıya çarpan (bölen), elde edilen çarpıma ise kat denir."
+              });
+            }
+            showToast("Bu seçenek elendi! NarTES'in ipucunu inceleyip kalan seçeneklerden doğru olanı seç.");
           }
         });
         picker.appendChild(cBtn);
@@ -1095,15 +1104,23 @@
       btn.className = "option-btn vcp-option-btn";
       btn.innerHTML = `<span class="option-letter">${letters[idx] || "•"}</span><span class="vcp-option-text">${renderOptionMath(ch)}</span>`;
       btn.addEventListener("click", () => {
+        if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
         if (String(ch) === String(stop.quickCorrect)) {
           choicesBox.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
           btn.classList.add("correct");
           completeCurrentStop("Anlatımı ve doğrulama sorusunu başarıyla tamamladın!");
         } else {
           playTone("error");
-          btn.classList.add("wrong");
-          if (window.NartesMentor) window.NartesMentor.onWrong("Soldaki animasyon adımlarında oluşan farklı durumların sayısına tekrar dikkat et.");
-          showToast("Soldaki animasyon adımlarını kontrol edip tekrar dene!");
+          btn.classList.add("wrong", "wrong-disabled");
+          btn.disabled = true;
+          if (window.NartesMentor) {
+            window.NartesMentor.onWrong({
+              wrongValue: ch,
+              targetLabel: stop.quickQuestion,
+              customHint: "Soldaki animasyon adımlarında oluşan farklı durumların sayısına ve son adımdaki özete tekrar dikkat et."
+            });
+          }
+          showToast("Bu seçenek elendi! NarTES'in ipucuna göz atıp kalan seçenekleri değerlendir.");
         }
       });
       choicesBox.appendChild(btn);
@@ -1126,6 +1143,18 @@
       const seqRow = document.createElement("div");
       seqRow.style.cssText = "display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:14px 0;";
 
+      const poolWrap = document.createElement("div");
+      poolWrap.className = "chip-grid";
+
+      function clearWrongPoolChips() {
+        poolWrap.querySelectorAll(".num-chip.wrong-disabled").forEach(ch => {
+          ch.classList.remove("wrong", "wrong-disabled");
+          if (!ch.classList.contains("correct")) {
+            ch.disabled = false;
+          }
+        });
+      }
+
       function renderSlots() {
         seqRow.innerHTML = "";
         stop.sequence.forEach((item, idx) => {
@@ -1140,6 +1169,7 @@
             box.addEventListener("click", () => {
               if (!isSolved) {
                 activeMissingIdx = targetStates.indexOf(missObj);
+                clearWrongPoolChips();
                 renderSlots();
               }
             });
@@ -1156,13 +1186,12 @@
       board.innerHTML = `<div style="text-align:center;font-weight:700;color:#334155;">Turuncu/Seçili kutu için alttaki doğru değere tıkla:</div>`;
       board.appendChild(seqRow);
 
-      const poolWrap = document.createElement("div");
-      poolWrap.className = "chip-grid";
       stop.pool.forEach(val => {
         const chip = document.createElement("button");
         chip.className = "num-chip";
         chip.innerHTML = renderOptionMath(val);
         chip.addEventListener("click", () => {
+          if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
           const currentTarget = targetStates[activeMissingIdx];
           if (!currentTarget || currentTarget.solved) return;
           if (String(val) === String(currentTarget.answer)) {
@@ -1171,6 +1200,7 @@
             chip.classList.add("correct");
             chip.disabled = true;
             solvedCount++;
+            clearWrongPoolChips();
             const nextUnsolved = targetStates.findIndex(m => !m.solved);
             if (nextUnsolved !== -1) activeMissingIdx = nextUnsolved;
             renderSlots();
@@ -1179,9 +1209,15 @@
             }
           } else {
             playTone("error");
-            chip.classList.add("wrong");
-            setTimeout(() => chip.classList.remove("wrong"), 400);
-            if (window.NartesMentor) window.NartesMentor.onWrong(currentTarget.hint);
+            chip.classList.add("wrong", "wrong-disabled");
+            chip.disabled = true;
+            if (window.NartesMentor) {
+              window.NartesMentor.onWrong({
+                wrongValue: val,
+                targetLabel: String(stop.sequence[currentTarget.index] || "Seçili Kutu"),
+                customHint: currentTarget.hint
+              });
+            }
             showToast(`İpucu: ${currentTarget.hint}`);
           }
         });
@@ -1197,6 +1233,18 @@
       let activeNodeIdx = 0;
       const nodeStates = stop.missingNodes.map(n => ({ ...n, done: false }));
 
+      const pool = document.createElement("div");
+      pool.className = "chip-grid";
+
+      function clearWrongTreeChips() {
+        pool.querySelectorAll(".num-chip.wrong-disabled").forEach(ch => {
+          ch.classList.remove("wrong", "wrong-disabled");
+          if (!ch.classList.contains("correct")) {
+            ch.disabled = false;
+          }
+        });
+      }
+
       function drawTreeNodes() {
         nodesWrap.innerHTML = "";
         nodeStates.forEach((n, idx) => {
@@ -1206,6 +1254,7 @@
           card.addEventListener("click", () => {
             if (!n.done) {
               activeNodeIdx = idx;
+              clearWrongTreeChips();
               drawTreeNodes();
             }
           });
@@ -1216,13 +1265,12 @@
       drawTreeNodes();
       board.appendChild(nodesWrap);
 
-      const pool = document.createElement("div");
-      pool.className = "chip-grid";
       stop.pool.forEach(num => {
         const btn = document.createElement("button");
         btn.className = "num-chip";
         btn.innerHTML = renderOptionMath(num);
         btn.addEventListener("click", () => {
+          if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
           const target = nodeStates[activeNodeIdx];
           if (!target || target.done) return;
           if (String(num) === String(target.answer)) {
@@ -1231,6 +1279,7 @@
             btn.classList.add("correct");
             btn.disabled = true;
             solved++;
+            clearWrongTreeChips();
             const nextIdx = nodeStates.findIndex(x => !x.done);
             if (nextIdx !== -1) activeNodeIdx = nextIdx;
             drawTreeNodes();
@@ -1239,8 +1288,16 @@
             }
           } else {
             playTone("error");
-            btn.classList.add("wrong");
-            setTimeout(() => btn.classList.remove("wrong"), 400);
+            btn.classList.add("wrong", "wrong-disabled");
+            btn.disabled = true;
+            if (window.NartesMentor) {
+              window.NartesMentor.onWrong({
+                wrongValue: num,
+                targetLabel: target.label,
+                customHint: `"${target.label}" dalında iki dalın çarpımı üstteki sayıyı vermelidir.`
+              });
+            }
+            showToast("Bu sayı seçili dalı tamamlamıyor! İpucuna göz at.");
           }
         });
         pool.appendChild(btn);
@@ -1270,6 +1327,7 @@
           b.style.minWidth = "175px";
           b.innerHTML = renderOptionMath(c);
           b.addEventListener("click", () => {
+            if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
             if (String(c) === String(item.answer)) {
               playTone("click");
               b.classList.add("correct");
@@ -1281,8 +1339,16 @@
               }
             } else {
               playTone("error");
-              b.classList.add("wrong");
-              setTimeout(() => b.classList.remove("wrong"), 400);
+              b.classList.add("wrong", "wrong-disabled");
+              b.disabled = true;
+              if (window.NartesMentor) {
+                window.NartesMentor.onWrong({
+                  wrongValue: c,
+                  targetLabel: item.text,
+                  customHint: item.reason || "Karttaki durumun bütünden eş parçalara mı (EBOB) yoksa küçük nöbet/parçalardan ortak buluşmaya mı (EKOK / Aralarında Asallık) gittiğini kontrol et."
+                });
+              }
+              showToast("Bu sınıflandırma yanlış! NarTES'in ipucunu incele.");
             }
           });
           btnWrap.appendChild(b);
@@ -1328,6 +1394,7 @@
           btn.className = "num-chip";
           btn.textContent = n;
           btn.addEventListener("click", () => {
+            if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
             if (lvl.divisors.includes(n)) {
               if (!found.includes(n)) {
                 playTone("click");
@@ -1346,9 +1413,16 @@
               }
             } else {
               playTone("error");
-              btn.classList.add("wrong");
-              setTimeout(() => btn.classList.remove("wrong"), 400);
-              showToast(`${lvl.target} sayısı ${n}'e kalansız bölünmez!`);
+              btn.classList.add("wrong", "wrong-disabled");
+              btn.disabled = true;
+              if (window.NartesMentor) {
+                window.NartesMentor.onWrong({
+                  wrongValue: n,
+                  targetNumber: lvl.target,
+                  customHint: `${lvl.target} sayısını ${n} sayısına böldüğümüzde kalan ${lvl.target % n} oluyor. Tam bölen olabilmesi için kalan 0 olmalıdır.`
+                });
+              }
+              showToast(`${lvl.target} sayısı ${n}'e kalansız bölünmez! Bu sayı elendi.`);
             }
           });
           grid.appendChild(btn);
@@ -1398,6 +1472,13 @@
               }
             } else if (product > target) {
               playTone("error");
+              if (window.NartesMentor) {
+                window.NartesMentor.onWrong({
+                  wrongValue: product,
+                  targetNumber: target,
+                  customHint: `Hedef sayı ${target} iken seçtiğin asal çarpanların çarpımı ${product} oldu. ${target} sayısını kalansız bölen asal sayıları seçerek ilerle.`
+                });
+              }
               showToast("Hedef sayıyı aştın! Sıfırlanıyor...");
               setTimeout(renderSynth, 500);
             } else {
@@ -1443,6 +1524,7 @@
           btn.className = "num-chip";
           btn.innerHTML = renderOptionMath(opt);
           btn.addEventListener("click", () => {
+            if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
             if (String(opt) === String(correctVal)) {
               playTone("click");
               btn.classList.add("correct");
@@ -1454,8 +1536,16 @@
               }
             } else {
               playTone("error");
-              btn.classList.add("wrong");
-              setTimeout(() => btn.classList.remove("wrong"), 400);
+              btn.classList.add("wrong", "wrong-disabled");
+              btn.disabled = true;
+              if (window.NartesMentor) {
+                window.NartesMentor.onWrong({
+                  wrongValue: opt,
+                  targetLabel: promptHtml.replace(/<[^>]+>/g, ""),
+                  customHint: r.reason || "Verilen sayıların ortak bölenlerini (EBOB), ortak katlarını (EKOK) veya ortak asal böleni olup olmadığını tekrar kontrol et."
+                });
+              }
+              showToast("Bu seçenek elendi! NarTES'in ipucunu incele.");
             }
           });
           cWrap.appendChild(btn);
@@ -1482,6 +1572,7 @@
           btn.className = "num-chip";
           btn.innerHTML = renderOptionMath(opt);
           btn.addEventListener("click", () => {
+            if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
             if (String(opt) === String(ch.ans)) {
               playTone("click");
               btn.classList.add("correct");
@@ -1493,8 +1584,16 @@
               }
             } else {
               playTone("error");
-              btn.classList.add("wrong");
-              setTimeout(() => btn.classList.remove("wrong"), 400);
+              btn.classList.add("wrong", "wrong-disabled");
+              btn.disabled = true;
+              if (window.NartesMentor) {
+                window.NartesMentor.onWrong({
+                  wrongValue: opt,
+                  targetLabel: ch.q,
+                  customHint: ch.hint || "Sorudaki anahtar matematiksel kuralı düşünerek kalan seçenekleri değerlendir."
+                });
+              }
+              showToast("Bu seçenek elendi! İpucunu inceleyip kalan seçeneklerden seç.");
             }
           });
           wrap.appendChild(btn);
@@ -1546,6 +1645,7 @@
       `;
     }
 
+    let questionWrongAttempts = 0;
     stop.options.forEach(opt => {
       const btn = document.createElement("button");
       btn.className = "option-btn";
@@ -1555,6 +1655,7 @@
       btn.innerHTML = `<span class="option-letter">${opt.letter}</span><span>${renderOptionMath(opt.text)}</span>`;
 
       btn.addEventListener("click", () => {
+        if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
         if (opt.letter === stop.correctLetter) {
           grid.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
           btn.classList.add("correct");
@@ -1567,13 +1668,23 @@
           applyKaTeX(solArea);
           completeCurrentStop("Soruyu doğru çözdün!");
         } else {
+          questionWrongAttempts++;
           playTone("error");
-          btn.classList.add("wrong");
-          if (window.NartesMentor) window.NartesMentor.onWrong(stop.hint);
+          btn.classList.add("wrong", "wrong-disabled");
+          btn.disabled = true;
+          const wrongLabel = `${opt.letter}) ${opt.text}`;
+          if (window.NartesMentor) {
+            window.NartesMentor.onWrong({
+              wrongValue: wrongLabel,
+              targetLabel: stop.stem,
+              customHint: stop.hint
+            });
+          }
           solArea.innerHTML = `
             <div class="solution-box" style="background:#fffbeb;border-color:#fde68a;color:#92400e;">
-              <h4 style="color:#b45309;">💡 İpucu</h4>
-              <div>${stop.hint}</div>
+              <h4 style="color:#b45309;">💡 ${questionWrongAttempts}. Deneme İpucu (${opt.letter} seçeneği elendi)</h4>
+              <div style="margin-bottom:6px;">${stop.hint}</div>
+              <div style="font-size:12.5px;color:#78350f;font-weight:700;">🔎 "${wrongLabel}" seçeneğini sorudaki koşulla karşılaştırıp kalan seçenekleri değerlendir.</div>
             </div>
           `;
           applyKaTeX(solArea);
@@ -2128,8 +2239,10 @@
     });
 
     const btnSound = document.getElementById("btnToggleSound");
+    window.MATFLOW_SOUND_MUTED = !state.soundEnabled;
     btnSound.addEventListener("click", () => {
       state.soundEnabled = !state.soundEnabled;
+      window.MATFLOW_SOUND_MUTED = !state.soundEnabled;
       btnSound.textContent = state.soundEnabled ? "🔊" : "🔇";
       btnSound.classList.toggle("muted", !state.soundEnabled);
     });
