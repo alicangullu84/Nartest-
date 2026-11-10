@@ -16,30 +16,92 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=20261109d">
+  <link rel="stylesheet" href="css/style.css?v=20261110h">
 </head>
 <body class="auth-locked">
 
-  <!-- 0. NARTES+ ÖZEL ŞİFRELİ GİRİŞ EKRANI (Sadece Yetkili Erişim) -->
+  <!-- 0. NARTES+ TAM EKRAN ŞIK GİRİŞ PORTALI (Sadece Yetkili Erişim) -->
   <div class="auth-gate-overlay" id="authGateOverlay">
-    <div class="auth-gate-card">
-      <div class="auth-gate-logo">
-        <img src="assets/logos/nartes_plus_logo_2.svg" alt="Nartes+ Logo" class="auth-logo-img">
-      </div>
-      <div class="auth-gate-badge">🔒 ÖZEL YETKİLİ ERİŞİM</div>
-      <h2 class="auth-gate-title">Nartes+ LGS Matematik Platformu</h2>
-      <p class="auth-gate-desc">Bu çalışma alanı özeldir. İçeriği görüntülemek için erişim şifresini girin.</p>
-      <form id="authGateForm" class="auth-gate-form" autocomplete="off">
-        <div class="auth-input-wrap">
-          <input type="password" id="authPasswordInput" class="auth-password-input" placeholder="Erişim şifresini girin..." required autofocus>
+    <div class="auth-ambient-glow auth-glow-1" aria-hidden="true"></div>
+    <div class="auth-ambient-glow auth-glow-2" aria-hidden="true"></div>
+    <div class="auth-gate-shell">
+      <!-- Sol Tanıtım & Karşılama Vitrin Alanı -->
+      <div class="auth-hero-pane">
+        <div class="auth-hero-top">
+          <div class="auth-gate-logo">
+            <img src="assets/logos/nartes_plus_logo_2.svg" alt="Nartes+ Logo" class="auth-logo-img">
+          </div>
+          <span class="auth-hero-pill">✨ YENİ NESİL ETKİLEŞİMLİ ÖĞRENME</span>
         </div>
-        <label class="auth-remember-row">
-          <input type="checkbox" id="authRememberChk" checked>
-          <span>Bu cihazda (Mac / PC / Tablet) oturumu açık tut</span>
-        </label>
-        <div class="auth-error-msg" id="authErrorMsg" hidden>Hatalı şifre! Lütfen tekrar deneyin.</div>
-        <button type="submit" class="auth-submit-btn">Şifreyi Doğrula ve Aç →</button>
-      </form>
+
+        <div class="auth-hero-center">
+          <h1 class="auth-hero-heading">
+            8. Sınıf LGS Matematik<br>
+            <span>Keşif ve Başarı Kampüsü</span>
+          </h1>
+          <p class="auth-hero-lead">
+            Kavramları görsel modellerle keşfet, adım adım etkileşimli duraklarla ilerle ve takıldığın her anda Sokratik rehberin <strong>Bilge NarTES</strong> ile doğruya kendin ulaş.
+          </p>
+
+          <div class="auth-feature-grid">
+            <div class="auth-feature-card">
+              <span class="auth-feat-icon">📚</span>
+              <div>
+                <strong>12 LGS Ünitesi</strong>
+                <small>MEB Müfredatına Tam Uyumlu</small>
+              </div>
+            </div>
+            <div class="auth-feature-card">
+              <span class="auth-feat-icon">🛣️</span>
+              <div>
+                <strong>360 Etkileşimli Durak</strong>
+                <small>Keşif • Anlatım • Oyun • Soru</small>
+              </div>
+            </div>
+            <div class="auth-feature-card">
+              <span class="auth-feat-icon">🦉</span>
+              <div>
+                <strong>Bilge NarTES Rehberi</strong>
+                <small>Adım Adım Sokratik İpucu</small>
+              </div>
+            </div>
+            <div class="auth-feature-card">
+              <span class="auth-feat-icon">🧮</span>
+              <div>
+                <strong>Görsel Modelleme</strong>
+                <small>Birimkare &amp; Canlı Araçlar</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="auth-hero-footer">
+          <span>🎯 Nartest Yayınları • Özel Dijital Eğitim Platformu</span>
+        </div>
+      </div>
+
+      <!-- Sağ Şifreli Giriş Formu Alanı -->
+      <div class="auth-gate-card">
+        <div class="auth-card-inner">
+          <div class="auth-gate-badge">🔒 ÖZEL YETKİLİ ERİŞİM</div>
+          <h2 class="auth-gate-title">Platforma Hoş Geldiniz</h2>
+          <p class="auth-gate-desc">Çalışma alanına bağlanmak ve kaldığınız duraktan devam etmek için erişim şifrenizi girin.</p>
+
+          <form id="authGateForm" class="auth-gate-form" autocomplete="off">
+            <div class="auth-input-wrap">
+              <span class="auth-input-icon" aria-hidden="true">🔑</span>
+              <input type="password" id="authPasswordInput" class="auth-password-input" placeholder="Erişim şifresini girin..." required autofocus>
+              <button type="button" id="authTogglePassBtn" class="auth-toggle-pass" title="Şifreyi Göster / Gizle" aria-label="Şifreyi Göster veya Gizle">👁️</button>
+            </div>
+            <label class="auth-remember-row">
+              <input type="checkbox" id="authRememberChk" checked>
+              <span>Bu cihazda (PC / Mac / Tablet) oturumu açık tut</span>
+            </label>
+            <div class="auth-error-msg" id="authErrorMsg" hidden>Hatalı şifre girdiniz! Lütfen kontrol edip tekrar deneyin.</div>
+            <button type="submit" class="auth-submit-btn">Şifreyi Doğrula ve Kampüsü Aç →</button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -170,13 +232,18 @@
       </div>
 
       <div class="sidebar-legend">
-        <div class="legend-item">
-          <span class="legend-dot green"></span>
-          <span id="legendDoneCount">0 Tamamlandı</span>
+        <div class="sidebar-legend-row">
+          <div class="legend-item">
+            <span class="legend-dot green"></span>
+            <span id="legendDoneCount">0 Tamamlandı</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot orange"></span>
+            <span id="legendTodoCount">6 Kaldı</span>
+          </div>
         </div>
-        <div class="legend-item">
-          <span class="legend-dot orange"></span>
-          <span id="legendTodoCount">6 Kaldı</span>
+        <div class="sidebar-unit-meter" title="Ünite İlerleme Çubuğu">
+          <div class="sidebar-unit-meter-fill" id="sidebarUnitMeterFill" style="width: 0%"></div>
         </div>
       </div>
 
@@ -274,12 +341,18 @@
       <footer class="journey-bar">
         <div class="journey-top-meta">
           <span class="journey-title-wrap">🛣️ <strong id="roadUnitTitleLabel">1. Ünite Yol Haritası (30 Durak)</strong> — Tamamlananlar <strong style="color:#16a34a;">Yeşil</strong>, Bekleyenler <strong style="color:#f97316;">Turuncu</strong></span>
+          <div class="journey-progress-inline" title="Bu Ünitedeki Genel İlerlemen">
+            <div class="journey-progress-track">
+              <div class="journey-progress-fill" id="roadProgressFill" style="width: 0%"></div>
+            </div>
+            <span class="journey-progress-pct" id="roadProgressPct">%0</span>
+          </div>
           <span id="roadStatusSummary" class="journey-summary">Aktif: 1. Durak • Açık: 1/30</span>
         </div>
 
         <div class="journey-scroll-wrap">
           <button class="road-scroll-btn" id="roadScrollLeft" title="Yolu Sola Kaydır" aria-label="Sola Kaydır">
-            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12.5 4.5L7 10l5.5 5.5"/>
             </svg>
           </button>
@@ -287,7 +360,7 @@
             <div class="road-stops" id="roadStops"></div>
           </div>
           <button class="road-scroll-btn" id="roadScrollRight" title="Yolu Sağa Kaydır" aria-label="Sağa Kaydır">
-            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M7.5 4.5L13 10l-5.5 5.5"/>
             </svg>
           </button>
@@ -305,9 +378,9 @@
     <div class="modal-card" id="infoModalContent"></div>
   </div>
 
-  <script src="data/carpanlar_katlar_data.js?v=20261109d"></script>
-  <script src="data/lgs_uniteler_2_12.js"></script>
-  <script src="js/nartes_mentor.js?v=20261109d"></script>
-  <script src="js/app.js?v=20261109d"></script>
+  <script src="data/carpanlar_katlar_data.js?v=20261110h"></script>
+  <script src="data/lgs_uniteler_2_12.js?v=20261110h"></script>
+  <script src="js/nartes_mentor.js?v=20261110h"></script>
+  <script src="js/app.js?v=20261110h"></script>
 </body>
 </html>

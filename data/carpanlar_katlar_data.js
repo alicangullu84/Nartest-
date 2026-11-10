@@ -154,7 +154,8 @@ window.MATFLOW_UNIT = {
       typeLabel: "Soru & Çözüm",
       title: "Kazanım Kontrol: Dikdörtgen Bahçe",
       subtitle: "Kazanım 1'i tamamlamak ve yeşile döndürmek için bu soruyu çöz!",
-      stem: "Alanı <strong>36 m²</strong> olan dikdörtgen şeklindeki bir hobi bahçesinin kenar uzunlukları metre cinsinden birer tam sayıdır. Buna göre bu bahçenin <strong>çevre uzunluğu en az</strong> kaç metredir?",
+      questionVisual: "assets/flow/q_dikdortgen_bahce.jpg",
+      stem: "Yandaki modelde verilen <strong>ABCD</strong> dikdörtgeni şeklindeki hobi bahçesinin alanı <strong>36 m²</strong> olup kenar uzunlukları (<strong>|AB| = a m</strong> ve <strong>|BC| = b m</strong>) metre cinsinden birer tam sayıdır. Buna göre <strong>ABCD</strong> bahçesinin <strong>çevre uzunluğu en az</strong> kaç metredir?",
       options: [
         { letter: "A", text: "24 metre" },
         { letter: "B", text: "26 metre" },
@@ -162,8 +163,8 @@ window.MATFLOW_UNIT = {
         { letter: "D", text: "40 metre" }
       ],
       correctLetter: "A",
-      hint: "Çevrenin en küçük olması için çarpan çiftlerinin birbirine en yakın (6 m × 6 m) seçilmesi gerekir.",
-      solution: "36'nın çarpan çiftleri: (1×36), (2×18), (3×12), (4×9) ve (6×6)'dır. Kenarlar birbirine en yakın seçildiğinde (6 m ve 6 m, kare de özel bir dikdörtgendir) çevre = 2 × (6 + 6) = <strong>24 metre</strong> ile en küçük değerini alır."
+      hint: "ABCD dikdörtgeninde çevrenin en küçük olması için a ve b çarpan çiftleri birbirine en yakın seçilmelidir.",
+      solution: "Alan(ABCD) = a · b = 36 m² olduğundan çarpan çiftleri: (1×36), (2×18), (3×12), (4×9) ve (6×6)'dır. Kenarlar birbirine en yakın seçildiğinde (a = 6 m ve b = 6 m; kare de özel bir dikdörtgendir) Çevre(ABCD) = 2 · (6 + 6) = <strong>24 metre</strong> ile en küçük değerini alır."
     },
 
     // ========================================================================
@@ -245,7 +246,7 @@ window.MATFLOW_UNIT = {
       typeLabel: "Soru & Çözüm",
       title: "Kazanım Kontrol: Bölen Listesi (Algoritma)",
       subtitle: "Kazanım 2'yi tamamlayıp yeşile çevirmek için algoritma sorusunu çöz!",
-      stem: "Bir <strong>A</strong> doğal sayısı asal çarpanlar algoritmasıyla sırasıyla <strong>2, 2, 3 ve 5</strong> asal sayılarına bölündüğünde bölüm 1 oluyor (A = 2² · 3¹ · 5¹). Buna göre <strong>A sayısı</strong> kaçtır?",
+      stem: "Yandaki asal çarpanlar algoritmasında <strong>A</strong> doğal sayısı sırasıyla <strong>2, 2, 3 ve 5</strong> asal sayılarına bölünerek <strong>B, C, D</strong> adımları üzerinden <strong>1</strong> sayısına ulaşıyor. Buna göre en üstteki <strong>A sayısı</strong> kaçtır?",
       options: [
         { letter: "A", text: "30" },
         { letter: "B", text: "45" },
@@ -253,8 +254,8 @@ window.MATFLOW_UNIT = {
         { letter: "D", text: "90" }
       ],
       correctLetter: "C",
-      hint: "Sağdaki tüm asal bölenleri birbiriyle çarp: 2 × 2 × 3 × 5.",
-      solution: "Bölme algoritmasında en üstteki A sayısı, sağdaki tüm asal bölenlerin çarpımına eşittir: A = 2 × 2 × 3 × 5 = 4 × 15 = <strong>60</strong> bulunur."
+      hint: "Algoritmanın sağ sütunundaki asal bölenleri sırasıyla birbiriyle çarparak A sayısına ulaşabilirsin.",
+      solution: "Bölme algoritmasında en üstteki A sayısı, sağ sütundaki tüm asal bölenlerin çarpımına eşittir: A = 2² · 3¹ · 5¹ = 4 × 15 = <strong>60</strong> bulunur."
     },
 
     // ========================================================================
@@ -336,7 +337,8 @@ window.MATFLOW_UNIT = {
       typeLabel: "Soru & Çözüm",
       title: "Zeytinyağı Şişeleme Problemi",
       subtitle: "Önce 1 şişenin hacmini (EBOB), sonra toplam şişe sayısını bulalım.",
-      stem: "Bir üretici <strong>48 litre</strong> zeytinyağı ile <strong>60 litre</strong> ayçiçek yağını birbirine karıştırmadan ve hiç artmayacak biçimde eşit hacimli şişelere dolduracaktır. Bu iş için <strong>en az kaç şişe</strong> gerekir?",
+      questionVisual: "assets/flow/q_yag_siseleri.jpg",
+      stem: "Yandaki görselde verilen <strong>48 L</strong> zeytinyağı ile <strong>60 L</strong> ayçiçek yağı, birbirine karıştırmadan ve hiç artmayacak biçimde eşit hacimli (<strong>x L</strong>) şişelere doldurulacaktır. Bu iş için <strong>en az kaç şişe</strong> gerekir?",
       options: [
         { letter: "A", text: "9 şişe" },
         { letter: "B", text: "12 şişe" },
@@ -344,8 +346,8 @@ window.MATFLOW_UNIT = {
         { letter: "D", text: "18 şişe" }
       ],
       correctLetter: "A",
-      hint: "EBOB(48, 60) = 12 litredir (1 şişenin hacmi). Şişe sayısı için 48÷12 ve 60÷12 sonuçlarını topla!",
-      solution: "Şişe sayısının en az olması için şişe hacmi en büyük olmalıdır: EBOB(48, 60) = <strong>12 litre</strong>. Zeytinyağı için 48 ÷ 12 = 4 şişe, ayçiçek yağı için 60 ÷ 12 = 5 şişe gerekir. Toplam = 4 + 5 = <strong>9 şişe</strong>."
+      hint: "Şişe sayısının en az olması için 1 şişenin hacmi (x) hem 48'i hem 60'ı bölen en büyük sayı olmalıdır.",
+      solution: "Şişe sayısının en az olması için şişe hacmi en büyük olmalıdır: x = EBOB(48, 60) = <strong>12 L</strong>. Zeytinyağı için 48 ÷ 12 = 4 şişe, ayçiçek yağı için 60 ÷ 12 = 5 şişe gerekir. Toplam = 4 + 5 = <strong>9 şişe</strong>."
     },
     {
       id: 16,
@@ -353,9 +355,10 @@ window.MATFLOW_UNIT = {
       type: "question",
       icon: "❓",
       typeLabel: "Soru & Çözüm",
-      title: "Kazanım Kontrol: Tarla Etrafına Fidan Dikimi",
+      title: "Kazanım Kontrol: Park Etrafına Direk Dikimi",
       subtitle: "Kazanım 3'ü tamamlayıp yeşile çevirmek için çevre-aralık sorusunu çöz!",
-      stem: "Kenar uzunlukları <strong>40 m</strong> ve <strong>64 m</strong> olan dikdörtgen şeklindeki bir parkın etrafına, köşelerine de dikilmek şartıyla eşit aralıklarla en az sayıda aydınlatma direği dikilecektir. Kaç direk gerekir?",
+      questionVisual: "assets/flow/q_park_direkler.jpg",
+      stem: "Yandaki planda kenar uzunlukları <strong>|KL| = 64 m</strong> ve <strong>|LM| = 40 m</strong> olan <strong>KLMN</strong> dikdörtgeni şeklindeki parkın etrafına, köşelerine de dikilmek şartıyla eşit aralıklarla en az sayıda aydınlatma direği dikilecektir. Kaç direk gerekir?",
       options: [
         { letter: "A", text: "13 direk" },
         { letter: "B", text: "24 direk" },
@@ -363,8 +366,8 @@ window.MATFLOW_UNIT = {
         { letter: "D", text: "32 direk" }
       ],
       correctLetter: "C",
-      hint: "İki direk arası mesafe EBOB(40, 64) = 8 metredir. Kapalı şekillerde Direk Sayısı = Çevre ÷ EBOB!",
-      solution: "İki direk arası en büyük mesafe EBOB(40, 64) = <strong>8 metre</strong>dir. Parkın çevresi = 2 × (40 + 64) = 208 metredir. Toplam direk sayısı = 208 ÷ 8 = <strong>26 direk</strong> bulunur."
+      hint: "İki direk arası mesafe 40 m ve 64 m'nin EBOB'udur; kapalı dikdörtgende toplam direk sayısı Çevre ÷ Aralık ile bulunur.",
+      solution: "İki direk arası en büyük mesafe EBOB(40, 64) = <strong>8 m</strong>'dir. KLMN parkının çevresi = 2 · (40 + 64) = 208 m'dir. Toplam direk sayısı = 208 ÷ 8 = <strong>26 direk</strong> bulunur."
     },
 
     // ========================================================================
@@ -444,7 +447,8 @@ window.MATFLOW_UNIT = {
       typeLabel: "Soru & Çözüm",
       title: "Dikdörtgen Kartlarla Kare Oluşturma",
       subtitle: "Önce karenin bir kenarını (EKOK), sonra içine sığacak kart sayısını bulalım.",
-      stem: "Kenar uzunlukları <strong>8 cm</strong> ve <strong>12 cm</strong> olan dikdörtgen biçimindeki eş kartlar, kenarları çakışacak şekilde yan yana ve alt alta dizilerek <strong>en küçük alanlı bir kare</strong> oluşturulacaktır. Bu iş için kaç kart gerekir?",
+      questionVisual: "assets/flow/q_kartlarla_kare.jpg",
+      stem: "Yandaki modelde kenar uzunlukları <strong>8 cm</strong> ve <strong>12 cm</strong> olan dikdörtgen biçimindeki eş kartlar, kenarları çakışacak şekilde yan yana ve alt alta dizilerek <strong>en küçük alanlı ABCD karesi</strong> oluşturulacaktır. Bu iş için kaç kart gerekir?",
       options: [
         { letter: "A", text: "5 kart" },
         { letter: "B", text: "6 kart" },
@@ -452,8 +456,8 @@ window.MATFLOW_UNIT = {
         { letter: "D", text: "12 kart" }
       ],
       correctLetter: "B",
-      hint: "Karenin bir kenarı EKOK(8, 12) = 24 cm olur. Bir sıraya 24÷8=3, dikeyde 24÷12=2 kart sığar!",
-      solution: "Oluşacak en küçük karenin bir kenar uzunluğu EKOK(8, 12) = <strong>24 cm</strong>'dir. Yatayda 24 ÷ 8 = 3 sıra, dikeyde 24 ÷ 12 = 2 sıra kart dizilir. Toplam kart sayısı = 3 × 2 = <strong>6 kart</strong>."
+      hint: "ABCD karesinin bir kenarı hem 8 cm'nin hem 12 cm'nin en küçük ortak katı olmalıdır.",
+      solution: "Oluşacak en küçük ABCD karesinin bir kenar uzunluğu EKOK(8, 12) = <strong>24 cm</strong>'dir. Yatayda 24 ÷ 8 = 3 sütun, dikeyde 24 ÷ 12 = 2 satır kart dizilir. Toplam kart sayısı = 3 × 2 = <strong>6 kart</strong>."
     },
     {
       id: 22,
@@ -463,7 +467,8 @@ window.MATFLOW_UNIT = {
       typeLabel: "Soru & Çözüm",
       title: "Kazanım Kontrol: Artan Cevizler Problemi",
       subtitle: "Kazanım 4'ü tamamlayıp yeşile çevirmek için bu soruyu çöz!",
-      stem: "Bir sepetteki cevizler <strong>6'şar ve 8'er</strong> gruplandırıldığında her seferinde <strong>3 ceviz artmaktadır</strong>. Sepetteki ceviz sayısının 100'den fazla olduğu bilindiğine göre, sepette <strong>en az</strong> kaç ceviz vardır?",
+      questionVisual: "assets/flow/q_artan_cevizler.jpg",
+      stem: "Yandaki sepette bulunan cevizler <strong>6'şar ve 8'er</strong> gruplandırıldığında her seferinde <strong>3 ceviz artmaktadır</strong>. Sepetteki ceviz sayısının <strong>100'den fazla</strong> olduğu bilindiğine göre, sepette <strong>en az</strong> kaç ceviz vardır?",
       options: [
         { letter: "A", text: "99" },
         { letter: "B", text: "117" },
@@ -471,7 +476,7 @@ window.MATFLOW_UNIT = {
         { letter: "D", text: "123" }
       ],
       correctLetter: "D",
-      hint: "EKOK(6, 8) = 24'tür. 24'ün 100'den büyük en küçük katını bulup artan 3 cevizi ekle!",
+      hint: "Önce 6 ve 8'in EKOK'unu bul, 100'ü geçen ilk katını hesapla ve sonda artan 3 cevizi eklemeyi unutma!",
       solution: "EKOK(6, 8) = 24'tür. Ceviz sayısı 24'ün bir katından 3 fazladır. 24'ün katları: 24, 48, 72, 96, <strong>120</strong>. 100'den fazla dediği için 120 + 3 = <strong>123 ceviz</strong> bulunur."
     },
 
@@ -534,7 +539,7 @@ window.MATFLOW_UNIT = {
       typeLabel: "Soru & Çözüm",
       title: "Kazanım Kontrol: Sadeleşen Kesir Kalıbı",
       subtitle: "Kazanım 5'i tamamlayıp yeşile çevirmek için bu klasik LGS kalıbını çöz!",
-      stem: "<strong>(x + 2)</strong> ile <strong>(y − 1)</strong> aralarında asal iki doğal sayıdır. <strong>(x + 2) / (y − 1) = 20 / 35</strong> olduğuna göre <strong>x + y</strong> toplamı kaçtır?",
+      stem: "<strong>(x + 2)</strong> ile <strong>(y − 1)</strong> aralarında asal iki doğal sayıdır. Yandaki kesir eşitliğinde <strong>(x + 2) / (y − 1) = 20 / 35</strong> olduğuna göre <strong>x + y</strong> toplamı kaçtır?",
       options: [
         { letter: "A", text: "10" },
         { letter: "B", text: "11" },
@@ -542,7 +547,7 @@ window.MATFLOW_UNIT = {
         { letter: "D", text: "54" }
       ],
       correctLetter: "A",
-      hint: "Önce 20/35 kesrini 5 ile sadeleştirip aralarında asal (4/7) hâline getir!",
+      hint: "Önce 20/35 kesrini en sade (aralarında asal) hâline getirip payı paya, paydayı paydaya eşitle!",
       solution: "20 ve 35 aralarında asal değildir; 5 ile sadeleştirirsek 20/35 = <strong>4/7</strong> olur. 4 ile 7 aralarında asal olduğundan x + 2 = 4 ⇒ <strong>x = 2</strong> ve y − 1 = 7 ⇒ <strong>y = 8</strong> bulunur. Buradan x + y = 2 + 8 = <strong>10</strong>'dur."
     },
 
@@ -575,7 +580,8 @@ window.MATFLOW_UNIT = {
       typeLabel: "LGS Yeni Nesil Soru 1",
       title: "Kereste Kesim Süresi ve Kesim Sayısı İnceliği",
       subtitle: "Unutma: Bir çubuğu 2 parçaya ayırmak için 1 kesim, N parçaya ayırmak için (N − 1) kesim yapılır!",
-      stem: "Uzunlukları <strong>48 dm</strong> ve <strong>72 dm</strong> olan iki tomruk, hiç artmayacak şekilde eşit ve en büyük uzunlukta parçalara ayrılacaktır. Her bir kesim işlemi <strong>10 saniye</strong> sürdüğüne göre tüm kesim işlemi en az kaç saniye sürer?",
+      questionVisual: "assets/flow/q_tomruk_kesim.jpg",
+      stem: "Yandaki tezgâhta verilen <strong>48 dm</strong> ve <strong>72 dm</strong> uzunluğundaki <strong>I.</strong> ve <strong>II.</strong> tomruklar, hiç artmayacak şekilde eşit ve en büyük uzunlukta parçalara kesilecektir. Her bir kesim işlemi <strong>10 sn</strong> sürdüğüne göre tüm kesim işlemi en az kaç saniye sürer?",
       options: [
         { letter: "A", text: "30 saniye" },
         { letter: "B", text: "40 saniye" },
@@ -583,8 +589,8 @@ window.MATFLOW_UNIT = {
         { letter: "D", text: "60 saniye" }
       ],
       correctLetter: "A",
-      hint: "EBOB(48, 72) = 24 dm. 48 dm'lik tomruk 2 parçaya (1 kesim), 72 dm'lik tomruk 3 parçaya (2 kesim) ayrılır!",
-      solution: "Parça boyu EBOB(48, 72) = <strong>24 dm</strong>'dir. 1. tomruk: 48 ÷ 24 = 2 parça ⇒ <strong>1 kesim</strong>. 2. tomruk: 72 ÷ 24 = 3 parça ⇒ <strong>2 kesim</strong>. Toplam 1 + 2 = 3 kesim yapılır. 3 × 10 = <strong>30 saniye</strong> sürer."
+      hint: "Önce EBOB ile 1 parçanın boyunu bul; ardından her tomrukta (Parça Sayısı − 1) kadar kesim yapıldığını hatırla!",
+      solution: "Parça boyu EBOB(48, 72) = <strong>24 dm</strong>'dir. I. tomruk: 48 ÷ 24 = 2 parça ⇒ <strong>1 kesim</strong>. II. tomruk: 72 ÷ 24 = 3 parça ⇒ <strong>2 kesim</strong>. Toplam 1 + 2 = 3 kesim yapılır. 3 × 10 = <strong>30 saniye</strong> sürer."
     },
     {
       id: 29,
@@ -594,7 +600,8 @@ window.MATFLOW_UNIT = {
       typeLabel: "LGS Yeni Nesil Soru 2",
       title: "Güneş Panelleri Ortak Hat Uzunluğu",
       subtitle: "Üst ve alt sıradaki panellerin aynı hizada bitmesi için EKOK kullanalım.",
-      stem: "Bir çatıdaki üst sıraya genişliği <strong>60 cm</strong> olan A tipi paneller, alt sıraya ise genişliği <strong>80 cm</strong> olan B tipi paneller aralarında boşluk kalmadan diziliyor. İki sıra aynı hizada başlayıp aynı hizada bittiğine göre, toplamda <strong>en az kaç panel</strong> kullanılmıştır?",
+      questionVisual: "assets/flow/q_gunes_panelleri.jpg",
+      stem: "Yandaki çatının üst sırasına genişliği <strong>60 cm</strong> olan <strong>A tipi</strong> paneller, alt sırasına ise genişliği <strong>80 cm</strong> olan <strong>B tipi</strong> paneller boşluk kalmadan diziliyor. İki sıra aynı hizada başlayıp aynı hizada bittiğine göre toplamda <strong>en az kaç panel</strong> kullanılmıştır?",
       options: [
         { letter: "A", text: "5 panel" },
         { letter: "B", text: "7 panel" },
@@ -602,7 +609,7 @@ window.MATFLOW_UNIT = {
         { letter: "D", text: "14 panel" }
       ],
       correctLetter: "B",
-      hint: "EKOK(60, 80) = 240 cm'dir. Üst sıraya 240÷60, alt sıraya 240÷80 panel yerleşir.",
+      hint: "Çatının ortak hat uzunluğu 60 cm ve 80 cm'nin en küçük ortak katıdır; bu uzunluğu her panelin genişliğine böl!",
       solution: "Ortak hat uzunluğu en az EKOK(60, 80) = <strong>240 cm</strong> olur. Üst sırada 240 ÷ 60 = 4 adet A paneli, alt sırada 240 ÷ 80 = 3 adet B paneli kullanılır. Toplam = 4 + 3 = <strong>7 panel</strong>."
     },
     {

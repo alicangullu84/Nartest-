@@ -154,13 +154,19 @@
   const SUP_MAP = {
     "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4",
     "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9",
-    "⁻": "-", "⁺": "+", "ⁿ": "n"
+    "⁻": "-", "⁺": "+", "ⁿ": "n", "ᵃ": "a", "ᵇ": "b",
+    "ˣ": "x", "ʸ": "y", "ᵏ": "k", "ᵐ": "m"
   };
 
-  function unicodeMathToLatex(expr) {
+  // Eşitsizliklerdeki (< ve >) işaretlerinin HTML etiketi sanılıp yutulmasını önler
+  function safeMathHtml(raw) {
+    return String(raw || "").replace(/<(?![\/!]?(?:strong|em|b|i|u|br|span|sub|sup|p|div|button)\b)/gi, "&lt;");
+  }
+
+  function unicodeMathToLatex(expr, forceBold) {
     let s = String(expr);
     // Üslü karakter dizilerini ^{...} biçimine çevir
-    s = s.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ⁿ]+/g, (m) => {
+    s = s.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ⁿᵃᵇˣʸᵏᵐ]+/g, (m) => {
       const converted = m.split("").map(ch => SUP_MAP[ch] || ch).join("");
       return `^{${converted}}`;
     });
@@ -168,7 +174,24 @@
     s = s.replace(/√\(([^)]+)\)/g, "\\sqrt{$1}");
     s = s.replace(/√([0-9a-zA-Z^{}+-]+)/g, "\\sqrt{$1}");
     // EBOB / EKOK
-    s = s.replace(/\b(EBOB|EKOK)\s*\(/g, "\\text{$1}(");
+    s = s.replace(/\b(EBOB|EKOK)\s*\(/g, "\\textbf{$1}(");
+    // Ölçü birimlerini tek geçişte kalın (\textbf{...}) yap (çift sarmalamayı önler ve sayı-birim boşluğunu korur)
+    s = s.replace(/(^|[0-9)}\],]|\s+)(br|cm|mm|km|dm|m|kg|g|mg|L|mL|dk|sn|saat)(?=(?:\^\{[0-9]+\})?(?:$|[^a-zA-ZçğıöşüÇĞİÖŞÜ]))/g, (full, pre, unit) => {
+      // Tek başına "m" veya "g" harfini yalnızca sayıdan veya üsten hemen sonra birim yap (m + n gibi cebirsel harfleri bozmasın)
+      const trimmedPre = pre.replace(/\s+$/, "");
+      const hadSpace = /\s/.test(pre);
+      if ((unit === "m" || unit === "g") && !/[0-9)}\]]/.test(trimmedPre) && !hadSpace && !new RegExp("^" + unit + "\\^").test(full.slice(pre.length))) {
+        return full;
+      }
+      if (/[0-9)}\]]/.test(trimmedPre) || hadSpace) {
+        return `${trimmedPre}\\,\\textbf{${unit}}`;
+      }
+      return `${pre}\\textbf{${unit}}`;
+    });
+    // Tek başına m² / m³ gibi birimler
+    s = s.replace(/(^|[^a-zA-ZçğıöşüÇĞİÖŞÜ0-9\\}])(m)(?=\^\{[23]\})/g, "$1\\textbf{$2}");
+    // Kalın birimlerin üslerini de kalın yap (\textbf{br}^{2} -> \textbf{br}^{\mathbf{2}})
+    s = s.replace(/(\\textbf\{[a-zA-Z]+\})\^\{([0-9]+)\}/g, "$1^{\\mathbf{$2}}");
     // Semboller
     s = s.replace(/≤/g, " \\le ")
          .replace(/≥/g, " \\ge ")
@@ -176,39 +199,44 @@
          .replace(/×/g, " \\times ")
          .replace(/÷/g, " \\div ")
          .replace(/·/g, " \\cdot ")
+         .replace(/−/g, " - ")
          .replace(/π/g, "\\pi ")
          .replace(/°/g, "^{\\circ}");
+    if (forceBold) {
+      // KaTeX'te rakamların KaTeX_Main-Bold ile tam kalın çıkması için dışarıdaki rakam dizilerini \mathbf{...} içine al
+      const boldDigits = s.replace(/(\\(?:textbf|mathbf|sqrt)\{[^{}]*\})|([0-9]+)/g, (m, cmd, num) => {
+        return cmd ? cmd : `\\mathbf{${num}}`;
+      });
+      return `\\boldsymbol{${boldDigits}}`;
+    }
     return s;
   }
 
   // Şık, Buton ve Chip İçerikleri İçin KaTeX HTML Üretici
   function renderOptionMath(rawText) {
     const str = String(rawText).trim();
-    if (!window.katex) return str;
+    if (!window.katex) return safeMathHtml(str);
 
-    // Sadece Türkçe kelimelerden oluşan sözel şıklar (ör. "böleni (çarpanı)", "Aralarında Asal", "Daire Grafiği")
-    const hasMathSymbol = /[0-9√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺≤≥≠×÷·π°=<>+\-*/^()]/.test(str);
-    const hasTurkishLetters = /[a-zA-ZçğıöşüÇĞİÖŞÜ]{3,}/.test(str.replace(/\b(EBOB|EKOK|br|cm|mm|km|kg|dk|sn|veya|ile|ve)\b/g, ""));
+    const hasMathSymbol = /[0-9√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ⁿᵃᵇˣʸᵏᵐ≤≥≠×÷·−π°=<>+\-*/^()]/.test(str);
+    const strippedWords = str.replace(/\b(EBOB|EKOK|br|cm|mm|km|dm|m|kg|g|mg|L|mL|dk|sn|saat|veya|ile|ve)\b/g, "");
+    const hasTurkishLetters = /[a-zA-ZçğıöşüÇĞİÖŞÜ]{3,}/.test(strippedWords);
 
     if (hasMathSymbol && !hasTurkishLetters) {
-      // Saf matematiksel ifade veya birim içeren sayı (ör. "2³ · 3²", "6√2", "40 cm²", "x ≤ -4", "24")
-      let latex = unicodeMathToLatex(str);
-      latex = latex.replace(/\b(cm|mm|m|km|br|kg|g|L|mL|dk|sn|saat)\b/g, "\\text{ $1}");
+      const latex = unicodeMathToLatex(str, true);
       try {
         return window.katex.renderToString(latex, { throwOnError: false, displayMode: false });
       } catch (e) {
-        return str;
+        return safeMathHtml(str);
       }
     }
-    return upgradeInlineMathInText(str);
+    return upgradeInlineMathInText(str, true);
   }
 
-  // Metin içindeki matematiksel ifadeleri KaTeX HTML'ine çevirir.
-  // Üretilen HTML ikinci taramaya girmez; aksi halde MathML kaynağı yeniden dizilir.
-  function upgradeInlineMathInText(text) {
-    if (!window.katex) return text;
+  // Metin içindeki matematiksel ifadeleri ve ölçü birimlerini (br, br², cm², m² vb.) kitap dizgisi kalitesinde kalın KaTeX HTML'ine çevirir.
+  function upgradeInlineMathInText(text, forceBold) {
+    if (!window.katex) return safeMathHtml(text);
     const source = String(text);
-    if (source.includes("katex") || source.includes("<")) return source;
+    if (source.includes("katex")) return source;
 
     const shields = [];
     const shield = (html) => {
@@ -217,20 +245,69 @@
       return token;
     };
     const renderPiece = (raw) => {
+      // Baştaki/sondaki boşlukları, cümle sonu noktalamayı ve eşleşmemiş dış parantezleri matematik kutusunun dışında bırak
+      let lead = "";
+      let core = String(raw);
+      let trail = "";
+
+      while (/^\s/.test(core)) {
+        lead += core[0];
+        core = core.slice(1);
+      }
+      while (/\s$/.test(core)) {
+        trail = core.slice(-1) + trail;
+        core = core.slice(0, -1);
+      }
+      while (/[.,:;!?]$/.test(core)) {
+        trail = core.slice(-1) + trail;
+        core = core.slice(0, -1);
+      }
+      while (/\s$/.test(core)) {
+        trail = core.slice(-1) + trail;
+        core = core.slice(0, -1);
+      }
+      const openCount = (core.match(/\(/g) || []).length;
+      const closeCount = (core.match(/\)/g) || []).length;
+      if (openCount > closeCount && core.startsWith("(")) {
+        lead += "(";
+        core = core.slice(1);
+      } else if (closeCount > openCount && core.endsWith(")")) {
+        trail = ")" + trail;
+        core = core.slice(0, -1);
+      }
+      if (!core.trim()) return raw;
       try {
-        return shield(window.katex.renderToString(unicodeMathToLatex(raw), { throwOnError: false, displayMode: false }));
+        return lead + shield(window.katex.renderToString(unicodeMathToLatex(core, Boolean(forceBold)), { throwOnError: false, displayMode: false })) + trail;
       } catch (e) {
         return raw;
       }
     };
 
     let out = source;
+    // 1) EBOB(...) / EKOK(...)
     out = out.replace(/\b(EBOB|EKOK)\([0-9a-zA-Z,\s+-]+\)(\s*=\s*[0-9a-zA-Z·×^{}+-]+)?/g, (m) => renderPiece(m));
 
-    const mathPattern = /(?:[0-9a-zA-Z()]+\s*[×·÷+\-*/=≤≥<>]\s*)+[0-9a-zA-Z√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺().,/]+|[0-9a-zA-Z()]*[√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺π°][0-9a-zA-Z√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺().,+\-*/=·×]*/g;
+    // 2) Sayı / karekök / parantez + ölçü birimi: "(9x² + 30x + 25) cm²", "√20 cm", "3√5 cm", "24 br²", "36 m²", "48 dm"
+    out = out.replace(/(^|[^a-zA-ZçğıöşüÇĞİÖŞÜ0-9√\u0000])(\([^()]+\)\s*(?:br|cm|mm|km|dm|m)[²³]?|(?:[0-9]+(?:[.,][0-9]+)?)?√[0-9a-zA-Z]+\s*(?:br|cm|mm|km|dm|m|kg|g|L|mL|dk|sn|saat)[²³]?|[0-9]+(?:[.,][0-9]+)?[⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ⁿᵃᵇˣʸ]*\s*(?:br|cm|mm|km|dm|m|kg|g|mg|L|mL|dk|sn|saat)[²³]?)(?![a-zA-ZçğıöşüÇĞİÖŞÜ])/g, (full, pre, expr) => {
+      return pre + renderPiece(expr);
+    });
+
+    // 3) Tek başına birim ifadeleri: "br²", "cm²", "m²", "cm³", "br"
+    out = out.replace(/(^|[^a-zA-ZçğıöşüÇĞİÖŞÜ0-9\u0000])((?:br|cm|mm|km|dm|m)[²³]|br)(?![a-zA-ZçğıöşüÇĞİÖŞÜ0-9])/g, (full, pre, expr) => {
+      return pre + renderPiece(expr);
+    });
+
+    // 4) Koordinat noktaları: A(−3, 4), K'(4, n − 2)
+    out = out.replace(/\b([A-Z]'?\(\s*[−+-]?[0-9a-zA-Z+\-\s]+\s*,\s*[−+-]?[0-9a-zA-Z+\-\s]+\s*\))/g, (m) => {
+      if (m.indexOf("\u0000") !== -1) return m;
+      return renderPiece(m);
+    });
+
+    // 5) Genel matematiksel bağıntılar, eşitsizlikler, üslü ve köklü ifadeler (ondalık virgül 0,00045 × 10¹¹ dahil)
+    const mathPattern = /(?:[−-]?\s*[0-9a-zA-Z√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ⁿᵃᵇˣʸᵏᵐ(),.]+\s*[×·÷−+\-*/=≤≥<>]\s*)+[−-]?\s*[0-9a-zA-Z√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ⁿᵃᵇˣʸᵏᵐ().,/]+|[0-9a-zA-Z()]*[√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ⁿᵃᵇˣʸᵏᵐπ°][0-9a-zA-Z√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ⁿᵃᵇˣʸᵏᵐ().,+\-*/=·×−]*/g;
     out = out.replace(mathPattern, (match) => {
       if (match.indexOf("\u0000") !== -1) return match;
-      if (!/[0-9√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺≤≥≠×÷·π°=]/.test(match)) return match;
+      if (!/[0-9√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ⁿᵃᵇˣʸᵏᵐ≤≥≠×÷·−π°=<>]/.test(match)) return match;
       return renderPiece(match);
     });
 
@@ -251,8 +328,8 @@
           if (tag === "script" || tag === "style" || tag === "svg" || tag === "textarea") {
             return NodeFilter.FILTER_REJECT;
           }
-          if (parent.closest(".katex")) return NodeFilter.FILTER_REJECT;
-          if (/[0-9√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺≤≥≠×÷·π°=<>]/.test(node.nodeValue)) {
+          if (parent.closest(".katex") || parent.closest("svg")) return NodeFilter.FILTER_REJECT;
+          if (/[0-9√⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺ⁿᵃᵇˣʸᵏᵐ≤≥≠×÷·−π°=<>]/.test(node.nodeValue) || /(^|[^a-zA-ZçğıöşüÇĞİÖŞÜ])br(?![a-zA-ZçğıöşüÇĞİÖŞÜ])/.test(node.nodeValue)) {
             return NodeFilter.FILTER_ACCEPT;
           }
           return NodeFilter.FILTER_SKIP;
@@ -267,10 +344,15 @@
 
       nodes.forEach(textNode => {
         const original = textNode.nodeValue;
-        const upgraded = upgradeInlineMathInText(original);
+        const parentEl = textNode.parentElement;
+        const isBoldCtx = Boolean(
+          parentEl && parentEl.closest("strong, b, h1, h2, h3, h4, .vcp-question-title, .option-btn, .slot-choice-btn, .blank-slot, .bar-caption, .q-data-chip")
+        );
+        const upgraded = upgradeInlineMathInText(original, isBoldCtx);
         if (upgraded !== original) {
           const span = document.createElement("span");
-          span.innerHTML = upgraded;
+          span.className = "math-inline-run";
+          span.innerHTML = safeMathHtml(upgraded);
           textNode.parentNode.replaceChild(span, textNode);
         }
       });
@@ -426,10 +508,16 @@
     UNIT.kazanimlar.forEach(kaz => {
       const done = isKazanimDone(kaz, UNIT);
       const isCurrent = currentStop && currentStop.kazanimId === kaz.id;
+      const unlocked = isStopUnlocked(kaz.stops[0], UNIT);
       const doneInKaz = kaz.stops.filter(s => isStopDone(s, UNIT)).length;
 
       const item = document.createElement("div");
-      item.className = `kazanim-item ${done ? "status-done" : "status-todo"} ${isCurrent ? "is-current" : ""}`;
+      item.className = [
+        "kazanim-item",
+        done ? "status-done" : "status-todo",
+        isCurrent ? "is-current" : "",
+        unlocked ? "is-unlocked" : "is-locked"
+      ].filter(Boolean).join(" ");
 
       const dotsHtml = kaz.stops.map(sId => {
         const sDone = isStopDone(sId, UNIT);
@@ -437,12 +525,21 @@
         return `<span class="kazanim-mini-dot ${sDone ? "done" : ""} ${sCurr ? "active" : ""}"></span>`;
       }).join("");
 
+      let statusLabel = `${doneInKaz}/${kaz.stops.length} Durak`;
+      if (done) {
+        statusLabel = "Tamamlandı";
+      } else if (isCurrent) {
+        statusLabel = `Aktif • ${doneInKaz}/${kaz.stops.length}`;
+      } else if (!unlocked) {
+        statusLabel = `Sırada • 0/${kaz.stops.length}`;
+      }
+
       item.innerHTML = `
         <div class="kazanim-node">${done ? "✓" : kaz.no}</div>
         <div class="kazanim-info">
           <div class="kazanim-title">${kaz.title}</div>
           <div class="kazanim-meta">
-            <span>${done ? "Tamamlandı (Yeşil)" : `Durak ${doneInKaz}/${kaz.stops.length}`}</span>
+            <span class="kazanim-status-txt">${statusLabel}</span>
             <div class="kazanim-mini-dots">${dotsHtml}</div>
           </div>
         </div>
@@ -467,7 +564,21 @@
     const totalDone = uState.completedStops.length;
     const pct = Math.round((totalDone / UNIT.stops.length) * 100);
     document.getElementById("topProgressText").textContent = `${totalDone} / ${UNIT.stops.length} Durak (%${pct})`;
+    const sidebarMeter = document.getElementById("sidebarUnitMeterFill");
+    if (sidebarMeter) sidebarMeter.style.width = `${pct}%`;
     renderUnitSelector();
+  }
+
+  function getFriendlyStopShortLabel(stop) {
+    if (!stop) return "Durak";
+    const tl = String(stop.typeLabel || "");
+    if (/Maraton/i.test(tl)) return "Maraton";
+    if (stop.type === "concept") return "Keşif";
+    if (stop.type === "video") return "Anlatım";
+    if (stop.type === "activity") return "Etkinlik";
+    if (stop.type === "game") return "Oyun";
+    if (stop.type === "question") return "Soru";
+    return tl.split(" ")[0] || "Durak";
   }
 
   // ==========================================================================
@@ -495,18 +606,23 @@
       if (idx > 0) {
         const prevDone = isStopDone(UNIT.stops[idx - 1].id, UNIT);
         const conn = document.createElement("div");
-        conn.className = `road-connector ${prevDone ? "done" : ""}`;
+        conn.className = `road-connector ${prevDone ? "done" : ""} ${unlocked ? "unlocked" : ""}`;
         wrap.appendChild(conn);
       }
 
       const btn = document.createElement("button");
-      btn.className = `road-stop-btn ${done ? "status-done" : "status-todo"} ${isCurrent ? "is-current" : ""}`;
+      btn.className = [
+        "road-stop-btn",
+        done ? "status-done" : "status-todo",
+        isCurrent ? "is-current" : "",
+        unlocked ? "is-unlocked" : "is-locked"
+      ].filter(Boolean).join(" ");
       btn.id = `road-stop-${stop.id}`;
       btn.title = `${stop.id}. Durak: ${stop.title} (${stop.typeLabel})`;
 
       btn.innerHTML = `
         <div class="stop-circle">${done ? "✓" : stop.icon}</div>
-        <span class="stop-label">${stop.id}. ${stop.typeLabel.split(" ")[0]}</span>
+        <span class="stop-label">${stop.id}. ${getFriendlyStopShortLabel(stop)}</span>
       `;
 
       btn.addEventListener("click", () => {
@@ -529,9 +645,16 @@
       }
     }, 60);
 
+    const doneCount = uState.completedStops.length;
+    const roadPct = Math.round((doneCount / UNIT.stops.length) * 100);
+    const roadFill = document.getElementById("roadProgressFill");
+    if (roadFill) roadFill.style.width = `${roadPct}%`;
+    const roadPctEl = document.getElementById("roadProgressPct");
+    if (roadPctEl) roadPctEl.textContent = `%${roadPct}`;
+
     const maxUnlocked = getMaxUnlockedStopId(UNIT);
     document.getElementById("roadStatusSummary").textContent =
-      `Aktif: ${uState.currentStopId}. Durak • Açık: ${maxUnlocked}/30 • Tamamlanan (Yeşil): ${uState.completedStops.length}`;
+      `Aktif: ${uState.currentStopId}. Durak • Açık: ${maxUnlocked}/30 • Biten: ${doneCount}/30`;
   }
 
   // ==========================================================================
@@ -699,7 +822,7 @@
 
     const leftCol = document.createElement("div");
     leftCol.className = "lead-text";
-    leftCol.innerHTML = stop.explanation.map(p => `<p>${p}</p>`).join("");
+    leftCol.innerHTML = stop.explanation.map(p => `<p>${safeMathHtml(p)}</p>`).join("");
 
     if (stop.barsDemo) {
       const bars = document.createElement("div");
@@ -820,50 +943,88 @@
     sentenceBox.className = "interactive-sentence-box";
 
     const filledState = {};
-    let activeBlankId = 0;
+    let activeBlankId = stop.blanks && stop.blanks[0] ? stop.blanks[0].id : 0;
+
+    function syncProgressToMentor() {
+      if (window.NartesMentor && typeof window.NartesMentor.updateProgress === "function") {
+        window.NartesMentor.updateProgress({ filledBlanks: Object.assign({}, filledState), activeBlankId });
+      }
+    }
+
+    function resolveActiveBlank() {
+      const target = stop.blanks.find(b => b.id === activeBlankId && !filledState[b.id])
+                  || stop.blanks.find(b => !filledState[b.id]);
+      activeBlankId = target ? target.id : -1;
+      return target || null;
+    }
 
     function updateSentenceHtml() {
-      let html = stop.sentenceHtml;
-      stop.blanks.forEach(b => {
+      const targetBlank = resolveActiveBlank();
+
+      let html = safeMathHtml(stop.sentenceHtml);
+      stop.blanks.forEach((b) => {
         const val = filledState[b.id];
-        const cls = val ? "blank-slot filled-correct" : "blank-slot";
-        const label = val ? `✓ ${renderOptionMath(val)}` : "???";
-        html = html.replace(`{${b.id}}`, `<button class="${cls}" data-blank="${b.id}">${label}</button>`);
+        const isFocused = Boolean(targetBlank && targetBlank.id === b.id);
+        const cls = val
+          ? "blank-slot filled-correct"
+          : (isFocused ? "blank-slot is-active-blank" : "blank-slot is-pending-blank");
+        const label = val
+          ? `<span class="blank-check-ico">✓</span><span>${renderOptionMath(val)}</span>`
+          : `<span class="blank-dots" aria-hidden="true">• • •</span>`;
+        html = html.replace(
+          `{${b.id}}`,
+          `<button type="button" class="${cls}" data-blank="${b.id}" title="Boşluğu seç">${label}</button>`
+        );
       });
-      sentenceBox.innerHTML = `<div>${html}</div><div id="slotPickerArea"></div>`;
+
+      sentenceBox.innerHTML = `
+        <div class="sentence-statement">${html}</div>
+        <div id="slotPickerArea" class="slot-picker-wrap"></div>
+      `;
 
       sentenceBox.querySelectorAll(".blank-slot").forEach(btn => {
         btn.addEventListener("click", () => {
+          if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
           const bId = parseInt(btn.getAttribute("data-blank"), 10);
-          if (!filledState[bId]) {
+          if (!filledState[bId] && activeBlankId !== bId) {
+            playTone("click");
             activeBlankId = bId;
-            renderPicker();
+            updateSentenceHtml();
           }
         });
       });
 
-      renderPicker();
+      renderPicker(targetBlank);
+      syncProgressToMentor();
       applyKaTeX(sentenceBox);
     }
 
-    function renderPicker() {
+    function renderPicker(targetBlank) {
       const pickerArea = sentenceBox.querySelector("#slotPickerArea");
-      const targetBlank = stop.blanks.find(b => b.id === activeBlankId && !filledState[b.id])
-                       || stop.blanks.find(b => !filledState[b.id]);
+      if (!pickerArea) return;
       if (!targetBlank) {
-        pickerArea.innerHTML = "";
+        pickerArea.innerHTML = `
+          <div class="slot-complete-banner">
+            ✨ Harika! Cümledeki tüm matematiksel kavramları doğru yerleştirdin.
+          </div>
+        `;
         return;
       }
-      activeBlankId = targetBlank.id;
 
       const picker = document.createElement("div");
       picker.className = "slot-picker";
-      picker.innerHTML = `<span class="slot-picker-label">Seçenekler:</span>`;
+      picker.innerHTML = `
+        <span class="slot-picker-label">Seçenekler:</span>
+        <div class="slot-choices-group"></div>
+      `;
+      const choicesGroup = picker.querySelector(".slot-choices-group");
 
       targetBlank.choices.forEach(choice => {
         const cBtn = document.createElement("button");
+        cBtn.type = "button";
         cBtn.className = "slot-choice-btn";
         cBtn.innerHTML = renderOptionMath(choice);
+
         cBtn.addEventListener("click", () => {
           if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
           if (String(choice) === String(targetBlank.correct)) {
@@ -875,21 +1036,21 @@
             }
           } else {
             playTone("error");
-            cBtn.classList.add("wrong-disabled");
-            cBtn.disabled = true;
-            cBtn.style.background = "#fee2e2";
-            cBtn.style.borderColor = "#ef4444";
+            cBtn.classList.add("wrong-flash");
             if (window.NartesMentor) {
               window.NartesMentor.onWrong({
                 wrongValue: choice,
-                targetLabel: "Kavram cümlesindeki boşluk",
-                customHint: "Çarpma ve bölme işleminde kalansız bölen sayıya çarpan (bölen), elde edilen çarpıma ise kat denir."
+                targetKey: `blank_${targetBlank.id}`,
+                targetLabel: "Seçili mavi boşluk",
+                correctAnswerToMask: targetBlank.correct,
+                customHint: stop.hint || "Çarpma ve bölme işleminde kalansız bölen sayıya çarpan (bölen), elde edilen çarpıma ise kat denir."
+              }, () => {
+                cBtn.classList.remove("wrong-flash");
               });
             }
-            showToast("Bu seçenek elendi! NarTES'in ipucunu inceleyip kalan seçeneklerden doğru olanı seç.");
           }
         });
-        picker.appendChild(cBtn);
+        choicesGroup.appendChild(cBtn);
       });
       pickerArea.innerHTML = "";
       pickerArea.appendChild(picker);
@@ -932,7 +1093,7 @@
           <span class="vcp-badge">🎯 Adım Sonu Doğrulama</span>
           <span class="vcp-step-indicator" id="vcpStepStatus">Adım 1 / ${stop.steps.length}</span>
         </div>
-        <h3 class="vcp-question-title">${stop.quickQuestion}</h3>
+        <h3 class="vcp-question-title">${safeMathHtml(stop.quickQuestion)}</h3>
         <p class="vcp-helper-sub" id="vcpHelperSub">Soldaki adımları inceledikten sonra doğru seçeneği işaretle:</p>
         <div id="videoQuickChoices" class="vcp-choices-list"></div>
         <div class="vcp-mentor-row">
@@ -1111,16 +1272,18 @@
           completeCurrentStop("Anlatımı ve doğrulama sorusunu başarıyla tamamladın!");
         } else {
           playTone("error");
-          btn.classList.add("wrong", "wrong-disabled");
-          btn.disabled = true;
+          btn.classList.add("wrong-flash");
           if (window.NartesMentor) {
             window.NartesMentor.onWrong({
               wrongValue: ch,
+              targetKey: "video_verify",
               targetLabel: stop.quickQuestion,
+              correctAnswerToMask: stop.quickCorrect,
               customHint: "Soldaki animasyon adımlarında oluşan farklı durumların sayısına ve son adımdaki özete tekrar dikkat et."
+            }, () => {
+              btn.classList.remove("wrong-flash");
             });
           }
-          showToast("Bu seçenek elendi! NarTES'in ipucuna göz atıp kalan seçenekleri değerlendir.");
         }
       });
       choicesBox.appendChild(btn);
@@ -1146,15 +1309,6 @@
       const poolWrap = document.createElement("div");
       poolWrap.className = "chip-grid";
 
-      function clearWrongPoolChips() {
-        poolWrap.querySelectorAll(".num-chip.wrong-disabled").forEach(ch => {
-          ch.classList.remove("wrong", "wrong-disabled");
-          if (!ch.classList.contains("correct")) {
-            ch.disabled = false;
-          }
-        });
-      }
-
       function renderSlots() {
         seqRow.innerHTML = "";
         stop.sequence.forEach((item, idx) => {
@@ -1167,9 +1321,9 @@
             const rawText = isSolved ? `${item.toString().replace("?", missObj.answer)}` : String(item);
             box.innerHTML = renderOptionMath(rawText);
             box.addEventListener("click", () => {
+              if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
               if (!isSolved) {
                 activeMissingIdx = targetStates.indexOf(missObj);
-                clearWrongPoolChips();
                 renderSlots();
               }
             });
@@ -1183,7 +1337,7 @@
       }
 
       renderSlots();
-      board.innerHTML = `<div style="text-align:center;font-weight:700;color:#334155;">Turuncu/Seçili kutu için alttaki doğru değere tıkla:</div>`;
+      board.innerHTML = `<div style="text-align:center;font-weight:700;color:#334155;">Mavi seçili kutu için alttaki doğru değere tıkla:</div>`;
       board.appendChild(seqRow);
 
       stop.pool.forEach(val => {
@@ -1200,7 +1354,6 @@
             chip.classList.add("correct");
             chip.disabled = true;
             solvedCount++;
-            clearWrongPoolChips();
             const nextUnsolved = targetStates.findIndex(m => !m.solved);
             if (nextUnsolved !== -1) activeMissingIdx = nextUnsolved;
             renderSlots();
@@ -1209,16 +1362,18 @@
             }
           } else {
             playTone("error");
-            chip.classList.add("wrong", "wrong-disabled");
-            chip.disabled = true;
+            chip.classList.add("wrong-flash");
             if (window.NartesMentor) {
               window.NartesMentor.onWrong({
                 wrongValue: val,
+                targetKey: `rainbow_${activeMissingIdx}`,
                 targetLabel: String(stop.sequence[currentTarget.index] || "Seçili Kutu"),
+                correctAnswerToMask: currentTarget.answer,
                 customHint: currentTarget.hint
+              }, () => {
+                chip.classList.remove("wrong-flash");
               });
             }
-            showToast(`İpucu: ${currentTarget.hint}`);
           }
         });
         poolWrap.appendChild(chip);
@@ -1236,15 +1391,6 @@
       const pool = document.createElement("div");
       pool.className = "chip-grid";
 
-      function clearWrongTreeChips() {
-        pool.querySelectorAll(".num-chip.wrong-disabled").forEach(ch => {
-          ch.classList.remove("wrong", "wrong-disabled");
-          if (!ch.classList.contains("correct")) {
-            ch.disabled = false;
-          }
-        });
-      }
-
       function drawTreeNodes() {
         nodesWrap.innerHTML = "";
         nodeStates.forEach((n, idx) => {
@@ -1252,9 +1398,9 @@
           card.style.cssText = `padding:14px;border-radius:12px;text-align:center;font-weight:800;font-size:16px;cursor:pointer;border:2px solid ${n.done ? "#16a34a" : (idx === activeNodeIdx ? "#2563eb" : "#f97316")};background:${n.done ? "#dcfce7" : (idx === activeNodeIdx ? "#eff6ff" : "#fff7ed")};`;
           card.textContent = n.done ? n.label.replace("[ ? ]", n.answer) : n.label;
           card.addEventListener("click", () => {
+            if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
             if (!n.done) {
               activeNodeIdx = idx;
-              clearWrongTreeChips();
               drawTreeNodes();
             }
           });
@@ -1279,7 +1425,6 @@
             btn.classList.add("correct");
             btn.disabled = true;
             solved++;
-            clearWrongTreeChips();
             const nextIdx = nodeStates.findIndex(x => !x.done);
             if (nextIdx !== -1) activeNodeIdx = nextIdx;
             drawTreeNodes();
@@ -1288,16 +1433,18 @@
             }
           } else {
             playTone("error");
-            btn.classList.add("wrong", "wrong-disabled");
-            btn.disabled = true;
+            btn.classList.add("wrong-flash");
             if (window.NartesMentor) {
               window.NartesMentor.onWrong({
                 wrongValue: num,
+                targetKey: `tree_${activeNodeIdx}`,
                 targetLabel: target.label,
+                correctAnswerToMask: target.answer,
                 customHint: `"${target.label}" dalında iki dalın çarpımı üstteki sayıyı vermelidir.`
+              }, () => {
+                btn.classList.remove("wrong-flash");
               });
             }
-            showToast("Bu sayı seçili dalı tamamlamıyor! İpucuna göz at.");
           }
         });
         pool.appendChild(btn);
@@ -1315,7 +1462,7 @@
           <div style="text-align:center;padding:12px;">
             <div style="font-size:12px;font-weight:800;color:#f97316;margin-bottom:6px;">KART ${currentIdx + 1} / ${stop.items.length}</div>
             <div style="font-size:18px;font-weight:800;color:#0f172a;background:#ffffff;padding:18px;border-radius:14px;border:2px solid #cbd5e1;margin-bottom:16px;">
-              "${item.text}"
+              "${safeMathHtml(item.text)}"
             </div>
             <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;" id="sortBtns"></div>
           </div>
@@ -1339,16 +1486,18 @@
               }
             } else {
               playTone("error");
-              b.classList.add("wrong", "wrong-disabled");
-              b.disabled = true;
+              b.classList.add("wrong-flash");
               if (window.NartesMentor) {
                 window.NartesMentor.onWrong({
                   wrongValue: c,
+                  targetKey: `sort_${currentIdx}`,
                   targetLabel: item.text,
+                  correctAnswerToMask: item.answer,
                   customHint: item.reason || "Karttaki durumun bütünden eş parçalara mı (EBOB) yoksa küçük nöbet/parçalardan ortak buluşmaya mı (EKOK / Aralarında Asallık) gittiğini kontrol et."
+                }, () => {
+                  b.classList.remove("wrong-flash");
                 });
               }
-              showToast("Bu sınıflandırma yanlış! NarTES'in ipucunu incele.");
             }
           });
           btnWrap.appendChild(b);
@@ -1413,16 +1562,17 @@
               }
             } else {
               playTone("error");
-              btn.classList.add("wrong", "wrong-disabled");
-              btn.disabled = true;
+              btn.classList.add("wrong-flash");
               if (window.NartesMentor) {
                 window.NartesMentor.onWrong({
                   wrongValue: n,
+                  targetKey: `hunter_${lvlIdx}`,
                   targetNumber: lvl.target,
                   customHint: `${lvl.target} sayısını ${n} sayısına böldüğümüzde kalan ${lvl.target % n} oluyor. Tam bölen olabilmesi için kalan 0 olmalıdır.`
+                }, () => {
+                  btn.classList.remove("wrong-flash");
                 });
               }
-              showToast(`${lvl.target} sayısı ${n}'e kalansız bölünmez! Bu sayı elendi.`);
             }
           });
           grid.appendChild(btn);
@@ -1458,6 +1608,7 @@
           b.style.cssText = "border-color:#22c55e;color:#15803d;font-size:18px;";
           b.textContent = `× ${p}`;
           b.addEventListener("click", () => {
+            if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
             product *= p;
             chosen.push(p);
             gameBox.querySelector("#currProd").textContent = product;
@@ -1475,12 +1626,15 @@
               if (window.NartesMentor) {
                 window.NartesMentor.onWrong({
                   wrongValue: product,
+                  targetKey: `synth_${tIdx}`,
                   targetNumber: target,
                   customHint: `Hedef sayı ${target} iken seçtiğin asal çarpanların çarpımı ${product} oldu. ${target} sayısını kalansız bölen asal sayıları seçerek ilerle.`
+                }, () => {
+                  renderSynth();
                 });
+              } else {
+                setTimeout(renderSynth, 500);
               }
-              showToast("Hedef sayıyı aştın! Sıfırlanıyor...");
-              setTimeout(renderSynth, 500);
             } else {
               playTone("click");
             }
@@ -1536,16 +1690,18 @@
               }
             } else {
               playTone("error");
-              btn.classList.add("wrong", "wrong-disabled");
-              btn.disabled = true;
+              btn.classList.add("wrong-flash");
               if (window.NartesMentor) {
                 window.NartesMentor.onWrong({
                   wrongValue: opt,
+                  targetKey: `round_${rIdx}`,
                   targetLabel: promptHtml.replace(/<[^>]+>/g, ""),
+                  correctAnswerToMask: correctVal,
                   customHint: r.reason || "Verilen sayıların ortak bölenlerini (EBOB), ortak katlarını (EKOK) veya ortak asal böleni olup olmadığını tekrar kontrol et."
+                }, () => {
+                  btn.classList.remove("wrong-flash");
                 });
               }
-              showToast("Bu seçenek elendi! NarTES'in ipucunu incele.");
             }
           });
           cWrap.appendChild(btn);
@@ -1562,7 +1718,7 @@
             <div style="display:inline-block;font-size:11.5px;font-weight:800;color:#15803d;background:#dcfce7;padding:4px 12px;border-radius:999px;margin-bottom:12px;">
               ETAP ${cIdx + 1} / ${stop.challenges.length}
             </div>
-            <div style="font-size:clamp(17px, 1.4vw, 21px);font-weight:800;color:#0f172a;line-height:1.45;margin-bottom:20px;">${ch.q}</div>
+            <div style="font-size:clamp(17px, 1.4vw, 21px);font-weight:800;color:#0f172a;line-height:1.45;margin-bottom:20px;">${safeMathHtml(ch.q)}</div>
             <div class="chip-grid" id="finalChoices"></div>
           </div>
         `;
@@ -1584,16 +1740,18 @@
               }
             } else {
               playTone("error");
-              btn.classList.add("wrong", "wrong-disabled");
-              btn.disabled = true;
+              btn.classList.add("wrong-flash");
               if (window.NartesMentor) {
                 window.NartesMentor.onWrong({
                   wrongValue: opt,
+                  targetKey: `marathon_${cIdx}`,
                   targetLabel: ch.q,
-                  customHint: ch.hint || "Sorudaki anahtar matematiksel kuralı düşünerek kalan seçenekleri değerlendir."
+                  correctAnswerToMask: ch.ans,
+                  customHint: ch.hint || "Sorudaki anahtar matematiksel kuralı düşünerek seçenekleri değerlendir."
+                }, () => {
+                  btn.classList.remove("wrong-flash");
                 });
               }
-              showToast("Bu seçenek elendi! İpucunu inceleyip kalan seçeneklerden seç.");
             }
           });
           wrap.appendChild(btn);
@@ -1607,29 +1765,494 @@
   }
 
   // ==========================================================================
-  // TÜR 5: ❓ SORU & ADIM ADIM AÇILIR ÇÖZÜM KARTI (Sade ve Estetik)
+  // TÜR 5: ❓ KİTAP DİZGİSİ KALİTESİNDE SORU KARTI + İLİŞKİLİ MATEMATİKSEL MODEL
   // ==========================================================================
+  function escSvg(val) {
+    return String(val || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function stripPlain(raw) {
+    return String(raw || "")
+      .replace(/<\/?[a-zA-Z][^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function extractQuestionSummaryMeta(stop) {
+    const plain = stripPlain(stop.stem);
+    // Koyu (<strong>) vurgulanan anahtar verileri ayıkla
+    const boldMatches = [];
+    const reBold = /<strong[^>]*>([\s\S]*?)<\/strong>/gi;
+    let m;
+    while ((m = reBold.exec(stop.stem || "")) !== null) {
+      const cleaned = stripPlain(m[1]);
+      if (cleaned && !boldMatches.includes(cleaned)) boldMatches.push(cleaned);
+    }
+    const qSentences = plain.split(/[.!]+/).map(s => s.trim()).filter(Boolean);
+    const goalSent = qSentences.find(s => s.includes("?")) || qSentences[qSentences.length - 1] || "";
+    const shortGoal = goalSent.length > 68 ? goalSent.slice(0, 66) + "…" : goalSent;
+    const givenPills = boldMatches.slice(0, 3);
+    return { givenPills, shortGoal };
+  }
+
+  function buildDynamicMathSchematic(stop, kaz, UNIT) {
+    const plain = stripPlain(stop.stem);
+    const lower = plain.toLocaleLowerCase("tr-TR");
+    const hasPhoto = Boolean(stop.questionVisual);
+    const vbH = hasPhoto ? 162 : 210;
+
+    // 1) DİKDÖRTGEN PROBLEMLERİ (ör. U1S5 ABCD Bahçe 36 m², U1S16 KLMN Park 40 m & 64 m, U2S15, U3S26, U6S10, U12S10)
+    if (lower.includes("dikdörtgen") && !lower.includes("yan yana ve alt alta")) {
+      const verts = plain.includes("KLMN") ? ["K", "L", "M", "N"] : ["A", "B", "C", "D"];
+      const areaMatch = plain.match(/(\([^)]+\)\s*(?:br|cm|mm|m)[²2]|[0-9]+(?:[.,][0-9]+)?\s*(?:br|cm|mm|m)[²2])/i);
+      const sideMatches = plain.match(/(?:[0-9⁰¹²³⁴⁵⁶⁷⁸⁹]+√[0-9]+|√[0-9]+|\([^)]+\)|[0-9]+[⁰¹²³⁴⁵⁶⁷⁸⁹]+|[0-9]+)\s*(?:cm|m|dm|br)\b/gi) || [];
+
+      let topLabel = `|${verts[0]}${verts[1]}| = a m`;
+      let rightLabel = `|${verts[1]}${verts[2]}| = b m`;
+      let centerMain = areaMatch ? `Alan(${verts.join("")}) = ${areaMatch[1]}` : `${verts.join("")} Dikdörtgeni`;
+      let subFormula = areaMatch
+        ? "a, b ∈ ℤ⁺  •  Çevre = 2·(a + b)"
+        : (lower.includes("direk") ? "Köşelere de direk dikilecek • Eşit aralık" : "Karşılıklı kenarlar eşittir");
+
+      if (sideMatches.length >= 2) {
+        const s1 = sideMatches[0].trim();
+        const s2 = sideMatches[1].trim();
+        topLabel = `|${verts[0]}${verts[1]}| = ${s2}`;
+        rightLabel = `|${verts[1]}${verts[2]}| = ${s1}`;
+        if (!areaMatch) {
+          centerMain = lower.includes("direk")
+            ? `${verts.join("")} Parkı`
+            : (lower.includes("alan") ? `Alan(${verts.join("")}) = ?` : `${verts.join("")} Modeli`);
+        }
+      }
+
+      const ry = hasPhoto ? 28 : 42;
+      const rh = hasPhoto ? 86 : 108;
+      const rx = 74;
+      const rw = 196;
+      const showPoles = lower.includes("direk") || lower.includes("fidan");
+
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 ${vbH}" role="img" aria-label="${escSvg(verts.join(""))} Dikdörtgen Modeli">
+          <defs>
+            <linearGradient id="rectFillGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#ecfdf5"/>
+              <stop offset="100%" stop-color="#dbeafe"/>
+            </linearGradient>
+          </defs>
+          <!-- Dikdörtgen Gövde -->
+          <rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" fill="url(#rectFillGrad)" stroke="#1d4ed8" stroke-width="2.4"/>
+          <!-- İç Birim Izgara Dokusu -->
+          <line x1="${rx + rw / 3}" y1="${ry}" x2="${rx + rw / 3}" y2="${ry + rh}" stroke="#93c5fd" stroke-width="1" stroke-dasharray="4 4" opacity="0.65"/>
+          <line x1="${rx + (2 * rw) / 3}" y1="${ry}" x2="${rx + (2 * rw) / 3}" y2="${ry + rh}" stroke="#93c5fd" stroke-width="1" stroke-dasharray="4 4" opacity="0.65"/>
+          <line x1="${rx}" y1="${ry + rh / 2}" x2="${rx + rw}" y2="${ry + rh / 2}" stroke="#93c5fd" stroke-width="1" stroke-dasharray="4 4" opacity="0.65"/>
+          <!-- Dik Açı Sembolleri -->
+          <path d="M ${rx + 12} ${ry} L ${rx + 12} ${ry + 12} L ${rx} ${ry + 12}" fill="none" stroke="#1e40af" stroke-width="1.5"/>
+          <path d="M ${rx + rw - 12} ${ry} L ${rx + rw - 12} ${ry + 12} L ${rx + rw} ${ry + 12}" fill="none" stroke="#1e40af" stroke-width="1.5"/>
+          <path d="M ${rx + 12} ${ry + rh} L ${rx + 12} ${ry + rh - 12} L ${rx} ${ry + rh - 12}" fill="none" stroke="#1e40af" stroke-width="1.5"/>
+          <path d="M ${rx + rw - 12} ${ry + rh} L ${rx + rw - 12} ${ry + rh - 12} L ${rx + rw} ${ry + rh - 12}" fill="none" stroke="#1e40af" stroke-width="1.5"/>
+          <!-- Köşe Noktaları -->
+          <circle cx="${rx}" cy="${ry}" r="${showPoles ? 5.5 : 4}" fill="${showPoles ? "#f97316" : "#1d4ed8"}"/>
+          <circle cx="${rx + rw}" cy="${ry}" r="${showPoles ? 5.5 : 4}" fill="${showPoles ? "#f97316" : "#1d4ed8"}"/>
+          <circle cx="${rx + rw}" cy="${ry + rh}" r="${showPoles ? 5.5 : 4}" fill="${showPoles ? "#f97316" : "#1d4ed8"}"/>
+          <circle cx="${rx}" cy="${ry + rh}" r="${showPoles ? 5.5 : 4}" fill="${showPoles ? "#f97316" : "#1d4ed8"}"/>
+          <!-- Köşe Harfleri -->
+          <text x="${rx - 14}" y="${ry - 6}" font-size="13" font-weight="800" fill="#0f172a">${verts[0]}</text>
+          <text x="${rx + rw + 7}" y="${ry - 6}" font-size="13" font-weight="800" fill="#0f172a">${verts[1]}</text>
+          <text x="${rx + rw + 7}" y="${ry + rh + 14}" font-size="13" font-weight="800" fill="#0f172a">${verts[2]}</text>
+          <text x="${rx - 14}" y="${ry + rh + 14}" font-size="13" font-weight="800" fill="#0f172a">${verts[3]}</text>
+          <!-- Üst ve Sağ Kenar Etiketleri -->
+          <text x="${rx + rw / 2}" y="${ry - 9}" text-anchor="middle" font-size="12.5" font-weight="800" fill="#1d4ed8">${escSvg(topLabel)}</text>
+          <text x="${rx + rw + 10}" y="${ry + rh / 2 + 4}" text-anchor="start" font-size="12" font-weight="800" fill="#15803d">${escSvg(rightLabel)}</text>
+          <!-- Merkez Alan Etiketi -->
+          <rect x="${rx + 26}" y="${ry + rh / 2 - 15}" width="${rw - 52}" height="30" rx="8" fill="#ffffff" fill-opacity="0.94" stroke="#93c5fd" stroke-width="1.3"/>
+          <text x="${rx + rw / 2}" y="${ry + rh / 2 + 5}" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">${escSvg(centerMain)}</text>
+          <!-- Alt Bağıntı Satırı -->
+          <text x="180" y="${vbH - 10}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#475569">${escSvg(subFormula)}</text>
+        </svg>
+      `;
+    }
+
+    // 2) ASAL ÇARPANLAR ALGORİTMASI / BÖLEN LİSTESİ (ör. U1S10: A | 2, 2, 3, 5)
+    if (lower.includes("algoritma") || lower.includes("bölen listesi")) {
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="Asal Çarpanlar Algoritması">
+          <rect x="34" y="14" width="292" height="176" rx="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+          <line x1="126" y1="26" x2="126" y2="176" stroke="#ea580c" stroke-width="2.6" stroke-linecap="round"/>
+          <text x="108" y="46" text-anchor="end" font-size="16" font-weight="900" fill="#1d4ed8">A</text>
+          <text x="142" y="46" font-size="15" font-weight="800" fill="#15803d">2</text>
+          <text x="108" y="76" text-anchor="end" font-size="15" font-weight="800" fill="#334155">B</text>
+          <text x="142" y="76" font-size="15" font-weight="800" fill="#15803d">2</text>
+          <text x="108" y="106" text-anchor="end" font-size="15" font-weight="800" fill="#334155">C</text>
+          <text x="142" y="106" font-size="15" font-weight="800" fill="#15803d">3</text>
+          <text x="108" y="136" text-anchor="end" font-size="15" font-weight="800" fill="#334155">D</text>
+          <text x="142" y="136" font-size="15" font-weight="800" fill="#15803d">5</text>
+          <text x="108" y="166" text-anchor="end" font-size="15" font-weight="900" fill="#0f172a">1</text>
+          <rect x="184" y="64" width="126" height="68" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+          <text x="247" y="91" text-anchor="middle" font-size="12" font-weight="800" fill="#1e40af">Üslü Çarpım</text>
+          <text x="247" y="116" text-anchor="middle" font-size="14" font-weight="900" fill="#0f172a">A = 2² · 3¹ · 5¹</text>
+        </svg>
+      `;
+    }
+
+    // 3) DİKDÖRTGEN KARTLARLA KARE OLUŞTURMA (ör. U1S21: 8 cm × 12 cm → ABCD Karesi)
+    if (lower.includes("yan yana ve alt alta") || (lower.includes("kart") && lower.includes("kare"))) {
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 ${vbH}" role="img" aria-label="Dikdörtgen Kartlarla ABCD Karesi Modeli">
+          <rect x="112" y="18" width="120" height="120" rx="4" fill="#eff6ff" stroke="#16a34a" stroke-width="2.5"/>
+          <!-- 8x12 örnek kartlar -->
+          <rect x="112" y="18" width="42" height="60" fill="#dbeafe" stroke="#2563eb" stroke-width="1.8"/>
+          <rect x="154" y="18" width="42" height="60" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.8"/>
+          <rect x="112" y="78" width="42" height="60" fill="#bfdbfe" stroke="#2563eb" stroke-width="1.8"/>
+          <text x="133" y="51" text-anchor="middle" font-size="10.5" font-weight="800" fill="#1e3a8a">8×12</text>
+          <text x="212" y="84" text-anchor="middle" font-size="14" font-weight="800" fill="#64748b">• • •</text>
+          <!-- ABCD Köşeleri -->
+          <text x="98" y="18" font-size="12.5" font-weight="800" fill="#0f172a">A</text>
+          <text x="238" y="18" font-size="12.5" font-weight="800" fill="#0f172a">B</text>
+          <text x="238" y="144" font-size="12.5" font-weight="800" fill="#0f172a">C</text>
+          <text x="98" y="144" font-size="12.5" font-weight="800" fill="#0f172a">D</text>
+          <text x="246" y="82" font-size="11.5" font-weight="800" fill="#15803d">|BC| = k cm</text>
+          <text x="180" y="${vbH - 6}" text-anchor="middle" font-size="11.5" font-weight="800" fill="#334155">1 Kart: 8 cm × 12 cm  ⇒  En küçük ABCD karesi</text>
+        </svg>
+      `;
+    }
+
+    // 4) ZEYTİNYAĞI / ŞİŞELEME / ÇUVAL PAYLAŞTIRMA (ör. U1S15: 48 L & 60 L → x L şişe)
+    if (lower.includes("şişe") || (lower.includes("çuval") && lower.includes("doldur"))) {
+      const nums = plain.match(/[0-9⁰¹²³⁴⁵⁶⁷⁸⁹]+\s*(?:L|litre|kg)/gi) || ["48 L", "60 L"];
+      const v1 = nums[0] || "1. Kap";
+      const v2 = nums[1] || "2. Kap";
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 ${vbH}" role="img" aria-label="Eşit Hacimli Paylaştırma Şeması">
+          <rect x="34" y="34" width="76" height="86" rx="12" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/>
+          <text x="72" y="74" text-anchor="middle" font-size="14" font-weight="900" fill="#854d0e">${escSvg(v1)}</text>
+          <text x="72" y="94" text-anchor="middle" font-size="10.5" font-weight="700" fill="#713f12">1. Bütün</text>
+
+          <rect x="126" y="22" width="76" height="98" rx="12" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/>
+          <text x="164" y="68" text-anchor="middle" font-size="14" font-weight="900" fill="#9a3412">${escSvg(v2)}</text>
+          <text x="164" y="88" text-anchor="middle" font-size="10.5" font-weight="700" fill="#7c2d12">2. Bütün</text>
+
+          <path d="M 216 74 L 248 74" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>
+          <polygon points="248,68 258,74 248,80" fill="#2563eb"/>
+
+          <rect x="268" y="48" width="58" height="62" rx="10" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+          <text x="297" y="77" text-anchor="middle" font-size="13" font-weight="900" fill="#15803d">x Birim</text>
+          <text x="297" y="95" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">Eşit Parça</text>
+
+          <text x="180" y="${vbH - 8}" text-anchor="middle" font-size="11.5" font-weight="800" fill="#334155">Karıştırmadan &amp; artmadan en az sayıda eşit kap</text>
+        </svg>
+      `;
+    }
+
+    // 5) TOMRUK / TEL / ŞERİT KESİMİ (ör. U1S28: 48 dm & 72 dm, U3S21, U3S28)
+    if (lower.includes("tomruk") || lower.includes("kesim") || (lower.includes("tel") && lower.includes("parça")) || lower.includes("şeridin")) {
+      const lens = plain.match(/(?:√[0-9]+|[0-9]+)\s*(?:dm|cm|m|metre)\b/gi) || ["48 dm", "72 dm"];
+      const l1 = lens[0] || "I. Parça";
+      const l2 = lens[1] || "";
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 ${vbH}" role="img" aria-label="Eşit Parçalara Kesim Modeli">
+          <rect x="44" y="34" width="176" height="28" rx="8" fill="#fed7aa" stroke="#c2410c" stroke-width="2"/>
+          <line x1="132" y1="29" x2="132" y2="67" stroke="#dc2626" stroke-width="2" stroke-dasharray="4 3"/>
+          <text x="232" y="53" font-size="12.5" font-weight="800" fill="#9a3412">I: ${escSvg(l1)}</text>
+
+          ${l2 ? `
+          <rect x="44" y="82" width="246" height="28" rx="8" fill="#fde68a" stroke="#b45309" stroke-width="2"/>
+          <line x1="126" y1="77" x2="126" y2="115" stroke="#dc2626" stroke-width="2" stroke-dasharray="4 3"/>
+          <line x1="208" y1="77" x2="208" y2="115" stroke="#dc2626" stroke-width="2" stroke-dasharray="4 3"/>
+          <text x="298" y="101" font-size="12.5" font-weight="800" fill="#92400e">II: ${escSvg(l2)}</text>
+          ` : ""}
+          <text x="180" y="${vbH - 8}" text-anchor="middle" font-size="11.5" font-weight="800" fill="#334155">Kural: N eş parça elde etmek için (N − 1) kesim yapılır</text>
+        </svg>
+      `;
+    }
+
+    // 6) GÜNEŞ PANELLERİ / ORTAK HİZA DİZİLİMİ (ör. U1S29: 60 cm A & 80 cm B)
+    if (lower.includes("panel") || lower.includes("aynı hizada")) {
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 ${vbH}" role="img" aria-label="Ortak Hiza Panel Dizilimi">
+          <line x1="42" y1="18" x2="42" y2="126" stroke="#16a34a" stroke-width="2.2" stroke-dasharray="4 3"/>
+          <line x1="318" y1="18" x2="318" y2="126" stroke="#16a34a" stroke-width="2.2" stroke-dasharray="4 3"/>
+          <!-- Üst sıra: A (60 cm) -->
+          <rect x="42" y="28" width="69" height="34" rx="4" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.8"/>
+          <rect x="111" y="28" width="69" height="34" rx="4" fill="#dbeafe" stroke="#1d4ed8" stroke-width="1.8"/>
+          <rect x="180" y="28" width="138" height="34" rx="4" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <text x="76" y="49" text-anchor="middle" font-size="11.5" font-weight="800" fill="#1e3a8a">A: 60 cm</text>
+          <text x="145" y="49" text-anchor="middle" font-size="11.5" font-weight="800" fill="#1e3a8a">60 cm</text>
+          <text x="249" y="49" text-anchor="middle" font-size="12" font-weight="800" fill="#64748b">• • •</text>
+          <!-- Alt sıra: B (80 cm) -->
+          <rect x="42" y="76" width="92" height="34" rx="4" fill="#dcfce7" stroke="#15803d" stroke-width="1.8"/>
+          <rect x="134" y="76" width="92" height="34" rx="4" fill="#dcfce7" stroke="#15803d" stroke-width="1.8"/>
+          <rect x="226" y="76" width="92" height="34" rx="4" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <text x="88" y="97" text-anchor="middle" font-size="11.5" font-weight="800" fill="#14532d">B: 80 cm</text>
+          <text x="180" y="97" text-anchor="middle" font-size="11.5" font-weight="800" fill="#14532d">80 cm</text>
+          <text x="272" y="97" text-anchor="middle" font-size="12" font-weight="800" fill="#64748b">• • •</text>
+          <text x="180" y="${vbH - 8}" text-anchor="middle" font-size="11.5" font-weight="800" fill="#15803d">Ortak Hat Uzunluğu = L = EKOK(60, 80)</text>
+        </svg>
+      `;
+    }
+
+    // 7) ARTAN CEVİZLER / GRUPLANDIRMA (ör. U1S22: 6'şar ve 8'er + 3 artan, > 100)
+    if (lower.includes("ceviz") || lower.includes("artmaktadır")) {
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 ${vbH}" role="img" aria-label="Kalanlı Gruplandırma Bağıntısı">
+          <rect x="28" y="22" width="304" height="102" rx="14" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.8"/>
+          <text x="180" y="52" text-anchor="middle" font-size="13.5" font-weight="900" fill="#92400e">Ceviz Sayısı (C) Bağıntısı</text>
+          <text x="180" y="80" text-anchor="middle" font-size="14" font-weight="800" fill="#0f172a">C = 6 · x + 3 = 8 · y + 3</text>
+          <text x="180" y="106" text-anchor="middle" font-size="12.5" font-weight="800" fill="#1d4ed8">Koşul: C &gt; 100  ⇒  En az C = ?</text>
+          <text x="180" y="${vbH - 8}" text-anchor="middle" font-size="11.5" font-weight="700" fill="#475569">6 ve 8'in ortak katından 3 fazla olan sayı</text>
+        </svg>
+      `;
+    }
+
+    // 8) BİTİŞİK VEYA TEKİL KARELER (ör. U3S5: 64 cm² & 25 cm², U3S29, U6S15, U6S28, U6S29)
+    if (lower.includes("kare") && !lower.includes("tam kare")) {
+      const areas = plain.match(/(?:\([^)]+\)|[0-9]+)\s*(?:cm|m|br)[²2]/gi) || [];
+      if (areas.length >= 2) {
+        return `
+          <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="Bitişik Kareler Modeli">
+            <rect x="66" y="34" width="112" height="112" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2.4"/>
+            <rect x="178" y="68" width="78" height="78" fill="#dcfce7" stroke="#15803d" stroke-width="2.4"/>
+            <text x="122" y="95" text-anchor="middle" font-size="13.5" font-weight="900" fill="#1e3a8a">${escSvg(areas[0])}</text>
+            <text x="217" y="112" text-anchor="middle" font-size="12.5" font-weight="900" fill="#14532d">${escSvg(areas[1])}</text>
+            <line x1="66" y1="164" x2="256" y2="164" stroke="#ea580c" stroke-width="2.2"/>
+            <text x="161" y="184" text-anchor="middle" font-size="12.5" font-weight="800" fill="#c2410c">Toplam Uzunluk = ?</text>
+          </svg>
+        `;
+      }
+      const label = areas[0] || (plain.match(/\([^)]+\)\s*cm/i) || ["a cm"])[0];
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="ABCD Karesi Modeli">
+          <rect x="118" y="28" width="124" height="124" rx="4" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.4"/>
+          <text x="104" y="26" font-size="12.5" font-weight="800" fill="#0f172a">A</text>
+          <text x="248" y="26" font-size="12.5" font-weight="800" fill="#0f172a">B</text>
+          <text x="248" y="164" font-size="12.5" font-weight="800" fill="#0f172a">C</text>
+          <text x="104" y="164" font-size="12.5" font-weight="800" fill="#0f172a">D</text>
+          <text x="180" y="95" text-anchor="middle" font-size="12.5" font-weight="900" fill="#1e3a8a">${escSvg(label)}</text>
+          <text x="180" y="188" text-anchor="middle" font-size="11.5" font-weight="700" fill="#475569">ABCD Karesi • Tüm kenar uzunlukları eşittir</text>
+        </svg>
+      `;
+    }
+
+    // 9) DAİRE GRAFİĞİ / SÜTUN GRAFİĞİ (Ünite 4 & U5S26)
+    if (lower.includes("daire grafiği")) {
+      const degs = (plain.match(/[0-9]+\s*°/g) || ["120°", "90°"]).slice(0, 3);
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="360 Derece Daire Grafiği Modeli">
+          <circle cx="132" cy="100" r="68" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2.2"/>
+          <path d="M 132 100 L 132 32 A 68 68 0 0 1 191 134 Z" fill="#bbf7d0" stroke="#15803d" stroke-width="2"/>
+          <path d="M 132 100 L 191 134 A 68 68 0 0 1 73 134 Z" fill="#fed7aa" stroke="#ea580c" stroke-width="2"/>
+          <circle cx="132" cy="100" r="3" fill="#0f172a"/>
+          <text x="156" y="84" font-size="12" font-weight="900" fill="#14532d">${escSvg(degs[0])}</text>
+          ${degs[1] ? `<text x="132" y="146" text-anchor="middle" font-size="12" font-weight="900" fill="#9a3412">${escSvg(degs[1])}</text>` : ""}
+          <rect x="218" y="54" width="118" height="92" rx="12" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+          <text x="277" y="82" text-anchor="middle" font-size="12" font-weight="800" fill="#1e40af">Tam Açı</text>
+          <text x="277" y="106" text-anchor="middle" font-size="16" font-weight="900" fill="#0f172a">360°</text>
+          <text x="277" y="128" text-anchor="middle" font-size="10.5" font-weight="700" fill="#475569">Orantı Kur</text>
+        </svg>
+      `;
+    }
+
+    if (lower.includes("sütun grafiği")) {
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="Sütun Grafiği Modeli">
+          <line x1="58" y1="30" x2="58" y2="162" stroke="#334155" stroke-width="2"/>
+          <line x1="58" y1="162" x2="310" y2="162" stroke="#334155" stroke-width="2"/>
+          <rect x="84" y="106" width="34" height="56" rx="5" fill="#60a5fa"/>
+          <rect x="138" y="78" width="34" height="84" rx="5" fill="#34d399"/>
+          <rect x="192" y="92" width="34" height="70" rx="5" fill="#fbbf24"/>
+          <rect x="246" y="42" width="34" height="120" rx="5" fill="#f97316"/>
+          <text x="101" y="99" text-anchor="middle" font-size="12" font-weight="800" fill="#1e3a8a">4</text>
+          <text x="155" y="71" text-anchor="middle" font-size="12" font-weight="800" fill="#065f46">6</text>
+          <text x="209" y="85" text-anchor="middle" font-size="12" font-weight="800" fill="#92400e">5</text>
+          <text x="263" y="35" text-anchor="middle" font-size="12" font-weight="800" fill="#9a3412">9</text>
+          <text x="180" y="188" text-anchor="middle" font-size="11.5" font-weight="800" fill="#475569">Aritmetik Ortalama = Toplam ÷ Veri Sayısı</text>
+        </svg>
+      `;
+    }
+
+    // 10) KOORDİNAT DÜZLEMİ / YANSIMA / ÖTELEME (Ünite 7 & 11)
+    if (lower.includes("koordinat") || lower.includes("eksen") || lower.includes("ötele") || lower.includes("yansıma")) {
+      const pt = (plain.match(/[A-Z]'?\([^)]+\)/) || ["A(x, y)"])[0];
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="Koordinat Sistemi Modeli">
+          <rect x="34" y="16" width="292" height="172" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+          <line x1="60" y1="102" x2="300" y2="102" stroke="#334155" stroke-width="2"/>
+          <line x1="180" y1="26" x2="180" y2="176" stroke="#334155" stroke-width="2"/>
+          <text x="306" y="106" font-size="12.5" font-weight="900" fill="#0f172a">x</text>
+          <text x="186" y="30" font-size="12.5" font-weight="900" fill="#0f172a">y</text>
+          <circle cx="132" cy="64" r="5.5" fill="#2563eb"/>
+          <line x1="132" y1="64" x2="132" y2="102" stroke="#93c5fd" stroke-dasharray="3 3" stroke-width="1.5"/>
+          <line x1="132" y1="64" x2="180" y2="64" stroke="#93c5fd" stroke-dasharray="3 3" stroke-width="1.5"/>
+          <text x="124" y="54" text-anchor="end" font-size="12.5" font-weight="900" fill="#1d4ed8">${escSvg(pt)}</text>
+        </svg>
+      `;
+    }
+
+    // 11) ÜÇGEN / PİSAGOR / EĞİM / BENZERLİK (Ünite 7, 9, 10)
+    if (lower.includes("üçgen") || lower.includes("hipotenüs") || lower.includes("rampa") || lower.includes("gölge") || lower.includes("pisagor")) {
+      const meas = plain.match(/[0-9]+(?:[.,][0-9]+)?\s*(?:cm|m|metre|%)/gi) || [];
+      const m1 = meas[0] || "a";
+      const m2 = meas[1] || "b";
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="ABC Üçgeni Geometrik Modeli">
+          <polygon points="92,38 92,154 268,154" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M 92 138 L 108 138 L 108 154" fill="none" stroke="#1e40af" stroke-width="1.8"/>
+          <text x="76" y="38" font-size="13" font-weight="900" fill="#0f172a">A</text>
+          <text x="76" y="162" font-size="13" font-weight="900" fill="#0f172a">B</text>
+          <text x="276" y="162" font-size="13" font-weight="900" fill="#0f172a">C</text>
+          <text x="82" y="102" text-anchor="end" font-size="12.5" font-weight="800" fill="#15803d">${escSvg(m1)}</text>
+          <text x="180" y="174" text-anchor="middle" font-size="12.5" font-weight="800" fill="#1d4ed8">${escSvg(m2)}</text>
+          <text x="192" y="88" font-size="12.5" font-weight="800" fill="#ea580c">|AC| = ?</text>
+        </svg>
+      `;
+    }
+
+    // 12) GEOMETRİK CİSİMLER: SİLİNDİR / KONİ / PRİZMA (Ünite 12)
+    if (lower.includes("silindir") || lower.includes("koni") || lower.includes("prizma")) {
+      const isCone = lower.includes("koni");
+      const rMatch = (plain.match(/yarıçapı\s*([0-9]+\s*(?:cm|m))/i) || [])[1] || "r";
+      const hMatch = (plain.match(/(?:yüksekliği|uzunluğu|genişliği)\s*([0-9]+\s*(?:cm|m|metre))/i) || [])[1] || "h";
+      if (isCone) {
+        return `
+          <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="Dik Koni Modeli">
+            <polygon points="180,28 112,152 248,152" fill="#eff6ff" stroke="#1d4ed8" stroke-width="2.3"/>
+            <ellipse cx="180" cy="152" rx="68" ry="18" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2.2"/>
+            <line x1="180" y1="28" x2="180" y2="152" stroke="#16a34a" stroke-width="1.8" stroke-dasharray="4 3"/>
+            <line x1="180" y1="152" x2="248" y2="152" stroke="#ea580c" stroke-width="2"/>
+            <text x="172" y="98" text-anchor="end" font-size="12" font-weight="800" fill="#15803d">h</text>
+            <text x="214" y="146" text-anchor="middle" font-size="12" font-weight="800" fill="#c2410c">${escSvg(rMatch)}</text>
+          </svg>
+        `;
+      }
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="Dik Dairesel Silindir Modeli">
+          <rect x="116" y="46" width="128" height="106" fill="#eff6ff" stroke="none"/>
+          <line x1="116" y1="46" x2="116" y2="152" stroke="#1d4ed8" stroke-width="2.3"/>
+          <line x1="244" y1="46" x2="244" y2="152" stroke="#1d4ed8" stroke-width="2.3"/>
+          <ellipse cx="180" cy="152" rx="64" ry="16" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2.2"/>
+          <ellipse cx="180" cy="46" rx="64" ry="16" fill="#bfdbfe" stroke="#1d4ed8" stroke-width="2.2"/>
+          <line x1="180" y1="46" x2="244" y2="46" stroke="#ea580c" stroke-width="2"/>
+          <text x="212" y="40" text-anchor="middle" font-size="12" font-weight="800" fill="#c2410c">r: ${escSvg(rMatch)}</text>
+          <text x="256" y="104" font-size="12.5" font-weight="800" fill="#15803d">h: ${escSvg(hMatch)}</text>
+        </svg>
+      `;
+    }
+
+    // 13) TERAZİ / EŞİTSİZLİK SAYI DOĞRUSU / CETVEL (Ünite 3 & 8)
+    if (lower.includes("terazi")) {
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="Eşitsizlik Terazisi Modeli">
+          <polygon points="180,126 160,172 200,172" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+          <line x1="76" y1="112" x2="284" y2="78" stroke="#1e293b" stroke-width="3.2" stroke-linecap="round"/>
+          <rect x="46" y="114" width="68" height="34" rx="8" fill="#dbeafe" stroke="#1d4ed8" stroke-width="2"/>
+          <rect x="246" y="80" width="68" height="34" rx="8" fill="#dcfce7" stroke="#15803d" stroke-width="2"/>
+          <text x="80" y="135" text-anchor="middle" font-size="11.5" font-weight="800" fill="#1e3a8a">3x + 2 kg</text>
+          <text x="280" y="101" text-anchor="middle" font-size="11.5" font-weight="800" fill="#14532d">x + 18 kg</text>
+          <text x="180" y="192" text-anchor="middle" font-size="11.5" font-weight="800" fill="#475569">Sol kefe daha ağır ⇒ 3x + 2 &gt; x + 18</text>
+        </svg>
+      `;
+    }
+
+    if (lower.includes("cetvel") || lower.includes("eşitsizli")) {
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="Sayı Doğrusu Modeli">
+          <rect x="28" y="28" width="304" height="148" rx="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+          <line x1="52" y1="108" x2="308" y2="108" stroke="#334155" stroke-width="2.4"/>
+          <polygon points="308,103 318,108 308,113" fill="#334155"/>
+          <polygon points="52,103 42,108 52,113" fill="#334155"/>
+          <line x1="110" y1="98" x2="110" y2="118" stroke="#1d4ed8" stroke-width="2.4"/>
+          <line x1="250" y1="98" x2="250" y2="118" stroke="#15803d" stroke-width="2.4"/>
+          <line x1="110" y1="108" x2="250" y2="108" stroke="#2563eb" stroke-width="5" opacity="0.45"/>
+          <circle cx="110" cy="108" r="5.5" fill="#ffffff" stroke="#1d4ed8" stroke-width="2.4"/>
+          <circle cx="250" cy="108" r="5.5" fill="#16a34a"/>
+          <text x="180" y="72" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">${escSvg((extractQuestionSummaryMeta(stop).givenPills[0] || kaz.title).slice(0, 34))}</text>
+          <text x="180" y="152" text-anchor="middle" font-size="11.5" font-weight="700" fill="#475569">Sınır noktalarının dahil / hariç durumuna dikkat et</text>
+        </svg>
+      `;
+    }
+
+    // 14) CEBİRSEL / KESİR / ÜSLÜ / OLASILIK BAĞINTI KARTI (Tüm sembolik sorularla %100 ilişkili)
+    const meta = extractQuestionSummaryMeta(stop);
+    const line1 = meta.givenPills[0] || kaz.title;
+    const line2 = meta.givenPills[1] || `Ünite ${UNIT.unitNo} • ${kaz.code || "LGS"}`;
+    return `
+      <svg class="q-schematic-svg" viewBox="0 0 360 205" role="img" aria-label="Soru Bağıntı Şeması">
+        <rect x="26" y="18" width="308" height="168" rx="16" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.6"/>
+        <rect x="46" y="36" width="268" height="48" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+        <text x="180" y="55" text-anchor="middle" font-size="10.5" font-weight="800" fill="#1d4ed8">VERİLEN BAĞINTI</text>
+        <text x="180" y="74" text-anchor="middle" font-size="13.5" font-weight="900" fill="#0f172a">${escSvg(line1.slice(0, 36))}</text>
+
+        <path d="M 180 88 L 180 106" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
+        <polygon points="175,104 180,112 185,104" fill="#2563eb"/>
+
+        <rect x="46" y="116" width="268" height="50" rx="10" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+        <text x="180" y="135" text-anchor="middle" font-size="10.5" font-weight="800" fill="#15803d">HEDEF &amp; İLİŞKİ</text>
+        <text x="180" y="154" text-anchor="middle" font-size="12.5" font-weight="800" fill="#14532d">${escSvg(line2.slice(0, 38))}</text>
+      </svg>
+    `;
+  }
+
+  function buildQuestionModelCardHtml(stop, kaz, UNIT) {
+    const schematicSvg = buildDynamicMathSchematic(stop, kaz, UNIT);
+    const flowImgHtml = stop.questionVisual
+      ? `
+        <div class="q-flow-scene-frame">
+          <img src="${stop.questionVisual}" onerror="this.parentElement.style.display='none'" alt="${escSvg(stop.title)}">
+          <span class="q-flow-scene-tag">✨ Google Flow Sahne</span>
+        </div>
+      `
+      : "";
+
+    return `
+      <div class="q-model-card ${stop.questionVisual ? "has-flow-scene" : ""}">
+        <div class="q-model-head">
+          <span class="q-model-badge">📐 Görsel &amp; Matematiksel Model</span>
+          <span class="q-model-code">${escSvg(kaz.code || `Ünite ${UNIT.unitNo}`)}</span>
+        </div>
+        ${flowImgHtml}
+        <div class="q-schematic-stage">
+          ${schematicSvg}
+        </div>
+      </div>
+    `;
+  }
+
   function renderQuestionStop(stop, kaz, container, UNIT) {
     const layout = document.createElement("div");
     layout.className = "question-layout";
 
+    const meta = extractQuestionSummaryMeta(stop);
+    const givenBadgesHtml = meta.givenPills.length > 0
+      ? meta.givenPills.map(g => `<span class="q-book-given-pill">${renderOptionMath(g)}</span>`).join("")
+      : `<span class="q-book-given-pill">${escSvg(kaz.title)}</span>`;
+
     const left = document.createElement("div");
     left.className = "question-left-col";
     left.innerHTML = `
-      <div class="lead-text" style="padding:4px 2px;">
-        ${stop.stem}
-      </div>
+      <article class="question-book-card">
+        <div class="question-book-top">
+          <span class="question-book-ribbon">📘 SORU KARTI • DURAK ${stop.id}</span>
+          <span class="question-book-topic">${escSvg(kaz.title)}</span>
+        </div>
+        <div class="question-book-stem">
+          <p>${safeMathHtml(stop.stem)}</p>
+        </div>
+        <div class="question-book-summary">
+          <span class="q-book-sum-label">Önemli Veriler:</span>
+          <div class="q-book-sum-pills">${givenBadgesHtml}</div>
+        </div>
+      </article>
       <div class="options-grid" id="qOptionsGrid"></div>
     `;
 
-    const imgPath = kaz.visual || UNIT.coverImage;
     const right = document.createElement("div");
     right.className = "question-right-col";
     right.innerHTML = `
-      <div class="flow-visual-box">
-        <img src="${imgPath}" onerror="this.src='assets/flow/kapak_carpanlar_katlar.jpg'" alt="${kaz.title}">
-        <div class="flow-visual-caption">${kaz.title}</div>
-      </div>
+      ${buildQuestionModelCardHtml(stop, kaz, UNIT)}
       <div id="solutionArea"></div>
     `;
 
@@ -1640,19 +2263,18 @@
       solArea.innerHTML = `
         <div class="solution-box">
           <h4>✓ Adım Adım Çözüm</h4>
-          <div>${stop.solution}</div>
+          <p>${safeMathHtml(stop.solution)}</p>
         </div>
       `;
     }
 
-    let questionWrongAttempts = 0;
     stop.options.forEach(opt => {
       const btn = document.createElement("button");
       btn.className = "option-btn";
       if (isStopDone(stop.id, UNIT) && opt.letter === stop.correctLetter) {
         btn.classList.add("correct");
       }
-      btn.innerHTML = `<span class="option-letter">${opt.letter}</span><span>${renderOptionMath(opt.text)}</span>`;
+      btn.innerHTML = `<span class="option-letter">${opt.letter}</span><span class="option-text-body">${renderOptionMath(opt.text)}</span>`;
 
       btn.addEventListener("click", () => {
         if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
@@ -1662,32 +2284,25 @@
           solArea.innerHTML = `
             <div class="solution-box">
               <h4>✓ Adım Adım Çözüm</h4>
-              <div>${stop.solution}</div>
+              <p>${safeMathHtml(stop.solution)}</p>
             </div>
           `;
           applyKaTeX(solArea);
           completeCurrentStop("Soruyu doğru çözdün!");
         } else {
-          questionWrongAttempts++;
           playTone("error");
-          btn.classList.add("wrong", "wrong-disabled");
-          btn.disabled = true;
+          btn.classList.add("wrong-flash");
           const wrongLabel = `${opt.letter}) ${opt.text}`;
           if (window.NartesMentor) {
             window.NartesMentor.onWrong({
               wrongValue: wrongLabel,
+              targetKey: `question_${stop.id}`,
               targetLabel: stop.stem,
               customHint: stop.hint
+            }, () => {
+              btn.classList.remove("wrong-flash");
             });
           }
-          solArea.innerHTML = `
-            <div class="solution-box" style="background:#fffbeb;border-color:#fde68a;color:#92400e;">
-              <h4 style="color:#b45309;">💡 ${questionWrongAttempts}. Deneme İpucu (${opt.letter} seçeneği elendi)</h4>
-              <div style="margin-bottom:6px;">${stop.hint}</div>
-              <div style="font-size:12.5px;color:#78350f;font-weight:700;">🔎 "${wrongLabel}" seçeneğini sorudaki koşulla karşılaştırıp kalan seçenekleri değerlendir.</div>
-            </div>
-          `;
-          applyKaTeX(solArea);
         }
       });
 
@@ -2032,6 +2647,7 @@
     const isSaved = localStorage.getItem(AUTH_STORAGE_KEY) === "1" || sessionStorage.getItem(AUTH_STORAGE_KEY) === "1";
     const form = document.getElementById("authGateForm");
     const input = document.getElementById("authPasswordInput");
+    const togglePassBtn = document.getElementById("authTogglePassBtn");
     const rememberChk = document.getElementById("authRememberChk");
     const errMsg = document.getElementById("authErrorMsg");
     const btnLock = document.getElementById("btnLockApp");
@@ -2041,6 +2657,15 @@
       onUnlocked();
     }
 
+    if (togglePassBtn && input) {
+      togglePassBtn.addEventListener("click", () => {
+        const isPass = input.type === "password";
+        input.type = isPass ? "text" : "password";
+        togglePassBtn.textContent = isPass ? "🙈" : "👁️";
+        input.focus();
+      });
+    }
+
     if (btnLock) {
       btnLock.addEventListener("click", () => {
         playTone("click");
@@ -2048,15 +2673,12 @@
         sessionStorage.removeItem(AUTH_STORAGE_KEY);
         document.body.classList.add("auth-locked");
         if (input) {
+          input.type = "password";
+          if (togglePassBtn) togglePassBtn.textContent = "👁️";
           input.value = "";
           setTimeout(() => input.focus(), 80);
         }
       });
-    }
-
-    if (isSaved) {
-      unlockNow();
-      return;
     }
 
     if (form) {
@@ -2081,6 +2703,10 @@
           }
         }
       });
+    }
+
+    if (isSaved) {
+      unlockNow();
     }
   }
 
@@ -2221,12 +2847,21 @@
       }, { passive: true });
     }
 
+    const roadViewportEl = document.getElementById("roadViewport");
     document.getElementById("roadScrollLeft").addEventListener("click", () => {
-      document.getElementById("roadViewport").scrollBy({ left: -260, behavior: "smooth" });
+      roadViewportEl.scrollBy({ left: -280, behavior: "smooth" });
     });
     document.getElementById("roadScrollRight").addEventListener("click", () => {
-      document.getElementById("roadViewport").scrollBy({ left: 260, behavior: "smooth" });
+      roadViewportEl.scrollBy({ left: 280, behavior: "smooth" });
     });
+    if (roadViewportEl) {
+      roadViewportEl.addEventListener("wheel", (e) => {
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+          e.preventDefault();
+          roadViewportEl.scrollLeft += e.deltaY * 1.15;
+        }
+      }, { passive: false });
+    }
 
     window.addEventListener("keydown", (e) => {
       const UNIT = getActiveUnit();
