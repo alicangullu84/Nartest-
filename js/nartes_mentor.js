@@ -646,7 +646,7 @@
     const unit = (ctx && ctx.unit) || {};
     const kaz = (ctx && ctx.kaz) || {};
     const stop = (ctx && ctx.stop) || {};
-    return {
+    const payload = {
       unitNo: unit.unitNo || 1,
       unitTitle: unit.title || "Çarpanlar ve Katlar",
       kazTitle: kaz.title || "",
@@ -654,6 +654,18 @@
       stopTitle: stop.title || "",
       stopType: stop.type || "concept"
     };
+    if (typeof stop.activeQuestionIndex === "number" && stop.stem) {
+      payload.activeQuestionIndex = stop.activeQuestionIndex;
+      payload.stop = {
+        title: stop.title,
+        type: "question",
+        stem: stop.stem,
+        options: stop.options || [],
+        correctLetter: stop.correctLetter || "",
+        hint: stop.hint || ""
+      };
+    }
+    return payload;
   }
 
   async function streamFromLocalServerAI(questionText, ctx, onChunk) {

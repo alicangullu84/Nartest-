@@ -303,7 +303,7 @@ function buildAuthoritativeStopContext(clientCtx = {}) {
     ? serverUnit.kazanimlar.find(k => k.id === serverStop.kazanimId)
     : null;
 
-  const stop = serverStop || clientCtx.stop || {};
+  const stop = (clientCtx.stop && clientCtx.stop.stem) ? clientCtx.stop : (serverStop || clientCtx.stop || {});
   const unitTitle = (serverUnit && serverUnit.title) || clientCtx.unitTitle || "Çarpanlar ve Katlar";
   const kazTitle = (serverKaz && serverKaz.title) || clientCtx.kazTitle || stop.title || "";
   const stopTitle = stop.title || clientCtx.stopTitle || "Etkinlik";

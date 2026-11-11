@@ -8,6 +8,46 @@
   const units2to12 = window.MATFLOW_UNITS_2_12 || [];
   const ALL_UNITS = [unit1, ...units2to12];
 
+  // Alt başlık (kazanım) sonlarına tanımlanan Akıllı Tahta Soru Çözüm duraklarını otomatik yerleştir
+  function injectSmartboardStopsIntoUnits(units) {
+    const bank = window.NARTES_SMARTBOARD_BANK || {};
+    units.forEach(unit => {
+      if (!unit || unit._smartboardInjected) return;
+      const unitBank = bank[unit.id];
+      if (!unitBank) return;
+
+      const rebuiltStops = [];
+      (unit.kazanimlar || []).forEach(kaz => {
+        const currentKazStops = (unit.stops || []).filter(s => s.kazanimId === kaz.id);
+        currentKazStops.forEach(s => rebuiltStops.push(s));
+
+        const sbEntry = unitBank[kaz.id];
+        if (sbEntry && Array.isArray(sbEntry.questions) && sbEntry.questions.length > 0) {
+          rebuiltStops.push({
+            id: 0,
+            kazanimId: kaz.id,
+            type: "smartboard",
+            icon: "✏️",
+            typeLabel: "Akıllı Tahta Soru Çözümü",
+            title: sbEntry.title || `Konu Sonu Akıllı Tahta: ${kaz.title}`,
+            subtitle: sbEntry.subtitle || "Bu alt başlığı tamamlamak için kaleminle akıllı tahtada soruları çöz!",
+            questions: sbEntry.questions
+          });
+        }
+      });
+
+      rebuiltStops.forEach((s, idx) => {
+        s.id = idx + 1;
+      });
+      unit.stops = rebuiltStops;
+      (unit.kazanimlar || []).forEach(kaz => {
+        kaz.stops = rebuiltStops.filter(s => s.kazanimId === kaz.id).map(s => s.id);
+      });
+      unit._smartboardInjected = true;
+    });
+  }
+  injectSmartboardStopsIntoUnits(ALL_UNITS);
+
   const STORAGE_KEY_ALL = "matflow_lgs_12units_v1";
   const LEGACY_KEY_U1 = "matflow_progress_m8_u1_v1";
 
@@ -578,6 +618,7 @@
     if (stop.type === "activity") return "Etkinlik";
     if (stop.type === "game") return "Oyun";
     if (stop.type === "question") return "Soru";
+    if (stop.type === "smartboard") return "Tahta Testi";
     return tl.split(" ")[0] || "Durak";
   }
 
@@ -592,7 +633,7 @@
 
     const roadLabel = document.getElementById("roadUnitTitleLabel");
     if (roadLabel) {
-      roadLabel.textContent = `${UNIT.unitNo}. Ünite (${UNIT.title}) Yol Haritası — 30 Durak`;
+      roadLabel.textContent = `${UNIT.unitNo}. Ünite (${UNIT.title}) Yol Haritası — ${UNIT.stops.length} Durak`;
     }
 
     UNIT.stops.forEach((stop, idx) => {
@@ -654,7 +695,7 @@
 
     const maxUnlocked = getMaxUnlockedStopId(UNIT);
     document.getElementById("roadStatusSummary").textContent =
-      `Aktif: ${uState.currentStopId}. Durak • Açık: ${maxUnlocked}/30 • Biten: ${doneCount}/30`;
+      `Aktif: ${uState.currentStopId}. Durak • Açık: ${maxUnlocked}/${UNIT.stops.length} • Biten: ${doneCount}/${UNIT.stops.length}`;
   }
 
   // ==========================================================================
@@ -793,6 +834,14 @@
       nextBtn.disabled = !state.teacherUnlock;
     }
 
+    if (window.NartesSmartboard) {
+      window.NartesSmartboard.cleanup();
+    }
+    const winCardElRef = document.getElementById("windowCard");
+    if (winCardElRef) {
+      winCardElRef.classList.toggle("is-smartboard-stop", stop.type === "smartboard");
+    }
+
     const body = document.getElementById("windowBody");
     body.innerHTML = "";
 
@@ -806,10 +855,25 @@
       renderGameStop(stop, kaz, body, UNIT);
     } else if (stop.type === "question") {
       renderQuestionStop(stop, kaz, body, UNIT);
+    } else if (stop.type === "smartboard" && window.NartesSmartboard) {
+      window.NartesSmartboard.renderStop({
+        stop,
+        kaz,
+        unit: UNIT,
+        container: body,
+        safeMathHtml,
+        renderOptionMath,
+        applyKaTeX,
+        playTone,
+        completeCurrentStop,
+        isStopDone
+      });
     }
 
     applyKaTeX(document.getElementById("windowCard"));
-    if (window.NartesMentor) window.NartesMentor.setContext({ unit: UNIT, kaz, stop });
+    if (stop.type !== "smartboard" && window.NartesMentor) {
+      window.NartesMentor.setContext({ unit: UNIT, kaz, stop });
+    }
     speakText(`${stop.title}. ${stop.subtitle}`);
   }
 
@@ -2331,7 +2395,7 @@
           <div class="unit-card-thumb" style="background-image:url('${u.coverImage}')">
             <span class="unit-card-no">${u.unitNo}. ÜNİTE</span>
             <span class="unit-card-status ${isDone ? "done" : "todo"}">
-              ${isDone ? "✓ Tamamlandı" : `${doneCount}/30 Durak`}
+              ${isDone ? "✓ Tamamlandı" : `${doneCount}/${u.stops.length} Durak`}
             </span>
           </div>
           <div class="unit-card-body">
@@ -2824,15 +2888,17 @@
     const winCardEl = document.getElementById("windowCard");
     let touchStartX = 0;
     let touchStartY = 0;
+    let touchStartedInCanvas = false;
     if (winCardEl) {
       winCardEl.addEventListener("touchstart", (e) => {
-        if (!e.touches || !e.touches[0]) return;
+        touchStartedInCanvas = Boolean(e.target && e.target.closest(".sb-kagit, .sb-arac-cubugu"));
+        if (touchStartedInCanvas || !e.touches || !e.touches[0]) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
       }, { passive: true });
 
       winCardEl.addEventListener("touchend", (e) => {
-        if (!e.changedTouches || !e.changedTouches[0]) return;
+        if (touchStartedInCanvas || !e.changedTouches || !e.changedTouches[0]) return;
         const dx = e.changedTouches[0].clientX - touchStartX;
         const dy = e.changedTouches[0].clientY - touchStartY;
         if (Math.abs(dx) > 68 && Math.abs(dx) > Math.abs(dy) * 1.6) {
