@@ -2683,15 +2683,24 @@
   }
 
   // ==========================================================================
-  // ÖZEL ŞİFRELİ GİRİŞ KAPISI (NARTES+ PRIVATE ACCESS GATE)
+  // ÖZEL ŞİFRELİ GİRİŞ KAPISI (ÖĞRENCİ & YÖNETİCİ TAM AÇIK MODU)
   // ==========================================================================
   const AUTH_STORAGE_KEY = "nartes_plus_auth_unlocked_v1";
+  const AUTH_ROLE_KEY = "nartes_plus_auth_role_v1";
+
+  // Yönetici şifreleri: giriş yapıldığında tüm 12 ünite ve tüm durakların kilidi otomatik açılır
+  const ADMIN_PASS_HASHES = [
+    "117b7bd219e16", // nartesadmin
+    "600d07e84b09b"  // yonetici2026
+  ];
+
   const ALLOWED_PASS_HASHES = [
     "ecf2a0206d7f0",
     "158d55f281293c",
     "8645f7c65e238",
     "e141883f829d6",
-    "d8b84bde7f068"
+    "d8b84bde7f068",
+    ...ADMIN_PASS_HASHES
   ];
 
   function hashPass(str) {
@@ -2707,8 +2716,26 @@
     return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
   }
 
+  function applyRoleUnlockState(isAdmin, showBanner) {
+    state.teacherUnlock = Boolean(isAdmin);
+    const btnTeacher = document.getElementById("btnTeacherMode");
+    if (btnTeacher) {
+      btnTeacher.textContent = state.teacherUnlock
+        ? "🛡️ Yönetici Modu (Her Şey Açık)"
+        : "🔒 Sıralı Öğrenci Modu";
+    }
+    renderUnitSelector();
+    renderSidebar();
+    renderRoad();
+    renderWindow();
+    if (showBanner && state.teacherUnlock) {
+      showToast("🛡️ Yönetici Girişi Aktif: Tüm 12 ünite ve tüm durakların kilidi açıldı!");
+    }
+  }
+
   function initAuthGate(onUnlocked) {
     const isSaved = localStorage.getItem(AUTH_STORAGE_KEY) === "1" || sessionStorage.getItem(AUTH_STORAGE_KEY) === "1";
+    const savedRole = localStorage.getItem(AUTH_ROLE_KEY) || sessionStorage.getItem(AUTH_ROLE_KEY) || "student";
     const form = document.getElementById("authGateForm");
     const input = document.getElementById("authPasswordInput");
     const togglePassBtn = document.getElementById("authTogglePassBtn");
@@ -2716,9 +2743,11 @@
     const errMsg = document.getElementById("authErrorMsg");
     const btnLock = document.getElementById("btnLockApp");
 
-    function unlockNow() {
+    function unlockNow(isAdmin, fromLoginSubmit) {
+      state.teacherUnlock = Boolean(isAdmin);
       document.body.classList.remove("auth-locked");
       onUnlocked();
+      applyRoleUnlockState(Boolean(isAdmin), Boolean(fromLoginSubmit));
     }
 
     if (togglePassBtn && input) {
@@ -2735,6 +2764,11 @@
         playTone("click");
         localStorage.removeItem(AUTH_STORAGE_KEY);
         sessionStorage.removeItem(AUTH_STORAGE_KEY);
+        localStorage.removeItem(AUTH_ROLE_KEY);
+        sessionStorage.removeItem(AUTH_ROLE_KEY);
+        state.teacherUnlock = false;
+        const btnTeacher = document.getElementById("btnTeacherMode");
+        if (btnTeacher) btnTeacher.textContent = "🔒 Sıralı Öğrenci Modu";
         document.body.classList.add("auth-locked");
         if (input) {
           input.type = "password";
@@ -2749,15 +2783,24 @@
       form.addEventListener("submit", (e) => {
         e.preventDefault();
         const val = input ? input.value : "";
-        if (ALLOWED_PASS_HASHES.includes(hashPass(val))) {
+        const h = hashPass(val);
+        if (ALLOWED_PASS_HASHES.includes(h)) {
+          const isAdminLogin = ADMIN_PASS_HASHES.includes(h);
+          const roleStr = isAdminLogin ? "admin" : "student";
           if (errMsg) errMsg.hidden = true;
           if (rememberChk && rememberChk.checked) {
-            try { localStorage.setItem(AUTH_STORAGE_KEY, "1"); } catch (err) {}
+            try {
+              localStorage.setItem(AUTH_STORAGE_KEY, "1");
+              localStorage.setItem(AUTH_ROLE_KEY, roleStr);
+            } catch (err) {}
           } else {
-            try { sessionStorage.setItem(AUTH_STORAGE_KEY, "1"); } catch (err) {}
+            try {
+              sessionStorage.setItem(AUTH_STORAGE_KEY, "1");
+              sessionStorage.setItem(AUTH_ROLE_KEY, roleStr);
+            } catch (err) {}
           }
           playTone("success");
-          unlockNow();
+          unlockNow(isAdminLogin, true);
         } else {
           playTone("error");
           if (errMsg) errMsg.hidden = false;
@@ -2770,7 +2813,7 @@
     }
 
     if (isSaved) {
-      unlockNow();
+      unlockNow(savedRole === "admin", false);
     }
   }
 
