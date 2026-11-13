@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k05-01",
+  "sira": 1,
+  "kazanimId": "k05",
+  "baslik": "EBOB 1 ise aralarında asaldır",
+  "metin": "1'den başka ortak pozitif böleni olmayan sayma sayıları aralarında asaldır. Kısa kural: EBOB 1 ise aralarında asaldır. Sayıların kendisi asal olmak zorunda değildir.",
+  "ornek": "8 ve 9 asal olmadığı halde EBOB(8, 9) = 1 olduğu için aralarında asaldır. 14 ve 21 aralarında asal değildir çünkü 7 ortaktır.",
+  "yanlis": [
+    {
+      "kod": "ikisi-de-asal-sarti",
+      "uyari": "Aralarında asal olmak için iki sayının da asal olması gerekmez. 8 ile 15 aralarında asaldır."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 33,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.3"
+}

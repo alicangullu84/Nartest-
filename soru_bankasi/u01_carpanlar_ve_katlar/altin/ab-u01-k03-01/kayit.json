@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k03-01",
+  "sira": 1,
+  "kazanimId": "k03",
+  "baslik": "EBOB ortak bölenlerin en büyüğüdür",
+  "metin": "İki doğal sayıyı da bölen en büyük doğal sayı, bu sayıların EBOB'udur. Gösterim EBOB(a, b) şeklindedir.",
+  "ornek": "18'in bölenleri 1, 2, 3, 6, 9, 18. 24'ün bölenleri 1, 2, 3, 4, 6, 8, 12, 24. Ortaklar 1, 2, 3, 6. En büyüğü 6. EBOB(18, 24) = 6.",
+  "yanlis": [
+    {
+      "kod": "ortak-kucugu",
+      "uyari": "Ortak bölenlerin en küçüğü her zaman 1'dir. EBOB en büyük ortak bölendir."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 17,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

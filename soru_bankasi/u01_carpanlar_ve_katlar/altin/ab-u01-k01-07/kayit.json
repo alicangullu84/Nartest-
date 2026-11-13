@@ -1,0 +1,28 @@
+{
+  "id": "ab-u01-k01-07",
+  "sira": 7,
+  "kazanimId": "k01",
+  "baslik": "Bölen sayısı üslerden gelir",
+  "metin": "Sayı asal çarpanlarına ayrılıp p^a · q^b · r^c biçiminde yazılırsa pozitif bölen sayısı (a+1)(b+1)(c+1) eder. Üsse 1 eklenir, sonuçlar çarpılır.",
+  "ornek": "12 = 2² · 3¹. Bölen sayısı (2+1)(1+1) = 6. Bölenler: 1, 2, 3, 4, 6, 12.",
+  "yanlis": [
+    {
+      "kod": "ussu-carpan",
+      "uyari": "Üssü doğrudan çarpma. Önce her üsse 1 ekle, sonra çarp."
+    },
+    {
+      "kod": "ayirmadan-sayma",
+      "uyari": "Formülden önce sayıyı asal çarpanlarına ayır. 12'yi 4×3 diye bırakırsan üsler yanlış kalır; 4 asal değil."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "sh",
+      "sayfa": 8,
+      "yer": "Ne işe yarar"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.1"
+}

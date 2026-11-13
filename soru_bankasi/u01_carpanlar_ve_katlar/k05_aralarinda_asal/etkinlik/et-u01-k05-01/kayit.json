@@ -1,0 +1,44 @@
+{
+  "id": "et-u01-k05-01",
+  "kazanimId": "k05",
+  "baslik": "Aralarında asal mı",
+  "yonerge": "Aralarında asal olan çifte evet, olmayana hayır yaz.",
+  "altinBilgiId": [
+    "ab-u01-k05-01",
+    "ab-u01-k05-02"
+  ],
+  "maddeler": [
+    {
+      "id": "a",
+      "istem": "8 ile 10",
+      "cevap": "hayır"
+    },
+    {
+      "id": "b",
+      "istem": "17 ile 20",
+      "cevap": "evet"
+    },
+    {
+      "id": "c",
+      "istem": "14 ile 15",
+      "cevap": "evet"
+    },
+    {
+      "id": "d",
+      "istem": "12 ile 18",
+      "cevap": "hayır"
+    },
+    {
+      "id": "e",
+      "istem": "8 ile 9",
+      "cevap": "evet"
+    },
+    {
+      "id": "f",
+      "istem": "21 ile 28",
+      "cevap": "hayır"
+    }
+  ],
+  "tur": "etkinlik",
+  "uniteId": "u01"
+}

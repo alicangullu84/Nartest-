@@ -1,0 +1,32 @@
+{
+  "kazanimId": "k07",
+  "baslik": "Örnek sorular",
+  "kod": "MEB",
+  "altin": [],
+  "anlatim": [],
+  "etkinlik": [],
+  "durak": 0,
+  "bantlar": [
+    {
+      "bant": "D1",
+      "durak": 0
+    },
+    {
+      "bant": "D2",
+      "durak": 0
+    },
+    {
+      "bant": "D3",
+      "durak": 0
+    },
+    {
+      "bant": "D4",
+      "durak": 0
+    },
+    {
+      "bant": "D5",
+      "durak": 0
+    }
+  ],
+  "liste": []
+}

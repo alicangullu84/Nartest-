@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k01-03",
+  "sira": 3,
+  "kazanimId": "k01",
+  "baslik": "Çarpan ile kat birbirinin tersidir",
+  "metin": "a, b'nin çarpanı ise b, a'nın katıdır. Biri söylenince diğeri de söylenmiş olur.",
+  "ornek": "4, 24'ün çarpanıdır. O halde 24, 4'ün katıdır.",
+  "yanlis": [
+    {
+      "kod": "ters-kurma",
+      "uyari": "Çarpan ile katı yer değiştirme. Bölen çarpandır; bölümün büyüğü kattır."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 9,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.1"
+}

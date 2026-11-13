@@ -190,8 +190,11 @@
     lastTargetLabel: null,
     filledBlanks: {},
     activeBlankId: null,
+    liveScreen: null,
     chatTurnCount: 0,
     chatHistory: [],
+    usedMotivationIndices: [],
+    shownHintBodies: [],
     remediationLocked: false
   };
 
@@ -337,6 +340,57 @@
   //    - Her yanlışta küçük bilgi kutusu açılır; 3 sn dolmadan "Okudum, anladım"
   //      tiklenemez, tiklenince tekrar cevap verme hakkı açılır (sınırsız hak).
   // ==========================================================================
+  const MAX_MENTOR_WORDS = 25;
+
+  function countWordsClient(str) {
+    const clean = String(str || "").trim();
+    if (!clean) return 0;
+    return clean.split(/\s+/).filter(Boolean).length;
+  }
+
+  function enforceMax25WordsClient(rawText, maxWords) {
+    const cap = maxWords || MAX_MENTOR_WORDS;
+    const text = String(rawText || "").replace(/\s+/g, " ").trim();
+    if (!text || countWordsClient(text) <= cap) return text;
+
+    const slots = [];
+    const masked = text.replace(/\$[^$]+\$/g, m => {
+      slots.push(m);
+      return `__M${slots.length - 1}__`;
+    });
+    const sentences = masked
+      .split(/(?<=[.!?])\s+/)
+      .map(p => p.replace(/__M(\d+)__/g, (_, i) => slots[Number(i)] || "").trim())
+      .filter(Boolean);
+
+    if (sentences.length >= 2) {
+      const last = sentences[sentences.length - 1];
+      const lastTwo = `${sentences[sentences.length - 2]} ${last}`.trim();
+      if (countWordsClient(lastTwo) <= cap) return lastTwo;
+      const firstLast = `${sentences[0]} ${last}`.trim();
+      if (countWordsClient(firstLast) <= cap) return firstLast;
+      if (countWordsClient(sentences[0]) <= cap && countWordsClient(sentences[0]) >= 5) return sentences[0];
+    }
+
+    const tokens = text.match(/\$[^$]+\$|\S+/g) || [];
+    const kept = [];
+    let total = 0;
+    for (const tok of tokens) {
+      const w = countWordsClient(tok);
+      if (total + w > cap) break;
+      kept.push(tok);
+      total += w;
+    }
+    let clipped = kept.join(" ").replace(/[,;:\-–—]+$/, "").trim();
+    if ((clipped.match(/\*\*/g) || []).length % 2 === 1) {
+      clipped = clipped.replace(/\*\*(?!.*\*\*)/, "");
+    }
+    if (clipped && !/[.!?]$/.test(clipped)) {
+      clipped += text.includes("?") ? "?" : ".";
+    }
+    return clipped;
+  }
+
   function diagnoseSpecificWrongAttempt(detail, ctx) {
     const stop = (ctx && ctx.stop) || {};
     const wrongVal = detail && detail.wrongValue !== undefined ? String(detail.wrongValue).trim() : "";
@@ -345,30 +399,32 @@
       ? sanitizeHintWithoutAnswer(detail.customHint, stop, detail.correctAnswerToMask)
       : "";
 
+    const activeNums = extractStopKeyNumbers(stop, detail);
+    const activeTarget = activeNums.mainNum;
+
     if (stop.type === "concept") {
       if (wrongVal === "katıdır") {
-        return `Az önce **"katıdır"** seçeneğini denedin; ancak küçük sayı ($4$ veya $6$) büyük sayıyı ($24$'ü) kalansız böldüğünde ona **kat** değil, **bölen (çarpan)** diyoruz. Kat, çarpım sonucunda oluşan büyük sayıdır.`;
+        return `**"katıdır"** büyük sonuç içindir; kalansız bölen küçük sayıya **çarpan (bölen)** denir. Hangisi uyar?`;
       }
       if (wrongVal === "çarpanıdır" || wrongVal === "bölenidir") {
-        return `Az önce **"${wrongVal}"** seçtin fakat bu mavi boşlukta büyük sayının küçük sayıya göre durumu soruluyor ($24 = 4 \\times 6$). Büyük sayı küçük sayının böleni mi yoksa **katı** mı olur?`;
+        return activeTarget
+          ? `Burada $${activeTarget}$ için büyük sayının durumu soruluyor: böleni mi, **katı** mı?`
+          : `Burada büyük sayının küçük sayıya göre durumu soruluyor: böleni mi, **katı** mı?`;
       }
       if (wrongVal === "kalanıdır" || wrongVal === "farkıdır") {
-        return `**"${wrongVal}"** kavramı çıkarma veya kalanlı bölme ile ilgilidir. Oysa burada kalan $0$ olan tam bir çarpma-bölme ilişkisi var. Bölen ve kat kavramlarını tekrar düşünür müsün?`;
+        return `Burada kalan $0$; tam çarpma-bölme ilişkisi var. Bölen ve kat kavramlarından hangisi uygun?`;
       }
       if (wrongVal === "kalanlı" || wrongVal === "ondalıklı") {
-        return `**"${wrongVal}"** seçtin ama bölme işleminde hiç artan sayı yok! Bir bölme işleminde kalan $0$ ise o bölünmeye ne ad veririz?`;
+        return `Bölme işleminde kalan $0$ olduğunda bu bölünmeye ne ad veririz?`;
       }
       if (wrongVal === "1") {
-        return `**$1$** sayısını seçtin ama unutma: Asal sayılar $1$'den büyük olmak zorundadır. En küçük ve tek çift asal sayımız hangisiydi?`;
+        return `Asal sayılar $1$'den büyük olmalıdır. En küçük çift asal sayımız kaçtır?`;
       }
     }
 
     if (stop.type === "video") {
-      if (wrongVal.includes("8 farklı") || wrongVal.includes("6 farklı")) {
-        return `**"${wrongVal}"** işaretledin. Toplam çarpan sayısı ile **dikdörtgen (çarpan çifti) sayısını** karıştırmış olabilirsin! Her dikdörtgen $2$ çarpanın eşleşmesiyle kurulur: $(1\\times 24), (2\\times 12), (3\\times 8), (4\\times 6)$. Kaç çift oluştu?`;
-      }
-      if (wrongVal.includes("3 farklı") || wrongVal.includes("2 farklı")) {
-        return `**"${wrongVal}"** seçtin ama soldaki animasyonda kurduğumuz $(1\\times 24)$, $(2\\times 12)$, $(3\\times 8)$ ve $(4\\times 6)$ dikdörtgenlerini tekrar sayalım; birini atlamış olabilir misin?`;
+      if (wrongVal.includes("farklı") && activeTarget) {
+        return `$${activeTarget}$ sayısının baştan ve sondan eşleşen çarpan çiftlerini tek tek sayar mısın?`;
       }
     }
 
@@ -378,16 +434,16 @@
         if (!isNaN(num)) {
           const rem = stop.targetNumber % num;
           if (rem !== 0) {
-            return `Seçtiğin **$${num}$** sayısı **$${stop.targetNumber}$** sayısını kalansız bölemez ($${stop.targetNumber} \\div ${num}$ işleminde kalan $${rem}$ olur). Çarpımı $${stop.targetNumber}$ veren çarpan çiftini düşün!`;
+            return `$${num}$ sayısı $${stop.targetNumber}$'ü tam bölmez (kalan $${rem}$). Çarpımı $${stop.targetNumber}$ veren çarpan hangisi?`;
           }
-          return `Seçtiğin **$${num}$** sayısı $${stop.targetNumber}$'ün bir çarpanı, ancak şu an seçili olan kutunun küçükten büyüğe sırasına uymuyor!`;
+          return `$${num}$ bir çarpandır ama seçili kutunun küçükten büyüğe sırasına uymuyor!`;
         }
       }
       if (stop.activityMode === "factor_tree") {
-        return `Çarpan ağacında **${targetInfo || "bu dal"}** için **${wrongVal}** seçtin. Dalın üstündeki sayıyı yanındaki çarpana böldüğünde kaç çıktığını kontrol eder misin?`;
+        return `**${targetInfo || "Bu dal"}** için üstteki sayıyı yanındaki çarpana bölüp sonucu kontrol eder misin?`;
       }
       if (stop.activityMode === "ebob_ekok_sort" || stop.activityMode === "coprime_check" || stop.activityMode === "custom_sort") {
-        return `Bu kart için **"${wrongVal}"** seçtin. Büyük bir bütünü eş parçalara mı ayırıyoruz (EBOB), yoksa küçük adımları katlayıp ortak bir noktada mı buluşturuyoruz (EKOK)?`;
+        return `Bütünü eş parçalara mı bölüyoruz (EBOB), yoksa adımları ortak katta mı buluşturuyoruz (EKOK)?`;
       }
     }
 
@@ -396,89 +452,335 @@
         const t = detail.targetNumber;
         const n = parseInt(wrongVal, 10);
         const rem = !isNaN(n) ? (t % n) : null;
-        return `Seçtiğin **$${wrongVal}$** sayısı **$${t}$** sayısını tam bölemez (kalan: **$${rem !== null ? rem : "sıfırdan farklı"}$**). Kalanı $0$ yapan bölenleri arıyoruz!`;
+        return `$${wrongVal}$ sayısı $${t}$'yi tam bölmez (kalan $${rem !== null ? rem : "\\neq 0"}$). Kalanı $0$ yapan böleni seç!`;
       }
-      return `Az önce **${wrongVal}** değerini denedin ama kuralı sağlamadı. ${customHint || "Sayıların arasındaki matematiksel ilişkiyi tekrar hesaplayalım!"}`;
+      return enforceMax25WordsClient(`**${wrongVal}** kuralı sağlamadı. ${customHint || "Sayılar arasındaki işlem ilişkisini tekrar hesaplayalım!"}`, 19);
     }
 
     if (stop.type === "question") {
       const cleanH = sanitizeHintWithoutAnswer(stop.hint, stop);
-      return `Seçtiğin **${wrongVal}** şıkkı sorudaki koşulu sağlamadı. Şu noktaya dikkat et: *${cleanH || "Soruda verilen değerleri kurala yerleştirerek adım adım kontrol edelim."}*`;
+      return enforceMax25WordsClient(
+        `Seçtiğin şık sorudaki koşulu sağlamadı. ${cleanH || "Verilen değerleri kurala yerleştirip ilk işlemi kontrol et!"}`,
+        19
+      );
     }
 
-    return customHint
-      ? `Az önce **${wrongVal || "bu seçeneği"}** denedin. Şu ipucuna odaklanalım: *${customHint}*`
-      : `Az önce **${wrongVal || "bu seçeneği"}** denedin ama tam uymadı. Verilen sayılar arasındaki ilişkiyi tekrar kontrol edelim!`;
+    return enforceMax25WordsClient(
+      customHint || "Seçimin koşulu sağlamadı; ekrandaki sayılar arasındaki ilişkiyi tekrar kontrol edelim!",
+      19
+    );
+  }
+
+  // ==========================================================================
+  // 2.B SINIRSIZ, TEKRARSIZ, %100 EKRAN KONUSUNA BAĞLI & <=25 KELİME SOKRATİK MOTOR
+  //     - Asla 25 kelimeyi geçmez; alakasız nesne/hikaye uydurmaz.
+  //     - Doğrudan o an ekrandaki matematik konusunu ve sayılarını kullanarak
+  //       kısa motivasyon + en temel toplama/çarpma/bölme adımlarına iner.
+  // ==========================================================================
+  const SHORT_MOTIVATIONS = [
+    "Hiç sorun değil! 😊",
+    "Güzel deneme! ✨",
+    "Pes etme, yaklaştın! 💪",
+    "Adım adım çözelim! 🌱",
+    "Cesaretin harika! 🌟",
+    "Birlikte başaracağız! 🤝",
+    "Çok iyi gidiyorsun! 🎯",
+    "Hiç acelemiz yok! 💡",
+    "Gayretin çok değerli! 🧭",
+    "Sakince tekrar bakalım! 🔍",
+    "Deneyerek öğreniyoruz! 🧩",
+    "Az kaldı, başaracaksın! 🚀"
+  ];
+
+  function pickFreshMotivation(attemptNo) {
+    const used = Array.isArray(studentTrace.usedMotivationIndices) ? studentTrace.usedMotivationIndices : [];
+    const available = [];
+    for (let i = 0; i < SHORT_MOTIVATIONS.length; i++) {
+      if (!used.includes(i)) available.push(i);
+    }
+    let chosenIdx;
+    if (available.length > 0) {
+      chosenIdx = available[attemptNo % available.length];
+    } else {
+      studentTrace.usedMotivationIndices = [];
+      chosenIdx = attemptNo % SHORT_MOTIVATIONS.length;
+    }
+    studentTrace.usedMotivationIndices.push(chosenIdx);
+    return SHORT_MOTIVATIONS[chosenIdx];
+  }
+
+  function extractStopKeyNumbers(stop, detail) {
+    const liveTask = studentTrace && studentTrace.liveTask ? studentTrace.liveTask : null;
+    if (liveTask && Array.isArray(liveTask.numbers) && liveTask.numbers.length > 0) {
+      const liveUnique = [...new Set(liveTask.numbers.map(Number).filter(n => Number.isFinite(n) && n >= 2 && n <= 2000))];
+      const wrongStr = detail && detail.wrongValue !== undefined ? String(detail.wrongValue) : "";
+      const wrongNumMatch = wrongStr.match(/\b\d{1,4}\b/);
+      const wrongNum = wrongNumMatch ? parseInt(wrongNumMatch[0], 10) : null;
+      return {
+        mainNum: (liveTask.targetNumber ? Number(liveTask.targetNumber) : null) || liveUnique[0] || null,
+        secondNum: liveUnique[1] || null,
+        allNums: liveUnique,
+        wrongNum: wrongNum && wrongNum >= 1 ? wrongNum : null
+      };
+    }
+
+    const rawSources = [
+      detail && detail.targetLabel ? stripHtml(detail.targetLabel) : "",
+      stop && stop.targetNumber ? String(stop.targetNumber) : "",
+      stop && stop.rootNumber ? String(stop.rootNumber) : "",
+      stop && stop.stem ? stripHtml(stop.stem) : "",
+      stop && stop.subtitle ? stripHtml(stop.subtitle) : "",
+      stop && stop.sentenceHtml ? stripHtml(stop.sentenceHtml) : "",
+      stop && stop.quickQuestion ? stripHtml(stop.quickQuestion) : ""
+    ].join(" ");
+    const nums = (rawSources.match(/\b\d{1,4}\b/g) || [])
+      .map(n => parseInt(n, 10))
+      .filter(n => n >= 2 && n <= 2000);
+    const uniqueNums = [...new Set(nums)];
+    const wrongStr = detail && detail.wrongValue !== undefined ? String(detail.wrongValue) : "";
+    const wrongNumMatch = wrongStr.match(/\b\d{1,4}\b/);
+    const wrongNum = wrongNumMatch ? parseInt(wrongNumMatch[0], 10) : null;
+    return {
+      mainNum: uniqueNums[0] || null,
+      secondNum: uniqueNums[1] || null,
+      allNums: uniqueNums,
+      wrongNum: wrongNum && wrongNum >= 1 ? wrongNum : null
+    };
+  }
+
+  function buildRepeatedAdditionDemo(n) {
+    const num = Number(n);
+    if (!Number.isFinite(num) || num < 4 || num > 144) {
+      return null;
+    }
+    const target = num;
+    let d = 2;
+    for (let k = 2; k <= 12; k++) {
+      if (target % k === 0 && target / k >= 2 && target / k <= 15) {
+        d = k;
+        break;
+      }
+    }
+    const groupVal = target % d === 0 ? target / d : Math.max(2, Math.floor(target / 2));
+    const groupCount = target % d === 0 ? d : 2;
+    const cleanTarget = groupVal * groupCount;
+    const sumChain = Array.from({ length: Math.min(groupCount, 4) }, () => String(groupVal)).join("+")
+      + (groupCount > 4 ? "+\\dots" : "");
+    return { cleanTarget, groupCount, groupVal, sumChain };
+  }
+
+  // 4. Deneme: Ekrandaki ünite konusunun en sade matematiksel özü (Alakasız benzetme YOK, <=18 kelime)
+  function buildUnitScreenConceptCore(unitNo, keyNums) {
+    const uNo = Number(unitNo || 1);
+    const n = keyNums && keyNums.mainNum ? keyNums.mainNum : null;
+    switch (uNo) {
+      case 1:
+        return n
+          ? `$${n}$ sayısını kalan $0$ olacak şekilde tam bölen sayıları küçükten büyüğe düşünelim: ilk çift hangisi?`
+          : `Ekrandaki sayıyı kalan $0$ olacak şekilde tam bölen pozitif sayıları küçükten büyüğe eşleştirir misin?`;
+      case 2:
+        return `Üslü ifadede üstteki sayı tabanı toplamaz; tabanı yan yana yazıp çarpar. İlk çarpımı hesaplar mısın?`;
+      case 3:
+        return `Karekök, "Hangi sayıyı kendisiyle çarparsam içerdeki sayıyı verir?" sorusudur. En yakın tam kare sayı kaçtır?`;
+      case 4:
+        return `Veri analizinde önce tüm değerleri toplayıp bütünü bul, sonra $360^\\circ$ veya istenen oranla eşleştir!`;
+      case 5:
+        return `Olasılık = İstenen durum sayısı $\\div$ Tüm olası durumların toplamı. Önce paydadaki toplam durumu sayalım mı?`;
+      case 6:
+        return `Cebirsel ifadelerde sadece benzer terimler ($x$'liler kendi arasında, sayılar kendi arasında) toplanıp çıkarılır. Hangileri benzer?`;
+      case 7:
+        return `Denklemde eşitliğin iki tarafına aynı ters işlemi uygulayarak bilinmeyeni yalnız bırak. İlk hangi sayıyı karşıya atalım?`;
+      case 8:
+        return `"En az" $\\ge$, "en fazla" $\\le$ demektir; negatif sayıyla çarpıp bölersek yön değişir. Sınır değerimiz kaç?`;
+      case 9:
+        return `Üçgende iki kenarın toplamı üçüncü kenardan büyük, farkı küçük olmalıdır; dik üçgende $a^2+b^2=c^2$ kurulur!`;
+      case 10:
+        return `Benzer şekillerde eş açılar aynıdır; karşılıklı kenarları aynı sırayla bölerek benzerlik oranını bulabilir misin?`;
+      case 11:
+        return `Ötelemede koordinatlara ekleme-çıkarma yapılır, yön değişmez; yansımada eksene eşit uzaklıkta işaret değişir!`;
+      default:
+        return `Geometrik cisimlerde hacim = Taban Alanı $\\times$ Yükseklik; yüzey alanı ise açınımdaki tüm yüzlerin toplamıdır!`;
+    }
+  }
+
+  // 5. Deneme: Ekrandaki sayılarla en temel toplama / çarpma / bölme kökü (<=19 kelime)
+  function buildBasicMathRootStep(unitNo, keyNums) {
+    const uNo = Number(unitNo || 1);
+    const demo = buildRepeatedAdditionDemo(keyNums.mainNum);
+    const wNum = keyNums.wrongNum;
+
+    if (wNum && wNum >= 2 && wNum <= 50 && keyNums.mainNum && keyNums.mainNum > wNum && keyNums.mainNum % wNum !== 0 && uNo === 1) {
+      const rem = keyNums.mainNum % wNum;
+      return `$${keyNums.mainNum}$ sayısını $${wNum}$ sayısına böldüğümüzde $${rem}$ kalanı çıkıyor. Kalanı $0$ yapan hangi sayıyı seçebiliriz?`;
+    }
+    if (uNo === 1 && demo) {
+      return `Çarpma eşit grupları toplamaktır ($${demo.sumChain}=${demo.cleanTarget} \\Rightarrow ${demo.groupCount}\\times${demo.groupVal}$). Ekrandaki sayıyı hangi iki çarpan verir?`;
+    }
+    if (uNo === 1) {
+      return `Ekrandaki sayıyı kalansız (kalan $0$) bölen en küçük doğal sayı çiftini adım adım dener misin?`;
+    }
+    if (uNo === 2) {
+      return `Toplama ile çarpmayı ayır: $2+2+2=6$ iken $2\\times2\\times2=8$'dir. Tabanı kendisiyle adım adım çarpar mısın?`;
+    }
+    if (uNo === 3) {
+      return `Tam kareleri sırayla hatırla: $2\\times2=4,\\; 3\\times3=9,\\; 4\\times4=16,\\; 5\\times5=25$. Sorudaki sayı hangisine uyuyor?`;
+    }
+    if (uNo === 6 || uNo === 7 || uNo === 8) {
+      return `$x+x+x=3x$ toplamanın kısa yazılışıdır; çarpmanın tersi ise bölmedir. Bilinmeyeni bulmak için kaça bölmeliyiz?`;
+    }
+    return `Temel işleme inelim: Ekrandaki sayıları küçük adımlarla toplayıp veya eşit böldüğümüzde ilk hangi sonuç çıkıyor?`;
+  }
+
+  function buildUnlimitedDeepScaffolding(detail, ctx, attemptNo) {
+    const stop = (ctx && ctx.stop) || {};
+    const kaz = (ctx && ctx.kaz) || {};
+    const unit = (ctx && ctx.unit) || {};
+    const unitNo = Number(unit.unitNo || 1);
+    const cleanStopHint = sanitizeHintWithoutAnswer((detail && detail.customHint) || stop.hint, stop, detail && detail.correctAnswerToMask);
+    const keyNums = extractStopKeyNumbers(stop, detail);
+    const pep = pickFreshMotivation(attemptNo);
+
+    const rawSol = stop.solution ? stripHtml(stop.solution) : "";
+    const solParts = rawSol.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
+    const safeSolStep1 = solParts.length > 0
+      ? sanitizeHintWithoutAnswer(solParts[0], stop, detail && detail.correctAnswerToMask)
+      : "";
+
+    const lensIdx = (attemptNo - 6) % 6;
+    let core = "";
+    let badgeTitle = "Temel Adım";
+
+    if (lensIdx === 0) {
+      badgeTitle = "Küçük Sayı Modeli";
+      core = `Küçük örnekle düşün: $12 = 3 \\times 4$ kalansız bölünür. Aynı bölme kontrolünü **$${keyNums.mainNum}$** için yapar mısın?`;
+    } else if (lensIdx === 1) {
+      badgeTitle = "İlk İşlem Basamağı";
+      core = safeSolStep1
+        ? `İlk işlemimiz: **${safeSolStep1}.** Buradan devam edince ne buluyorsun?`
+        : `Önce ekrandaki **$${keyNums.mainNum}$** sayısını $1, 2, 3\\dots$ sırasıyla deneyip kalansız bölen ilk çifti yazar mısın?`;
+    } else if (lensIdx === 2) {
+      badgeTitle = "Ters İşlem Sağlaması";
+      core = `Seçenekleri ters işlemle (çarpma veya toplama sağlamasıyla) yerine koyup dene; hangisi sorudaki eşitliği tam sağlıyor?`;
+    } else if (lensIdx === 3) {
+      badgeTitle = "Temel İşlem Kökü";
+      core = buildBasicMathRootStep(unitNo, keyNums);
+    } else if (lensIdx === 4) {
+      badgeTitle = "Kazanım Özeti";
+      core = cleanStopHint || buildUnitScreenConceptCore(unitNo, keyNums);
+    } else {
+      badgeTitle = "Seçenek Eleme";
+      const tried = studentTrace.wrongChoices.slice(-2).join(", ");
+      core = `${tried ? `Denediğin (${tried}) elendi. ` : ""}Kalan seçeneklerden hangisi **${kaz.title || "sorudaki"}** şartını tam sağlıyor?`;
+    }
+
+    const combined = enforceMax25WordsClient(`${pep} ${core}`, MAX_MENTOR_WORDS);
+    return {
+      badge: `💡 ${attemptNo}. İpucu • ${badgeTitle}`,
+      mood: attemptNo % 2 === 0 ? "thinking" : "encourage",
+      body: combined
+    };
+  }
+
+  function recordUniqueHint(hintObj, attemptNo) {
+    hintObj.body = enforceMax25WordsClient(hintObj.body, MAX_MENTOR_WORDS);
+    if (!Array.isArray(studentTrace.shownHintBodies)) {
+      studentTrace.shownHintBodies = [];
+    }
+    if (studentTrace.shownHintBodies.includes(hintObj.body)) {
+      const altPep = pickFreshMotivation(attemptNo + 3);
+      const stripped = hintObj.body.replace(/^[^.!?]+[.!?]\s*/, "");
+      hintObj.body = enforceMax25WordsClient(`${altPep} ${stripped || hintObj.body}`, MAX_MENTOR_WORDS);
+    }
+    studentTrace.shownHintBodies.push(hintObj.body);
+    if (studentTrace.shownHintBodies.length > 40) {
+      studentTrace.shownHintBodies = studentTrace.shownHintBodies.slice(-40);
+    }
+    return hintObj;
   }
 
   function buildProgressiveSocraticHint(detail, ctx, attemptNo) {
     const stop = (ctx && ctx.stop) || {};
     const kaz = (ctx && ctx.kaz) || {};
     const unit = (ctx && ctx.unit) || {};
-    const wrongVal = detail && detail.wrongValue !== undefined ? String(detail.wrongValue).trim() : "";
-    const cleanStopHint = sanitizeHintWithoutAnswer((detail && detail.customHint) || stop.hint, stop, detail && detail.correctAnswerToMask);
+    const unitNo = Number(unit.unitNo || 1);
+    const cleanStopHint = sanitizeHintWithoutAnswer(
+      (detail && detail.customHint) || (studentTrace.liveTask && studentTrace.liveTask.hint) || stop.hint,
+      stop,
+      detail && detail.correctAnswerToMask
+    );
+    const keyNums = extractStopKeyNumbers(stop, detail);
+    const pep = pickFreshMotivation(attemptNo);
 
-    // Genel kural cümlesi (1. deneme için)
     let generalRule = "";
-    if (Array.isArray(stop.explanation) && stop.explanation.length > 0) {
+    if (studentTrace.liveTask && studentTrace.liveTask.promptText) {
+      generalRule = sanitizeHintWithoutAnswer(studentTrace.liveTask.promptText, stop, detail && detail.correctAnswerToMask);
+    } else if (Array.isArray(stop.explanation) && stop.explanation.length > 0) {
       generalRule = sanitizeHintWithoutAnswer(stop.explanation[0], stop, detail && detail.correctAnswerToMask);
-    } else if (unit && Array.isArray(unit.stops)) {
+    } else if (!studentTrace.liveTask && unit && Array.isArray(unit.stops) && stop.type === "concept") {
       const conceptStop = unit.stops.find(s => s.kazanimId === stop.kazanimId && s.type === "concept");
       if (conceptStop && Array.isArray(conceptStop.explanation) && conceptStop.explanation[0]) {
         generalRule = sanitizeHintWithoutAnswer(conceptStop.explanation[0], stop, detail && detail.correctAnswerToMask);
       }
     }
 
-    // 1. DENEME: DAHA GENEL KAVRAMSAL İPUCU (10-11 yaşa uygun, kısa ve tek bakışta okunur)
     if (attemptNo <= 1) {
       let shortRule = "";
       if (stop.type === "question" && cleanStopHint) {
         shortRule = cleanStopHint;
       } else if (generalRule) {
-        const sentences = generalRule.split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
-        shortRule = (sentences.find(s => s.length >= 35) || sentences[0] || "").trim();
+        shortRule = generalRule.split(/[.!?]+/).map(s => s.trim()).filter(Boolean)[0] || "";
       }
-      if (shortRule && !/[.!?]$/.test(shortRule)) shortRule += ".";
-      const intro = shortRule
-        || cleanStopHint
-        || `**${kaz.title || stop.title || "Bu konu"}** kuralını hatırlayalım: Verilen sayıların birbirini tam bölüp bölmediğine dikkat edelim.`;
-      return {
-        badge: "🧭 1. İpucu • Genel Hatırlatma",
+      const intro = shortRule || cleanStopHint || `**${kaz.title || stop.title || "Bu konu"}** kuralına göre sayıları tekrar kontrol edelim!`;
+      return recordUniqueHint({
+        badge: "🧭 1. İpucu • Kısa Hatırlatma",
         mood: "encourage",
-        body: `${intro} Buna göre soruya bir kez daha bakar mısın?`
-      };
+        body: `${pep} ${intro}`
+      }, attemptNo);
     }
 
-    // 2. DENEME: SEÇİME ÖZEL YÖNLENDİRME
     if (attemptNo === 2) {
-      const specificText = diagnoseSpecificWrongAttempt(detail, ctx);
-      return {
-        badge: "🔎 2. İpucu • Özel Yönlendirme",
+      return recordUniqueHint({
+        badge: "🔎 2. İpucu • Seçimini İnceleyelim",
         mood: "thinking",
-        body: specificText
-      };
+        body: `${pep} ${diagnoseSpecificWrongAttempt(detail, ctx)}`
+      }, attemptNo);
     }
 
-    // 3. VE SONRAKİ DENEMELER: ADIM ADIM DAHA YAKIN REHBERLİK (CEVABI SÖYLEMEDEN, KISA VE NET)
-    let closerGuide = "";
-    if (stop.type === "question" && stop.solution) {
-      const solSentences = stripHtml(stop.solution).split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
-      const firstSetup = solSentences.length > 1 ? solSentences[0] : "";
-      const safeSetup = sanitizeHintWithoutAnswer(firstSetup, stop, detail && detail.correctAnswerToMask);
-      closerGuide = safeSetup
-        ? `Gel ilk adımı birlikte kuralım: **${safeSetup}.** Bu adımı devam ettirince hangi şıkka ulaşıyorsun?`
-        : `${cleanStopHint || "Verilen sayıları küçükten büyüğe yazıp kuralı dene."} Şimdi hangi seçenek doğru görünüyor?`;
-    } else {
-      closerGuide = cleanStopHint
-        ? `🎯 **Yakın İpucu:** *${cleanStopHint}* Buna göre doğru seçeneği bulabilir misin?`
-        : diagnoseSpecificWrongAttempt(detail, ctx);
+    if (attemptNo === 3) {
+      let closerGuide = "";
+      if (stop.type === "question" && stop.solution) {
+        const solSentences = stripHtml(stop.solution).split(/[.!?]+/).map(s => s.trim()).filter(Boolean);
+        const safeSetup = sanitizeHintWithoutAnswer(solSentences[0] || "", stop, detail && detail.correctAnswerToMask);
+        closerGuide = safeSetup
+          ? `İlk adım: **${safeSetup}.** Devamında hangi seçeneğe ulaşırsın?`
+          : (cleanStopHint || buildUnitScreenConceptCore(unitNo, keyNums));
+      } else {
+        closerGuide = cleanStopHint || buildUnitScreenConceptCore(unitNo, keyNums);
+      }
+      return recordUniqueHint({
+        badge: "🎯 3. İpucu • İlk İşlem Adımı",
+        mood: "encourage",
+        body: `${pep} ${closerGuide}`
+      }, attemptNo);
     }
 
-    return {
-      badge: `🎯 ${attemptNo}. İpucu • Adım Adım Rehber`,
-      mood: "encourage",
-      body: closerGuide
-    };
+    if (attemptNo === 4) {
+      return recordUniqueHint({
+        badge: "📐 4. İpucu • Konunun Özü",
+        mood: "encourage",
+        body: `${pep} ${buildUnitScreenConceptCore(unitNo, keyNums)}`
+      }, attemptNo);
+    }
+
+    if (attemptNo === 5) {
+      return recordUniqueHint({
+        badge: "🌱 5. İpucu • Temel Toplama & Çarpma",
+        mood: "encourage",
+        body: `${pep} ${buildBasicMathRootStep(unitNo, keyNums)}`
+      }, attemptNo);
+    }
+
+    return recordUniqueHint(buildUnlimitedDeepScaffolding(detail, ctx, attemptNo), attemptNo);
   }
 
   function showSocraticHintBox(ctx, detail, attemptNo, onUnderstoodCallback) {
@@ -502,6 +804,7 @@
     const hintData = buildProgressiveSocraticHint(detail, ctx, attemptNo);
     const WAIT_SECONDS = 3;
     let remainingMs = WAIT_SECONDS * 1000;
+    const showInteractiveHelpBtn = attemptNo >= 2;
 
     gateEl.innerHTML = `
       <div class="nartes-socratic-box" role="dialog" aria-modal="true" aria-labelledby="nartesHintBadge">
@@ -509,11 +812,17 @@
           <div class="nsb-avatar">${getAvatarHtml("nartes-avatar-md", hintData.mood)}</div>
           <div class="nsb-meta">
             <span class="nsb-badge" id="nartesHintBadge">${hintData.badge}</span>
-            <div class="nsb-sub">Bilge NarTES seni doğruya adım adım yönlendiriyor</div>
+            <div class="nsb-sub">${attemptNo >= 4 ? "Bilge NarTES en temel işlem mantığıyla yanında 🌱" : "Bilge NarTES seni doğruya adım adım yönlendiriyor"}</div>
           </div>
         </div>
 
         <div class="nsb-body">${formatMarkdownAndMath(hintData.body)}</div>
+
+        ${showInteractiveHelpBtn ? `
+          <button type="button" class="nsb-chat-link-btn" id="nsbOpenDeepChatBtn">
+            💬 Hâlâ karışık mı? Bilge NarTES ile en temelden karşılıklı çözelim →
+          </button>
+        ` : ""}
 
         <div class="nsb-timer-track" aria-hidden="true">
           <div class="nsb-timer-fill" id="nsbTimerFill"></div>
@@ -536,6 +845,26 @@
     const tickVisual = document.getElementById("nsbTickVisual");
     const tickText = document.getElementById("nsbTickText");
     const timerFill = document.getElementById("nsbTimerFill");
+    const openDeepChatBtn = document.getElementById("nsbOpenDeepChatBtn");
+
+    if (openDeepChatBtn) {
+      openDeepChatBtn.addEventListener("click", () => {
+        if (gateCountdownTimer) {
+          clearInterval(gateCountdownTimer);
+          gateCountdownTimer = null;
+        }
+        studentTrace.remediationLocked = false;
+        gateEl.hidden = true;
+        if (typeof onUnderstoodCallback === "function") {
+          onUnderstoodCallback();
+        }
+        applyPanelVisuals(true);
+        const deepPrompt = attemptNo >= 4
+          ? "Bu soruda zorlandım; ekrandaki sayılarla en temel toplama ve çarpma adımından kısaca anlatır mısın?"
+          : "Bu soruda takıldım, ilk işlemi kısaca gösterir misin?";
+        handleStudentQuestion(deepPrompt);
+      });
+    }
 
     // 3 saniyelik akıcı bar animasyonunu başlat
     requestAnimationFrame(() => {
@@ -597,9 +926,6 @@
     }
     list.push("http://127.0.0.1:8080");
     list.push("http://localhost:8080");
-    if (isGitHubOrRemoteStatic) {
-      list.push("");
-    }
     return [...new Set(list)];
   }
 
@@ -619,7 +945,8 @@
         if (data && data.ok) {
           activeApiBase = base;
           localAiServerOnline = true;
-          localAiModelLabel = "Yerel AI Aktif";
+          const mName = String(data.model || "");
+          localAiModelLabel = /gemma4|nartes-sokratik/i.test(mName) ? "Gemma 4 AI" : "Yerel AI";
           updateStatusTagUI();
           return;
         }
@@ -634,11 +961,11 @@
     const tagEl = document.getElementById("nartesHeadTag");
     const fabSub = document.querySelector("#nartesFabBtn .nartes-fab-text small");
     if (tagEl) {
-      tagEl.textContent = localAiServerOnline ? "🟢 Yerel AI" : "⚡ Sokratik Mod";
+      tagEl.textContent = localAiServerOnline ? `🟢 ${localAiModelLabel}` : "⚡ Sokratik Mod";
       tagEl.classList.toggle("is-online", localAiServerOnline);
     }
     if (fabSub && !isPanelOpen) {
-      fabSub.textContent = localAiServerOnline ? "Yerel Sokratik AI" : "Sokratik Rehber";
+      fabSub.textContent = localAiServerOnline ? `${localAiModelLabel} Aktif` : "Sokratik Rehber";
     }
   }
 
@@ -654,21 +981,41 @@
       stopTitle: stop.title || "",
       stopType: stop.type || "concept"
     };
-    if (typeof stop.activeQuestionIndex === "number" && stop.stem) {
-      payload.activeQuestionIndex = stop.activeQuestionIndex;
+    const qIdx = typeof (ctx && ctx.activeQuestionIndex) === "number"
+      ? ctx.activeQuestionIndex
+      : (typeof stop.activeQuestionIndex === "number" ? stop.activeQuestionIndex : undefined);
+    if (typeof qIdx === "number") {
+      payload.activeQuestionIndex = qIdx;
+    }
+    if (stop.stem || stop.sentenceHtml || stop.quickQuestion || stop.activityMode) {
       payload.stop = {
         title: stop.title,
-        type: "question",
-        stem: stop.stem,
+        subtitle: stop.subtitle || "",
+        type: stop.type || "question",
+        activityMode: stop.activityMode || "",
+        activeQuestionIndex: typeof qIdx === "number" ? qIdx : 0,
+        subQuestionBadge: stop.subQuestionBadge || "",
+        stem: stop.stem || "",
         options: stop.options || [],
         correctLetter: stop.correctLetter || "",
-        hint: stop.hint || ""
+        hint: stop.hint || "",
+        solution: stop.solution || "",
+        sentenceHtml: stop.sentenceHtml || "",
+        blanks: stop.blanks || [],
+        quickQuestion: stop.quickQuestion || "",
+        quickChoices: stop.quickChoices || [],
+        quickCorrect: stop.quickCorrect || ""
       };
     }
     return payload;
   }
 
   async function streamFromLocalServerAI(questionText, ctx, onChunk) {
+    const host = (window.location && window.location.hostname) || "";
+    if (/github\.io$|problemcoz\.com$/i.test(host) && !localAiServerOnline) {
+      checkLocalAiHealth();
+      return null;
+    }
     if (activeStreamAbort) {
       try { activeStreamAbort.abort(); } catch (_) {}
     }
@@ -691,8 +1038,13 @@
               question: questionText,
               stream: true,
               context: buildClientContextPayload(ctx),
+              wrongCount: studentTrace.wrongCount,
+              attemptNo: Math.max(studentTrace.wrongCount, Math.floor(studentTrace.chatHistory.length / 2) + 1),
               wrongChoices: studentTrace.wrongChoices.slice(-5),
               filledBlanks: studentTrace.filledBlanks || {},
+              activeBlankId: studentTrace.activeBlankId,
+              liveScreen: studentTrace.liveScreen || null,
+              liveTask: studentTrace.liveTask || null,
               history: studentTrace.chatHistory.slice(-6)
             })
           });
@@ -730,7 +1082,10 @@
           if (!line.trim()) continue;
           try {
             const evt = JSON.parse(line);
-            if (evt.type === "delta" && evt.text) {
+            if (evt.type === "meta" && evt.model && /gemma4|nartes-sokratik/i.test(evt.model)) {
+              localAiModelLabel = "Gemma 4 AI";
+              updateStatusTagUI();
+            } else if (evt.type === "delta" && evt.text) {
               accumulated += evt.text;
               if (typeof onChunk === "function") onChunk(accumulated);
             } else if (evt.type === "done" && typeof evt.fullText === "string") {
@@ -752,7 +1107,13 @@
     }
   }
 
-  // Yalnızca sunucu kapalıysa (ör. statik dosya olarak açıldığında) devreye giren çevrimdışı yedek
+  // Sunucu kapalıyken (ör. uzak tablet/statik kullanım) devreye giren çok adımlı sembolik Sokratik yedek motor
+  function gcdLocal(a, b) {
+    let x = Math.abs(a), y = Math.abs(b);
+    while (y !== 0) { const t = y; y = x % y; x = t; }
+    return x;
+  }
+
   function generateOfflineFallbackReply(rawText, ctx) {
     const text = String(rawText || "").trim();
     const lower = text.toLocaleLowerCase("tr-TR");
@@ -761,46 +1122,99 @@
     const unit = (ctx && ctx.unit) || {};
 
     studentTrace.chatTurnCount++;
+    const turn = studentTrace.chatTurnCount;
+
+    const liveTask = studentTrace && studentTrace.liveTask ? studentTrace.liveTask : null;
+    const activeHint = (liveTask && liveTask.hint) || stop.hint;
+    const activeOptions = (liveTask && Array.isArray(liveTask.options) && liveTask.options.length > 0) ? liveTask.options : stop.options;
+    const activeCorrectLetter = (liveTask && liveTask.correctLetter) || stop.correctLetter;
+    const topicName = (liveTask && liveTask.taskTitle) || kaz.title || unit.title || stop.title || "bu matematik konusu";
 
     if (PROFANITY_LIST.some(w => lower.includes(w))) {
-      return "Ben **NarTES**, senin matematik arkadaşınım. Aramızda her zaman nazik ve temiz bir dil kullanalım 😊 Gel şimdi sorumuzdaki sayılara odaklanalım!";
+      return enforceMax25WordsClient(`Nazik bir dil kullanalım 😊 Şimdi ekrandaki **${topicName}** sorusunda ilk hangi işlemi yapalım?`);
     }
     if (OFF_TOPIC_LIST.some(w => lower.includes(w))) {
-      return `Ben yalnızca **8. Sınıf LGS Matematik** ve şu anki **"${stop.title || "etkinlik"}"** durağımız için rehberlik yapabiliyorum 😊 Sorudaki hangi adımı birlikte inceleyelim?`;
+      return enforceMax25WordsClient(`Şimdi konumuz **${topicName}** 😊 Ekrandaki soruda verilen sayılarla ilk hangi işlemi kurmalıyız?`);
+    }
+    if (/^(merhaba|selam|selamlar|günaydın|iyi dersler|nasılsın)[!.,?\s]*$/i.test(lower)) {
+      return enforceMax25WordsClient(`Merhaba! 😊 Ekrandaki **${topicName}** sorusunda takıldığın adımı veya denediğin şıkkı sorabilirsin.`);
     }
     if (GIVE_ANSWER_PATTERNS.some(re => re.test(lower))) {
-      const cleanH = sanitizeHintWithoutAnswer(stop.hint, stop);
-      return `Doğrudan cevabı söylersem keşfetme heyecanını kaçırırız! ✨ Ama sana en kritik ipucunu vereyim: *${cleanH || "Sayıların arasındaki çarpma ve kalansız bölünme ilişkisini kontrol et."}* Sence ilk adımda hangi seçenek elenir?`;
+      const cleanH = sanitizeHintWithoutAnswer(activeHint, stop);
+      return enforceMax25WordsClient(`Cevabı doğrudan söylersem keyfi kaçar 😊 ${cleanH || `**${topicName}** kuralına göre ilk işlemi sen kurar mısın?`}`);
     }
 
-    const userNumbers = (text.match(/\d+/g) || []).map(n => parseInt(n, 10));
-    if (userNumbers.length > 0) {
-      const askedNum = userNumbers[0];
-      const targetNum = stop.targetNumber || (stop.gridModel && stop.gridModel.total) || null;
-      if (targetNum) {
-        if (targetNum % askedNum === 0) {
-          const pair = targetNum / askedNum;
-          return `Sorduğun **$${askedNum}$** sayısını deneyelim: **$${targetNum} \\div ${askedNum} = ${pair}$** ve kalan $0$! Yani **$${askedNum}$**, $${targetNum}$'ün tam bir çarpanıdır. Peki ekrandaki soruda bizden hangi durumu istiyor?`;
+    // 1) Öğrenci belirli bir şıkkı (A, B, C, D) sorduysa o şıkkı analiz et
+    if (Array.isArray(activeOptions) && activeOptions.length > 0) {
+      const optMatch = text.match(/(?:^|\s)([ABCDabcd])\s*(?:şıkkı|seçeneği|olur\s*mu|m[ıiuü]|neden|niye|\?|$)/);
+      if (optMatch) {
+        const askedLetter = optMatch[1].toUpperCase();
+        const askedOpt = activeOptions.find(o => o.letter === askedLetter);
+        if (askedOpt) {
+          const optValClean = stripHtml(askedOpt.text);
+          if (askedLetter === activeCorrectLetter) {
+            return enforceMax25WordsClient(`**${askedLetter}) ${optValClean}** çok güzel bir yaklaşım! 🎯 Sorudaki tüm şartları sağladığından eminsen işaretleyip dene!`);
+          }
+          const cleanH = sanitizeHintWithoutAnswer(activeHint, stop);
+          return enforceMax25WordsClient(`**${askedLetter}) ${optValClean}** sorudaki koşulu tam sağlamıyor. ${cleanH || "Şarta uyan diğer çarpan veya işlemi dener misin?"}`);
         }
-        const rem = targetNum % askedNum;
-        return `Sorduğun **$${askedNum}$** sayısını test ettiğimizde **$${targetNum} \\div ${askedNum}$** işleminden **$${rem}$ kalanı** çıkıyor. Kalansız bölen başka bir sayı düşünelim mi?`;
       }
     }
 
-    if (studentTrace.wrongCount > 0 && (lower.includes("neden") || lower.includes("yanlış") || lower.includes("anlamadım") || lower.includes("ipucu"))) {
-      return diagnoseSpecificWrongAttempt({
+    // 2) Öğrenci metinde sayı sorduysa sembolik matematik kontrolü yap
+    const userNumbers = (text.match(/\b\d{1,4}\b/g) || []).map(n => parseInt(n, 10)).filter(n => n > 0);
+    const stemNumbers = (stripHtml((liveTask && liveTask.promptText) || stop.stem || stop.subtitle || "").match(/\b\d{1,4}\b/g) || []).map(n => parseInt(n, 10)).filter(n => n > 1);
+    const liveTargetNum = (liveTask && Number(liveTask.targetNumber))
+      || (liveTask && Array.isArray(liveTask.numbers) && Number(liveTask.numbers[0]))
+      || null;
+    const targetNum = liveTargetNum || stop.targetNumber || stop.rootNumber || (stop.gridModel && stop.gridModel.total) || stemNumbers[0] || null;
+
+    if (userNumbers.length === 2 && (lower.includes("ebob") || lower.includes("ekok") || lower.includes("ortak") || lower.includes("asal"))) {
+      const a = userNumbers[0], b = userNumbers[1];
+      const eb = gcdLocal(a, b);
+      const ek = (a * b) / eb;
+      return enforceMax25WordsClient(`$\\text{EBOB}(${a},${b})=${eb}$, $\\text{EKOK}(${a},${b})=${ek}$. Soruda eş parçalara mı bölüyoruz, ortak katta mı buluşuyoruz?`);
+    }
+
+    if (userNumbers.length > 0 && targetNum && userNumbers[0] !== targetNum) {
+      const askedNum = userNumbers[0];
+      const big = Math.max(targetNum, askedNum);
+      const small = Math.min(targetNum, askedNum);
+      if (small > 1) {
+        const rem = big % small;
+        if (rem === 0) {
+          const pair = big / small;
+          return enforceMax25WordsClient(`$${big} \\div ${small} = ${pair}$ (kalan $0$, tam bölünür!). Peki sorudaki ek koşulu sağlıyor mu?`);
+        }
+        return enforceMax25WordsClient(`$${big} \\div ${small}$ işleminde kalan $${rem}$ oluyor, tam bölünmüyor. $${targetNum}$'ü tam bölen başka sayı dener misin?`);
+      }
+    }
+
+    // 3) Öğrenci ilk kez son yanlışını sorduysa spesifik hata teşhisi ver
+    if (studentTrace.wrongCount > 0 && turn <= 1 && (lower.includes("neden") || lower.includes("niye") || lower.includes("yanlış") || lower.includes("hata"))) {
+      const pep = pickFreshMotivation(studentTrace.wrongCount + 1);
+      return enforceMax25WordsClient(`${pep} ${diagnoseSpecificWrongAttempt({
         wrongValue: studentTrace.lastWrongValue,
         targetLabel: studentTrace.lastTargetLabel,
         customHint: stop.hint
-      }, ctx);
+      }, ctx)}`);
     }
 
-    const cleanHint = sanitizeHintWithoutAnswer(stop.hint, stop);
-    if (cleanHint) {
-      return `💡 *${cleanHint}* Buna göre ilk adımda hangi sayıyı denemeliyiz?`;
+    if (studentTrace.liveScreen && studentTrace.liveScreen.mode === "factor_methods_lab") {
+      const ls = studentTrace.liveScreen;
+      return enforceMax25WordsClient(
+        `Harika gidiyorsun! 😊 **${ls.methodTitle || "Bu yöntem"}** adımında **${ls.targetNumber || ""}** sayısı için seçili kutuda çarpım veya bölüm ilişkisini dener misin?`
+      );
     }
-    const progressive = buildProgressiveSocraticHint({}, ctx, Math.min(3, Math.max(1, studentTrace.chatTurnCount)));
-    return progressive.body;
+
+    // 4) Sınırsız, tekrarsız ve <=25 kelime Sokratik ilerleme
+    const effectiveDepth = turn + Math.max(0, studentTrace.wrongCount - 1);
+    const progressive = buildProgressiveSocraticHint({
+      wrongValue: studentTrace.lastWrongValue,
+      targetLabel: studentTrace.lastTargetLabel,
+      customHint: stop.hint
+    }, ctx, effectiveDepth);
+    return enforceMax25WordsClient(progressive.body);
   }
 
   // ==========================================================================
@@ -871,9 +1285,17 @@
     const promptsWrap = document.getElementById("nartesQuickPrompts");
     if (!promptsWrap) return;
     const stop = (currentContext && currentContext.stop) || {};
+    const ls = studentTrace.liveScreen;
 
     let chips = [];
-    if (stop.type === "concept") {
+    if (stop.activityMode === "factor_methods_lab" || (ls && ls.mode === "factor_methods_lab")) {
+      const mName = (ls && ls.methodTitle) || "bu yöntem";
+      chips = [
+        { label: "🌸 Bu yöntem nasıl çalışır?", prompt: `Ekrandaki ${mName} yöntemini kısaca nasıl uygulayacağımı söyler misin?` },
+        { label: "🎯 Seçili kutuyu nasıl bulurum?", prompt: `Ekranda seçili olan eksik kutuyu bulmak için hangi işlemi yapmalıyım?` },
+        { label: "🔎 Neden yanlış oldu?", prompt: "Az önceki denemem neden olmadı?" }
+      ];
+    } else if (stop.type === "concept") {
       chips = [
         { label: "🧩 Boşluğu nasıl bulurum?", prompt: "Seçili mavi boşluğa hangi kavramın geleceğini nasıl anlayabilirim?" },
         { label: "📘 Kuralı kısaca anlat", prompt: "Bu duraktaki kuralı çok kısa ve basitçe anlatır mısın?" },
@@ -881,8 +1303,8 @@
       ];
     } else if (stop.type === "question") {
       chips = [
-        { label: "🧭 İlk adım ne?", prompt: "Bu soruyu çözmeye ilk hangi adımdan başlamalıyım?" },
-        { label: "📐 Görseli nasıl kullanayım?", prompt: "Sorudaki şekil ve sayılar arasındaki ilişkiyi nasıl kurmalıyım?" },
+        { label: "🧭 İlk adım ne?", prompt: "Ekrandaki bu soruyu çözmeye ilk hangi işlemden başlamalıyım?" },
+        { label: "📐 İpucu verir misin?", prompt: "Bu sorudaki sayılar arasındaki ilişkiyi kurmam için motive edici bir ipucu verir misin?" },
         { label: "🔎 Neden yanlış oldu?", prompt: "Son denediğim şık neden doğru değil?" }
       ];
     } else {
@@ -992,10 +1414,13 @@
       const next = typeof forceState === "boolean" ? forceState : !isPanelOpen;
       applyPanelVisuals(next);
       if (next) {
+        if (!localAiServerOnline) {
+          checkLocalAiHealth();
+        }
         const msgBox = document.getElementById("nartesChatMessages");
         if (msgBox && msgBox.children.length === 0) {
           const stopTitle = (currentContext.stop && currentContext.stop.title) || "Çarpanlar ve Katlar";
-          const welcome = `Selam! Ben **Bilge NarTES** 👋 **${stopTitle}** adımında takıldığın yeri bana kısaca sor, ipucuyla hemen çözelim!`;
+          const welcome = enforceMax25WordsClient(`Selam! 👋 Ekrandaki **${stopTitle}** adımında takıldığın yeri veya denediğin şıkkı sor, birlikte çözelim!`);
           appendMessage("bot", welcome, true, "guide");
         }
         setTimeout(() => input && input.focus(), 60);
@@ -1028,14 +1453,186 @@
     });
   }
 
-  function formatMarkdownAndMath(text) {
-    return String(text || "")
+  function escapeHtmlBasic(str) {
+    return String(str || "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function formatMarkdownPreservingClosedMath(text, allowOpenBold) {
+    const mathTokens = [];
+    const stash = (match) => {
+      const idx = mathTokens.length;
+      mathTokens.push(escapeHtmlBasic(match));
+      return `\u0000NMATH${idx}\u0000`;
+    };
+
+    let work = String(text || "")
+      .replace(/\$\$[\s\S]+?\$\$/g, stash)
+      .replace(/\\\[[\s\S]+?\\\]/g, stash)
+      .replace(/\\\([\s\S]+?\\\)/g, stash)
+      .replace(/(^|[^\\])\$(?!\$)(?:\\.|[^$\\\n])+\$/g, (full, pre) => {
+        const expr = full.slice(pre.length);
+        return pre + stash(expr);
+      });
+
+    work = escapeHtmlBasic(work)
+      .replace(/\\times\b/g, "×")
+      .replace(/\\div\b/g, "÷")
+      .replace(/\\cdot\b/g, "·")
+      .replace(/\\pm\b/g, "±")
+      .replace(/\\le(?:q)?\b/g, "≤")
+      .replace(/\\ge(?:q)?\b/g, "≥")
+      .replace(/\\ne(?:q)?\b/g, "≠")
+      .replace(/\\Rightarrow\b/g, "⇒")
+      .replace(/\\rightarrow\b|\\to\b/g, "→")
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.+?)\*/g, "<em>$1</em>")
-      .replace(/\n/g, "<br>");
+      .replace(/(^|[^*])\*(?!\*)(.+?)\*(?!\*)/g, "$1<em>$2</em>");
+
+    if (allowOpenBold) {
+      work = work.replace(/\*\*([^*]+)$/, "<strong>$1</strong>");
+      // Sonda yarıda kalmış tek ters eğik çizgi varsa yazım bitene kadar gizle
+      work = work.replace(/\\[a-zA-Z]*$/, "");
+    }
+
+    work = work.replace(/\n/g, "<br>");
+    return work.replace(/\u0000NMATH(\d+)\u0000/g, (_, i) => mathTokens[Number(i)] || "");
+  }
+
+  function formatMarkdownAndMath(text) {
+    return formatMarkdownPreservingClosedMath(text, false);
+  }
+
+  const COMPLETE_LATEX_SYMBOLS = new Set([
+    "times", "div", "cdot", "pm", "mp", "le", "leq", "ge", "geq", "neq", "ne",
+    "approx", "Rightarrow", "rightarrow", "to", "infty", "pi", "in", "notin",
+    "subset", "cup", "cap", "dots", "cdots", "ldots"
+  ]);
+
+  function fallbackReadableMathPreview(rawLatex) {
+    return escapeHtmlBasic(
+      String(rawLatex || "")
+        .replace(/\\text\{([^}]*)\}?/g, "$1")
+        .replace(/\\times\b/g, " × ")
+        .replace(/\\div\b/g, " ÷ ")
+        .replace(/\\cdot\b/g, " · ")
+        .replace(/\\Rightarrow\b/g, " ⇒ ")
+        .replace(/\\rightarrow\b|\\to\b/g, " → ")
+        .replace(/\\le(?:q)?\b/g, " ≤ ")
+        .replace(/\\ge(?:q)?\b/g, " ≥ ")
+        .replace(/\\ne(?:q)?\b/g, " ≠ ")
+        .replace(/\\[a-zA-Z]*$/g, "")
+        .replace(/[{}]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+    );
+  }
+
+  function renderOpenLatexPreviewHtml(rawOpenLatex, isDisplay) {
+    const trimmed = String(rawOpenLatex || "").trim();
+    if (!trimmed) return "";
+
+    let prep = trimmed;
+    // Yarıda kalmış ters eğik çizgi veya henüz tamamlanmamış LaTeX komutunu geçici temizle
+    prep = prep.replace(/\\([a-zA-Z]*)$/, (full, cmd) => {
+      if (!cmd) return "";
+      if (COMPLETE_LATEX_SYMBOLS.has(cmd)) return full;
+      return "";
+    });
+
+    prep = prep.trim();
+    if (!prep) return "";
+
+    // Yarıda kalmış kök, üs, indis veya kesir yapılarını KaTeX için dengeli hâle getir
+    prep = prep
+      .replace(/\\frac\s*$/, "")
+      .replace(/\\sqrt\s*$/, "\\sqrt{\\,}")
+      .replace(/(\^|_)\s*$/, "$1{\\,}")
+      .replace(/(\\times|\\div|\\cdot|\\pm|\+|-|=)\s*$/, "$1 {}");
+
+    // Açık kalan { süslü parantezleri kapat
+    let openBraces = 0;
+    for (let i = 0; i < prep.length; i++) {
+      if (prep[i] === "\\" && i + 1 < prep.length) {
+        i++;
+        continue;
+      }
+      if (prep[i] === "{") openBraces++;
+      else if (prep[i] === "}" && openBraces > 0) openBraces--;
+    }
+    if (prep.endsWith("{")) {
+      prep += "\\,";
+    }
+    if (openBraces > 0) {
+      prep += "}".repeat(openBraces);
+    }
+    // \frac{a} gibi ikinci paydası henüz yazılmamış kesri tamamla
+    if (/\\frac\{[^{}]*\}$/.test(prep)) {
+      prep += "{\\,}";
+    }
+
+    if (window.katex && typeof window.katex.renderToString === "function") {
+      try {
+        return window.katex.renderToString(prep, {
+          displayMode: Boolean(isDisplay),
+          throwOnError: true
+        });
+      } catch (_) {}
+    }
+
+    const cleanPreview = fallbackReadableMathPreview(trimmed);
+    return cleanPreview ? `<span class="nartes-live-math">${cleanPreview}</span>` : "";
+  }
+
+  function renderStreamingBubbleMath(bubbleEl, partialText) {
+    if (!bubbleEl) return;
+    const src = String(partialText || "");
+
+    // Tamamlanmış tüm matematik bloklarını maskeleyip sonda açık kalan matematik başlangıcı var mı kontrol et
+    let scan = src
+      .replace(/\$\$[\s\S]+?\$\$/g, m => "X".repeat(m.length))
+      .replace(/\\\[[\s\S]+?\\\]/g, m => "X".repeat(m.length))
+      .replace(/\\\([\s\S]+?\\\)/g, m => "X".repeat(m.length))
+      .replace(/(^|[^\\])\$(?!\$)(?:\\.|[^$\\\n])+\$/g, (m, pre) => pre + "X".repeat(m.length - pre.length));
+
+    let openPos = -1;
+    let openLen = 0;
+    let isDisplay = false;
+
+    const candidates = [
+      { idx: scan.indexOf("$$"), len: 2, disp: true },
+      { idx: scan.indexOf("\\["), len: 2, disp: true },
+      { idx: scan.indexOf("\\("), len: 2, disp: false }
+    ];
+    const singleDollarMatch = /(^|[^\\])\$(?!\$)/.exec(scan);
+    if (singleDollarMatch) {
+      const dPos = singleDollarMatch.index + singleDollarMatch[1].length;
+      candidates.push({ idx: dPos, len: 1, disp: false });
+    }
+
+    for (const c of candidates) {
+      if (c.idx !== -1 && (openPos === -1 || c.idx < openPos)) {
+        openPos = c.idx;
+        openLen = c.len;
+        isDisplay = c.disp;
+      }
+    }
+
+    if (openPos === -1) {
+      bubbleEl.innerHTML = formatMarkdownPreservingClosedMath(src, true);
+      renderMathInside(bubbleEl);
+      return;
+    }
+
+    const closedPrefix = src.slice(0, openPos);
+    const rawOpenLatex = src.slice(openPos + openLen);
+    const tempPrefix = document.createElement("span");
+    tempPrefix.innerHTML = formatMarkdownPreservingClosedMath(closedPrefix, true);
+    renderMathInside(tempPrefix);
+    const liveMathHtml = renderOpenLatexPreviewHtml(rawOpenLatex, isDisplay);
+
+    bubbleEl.innerHTML = tempPrefix.innerHTML + liveMathHtml;
   }
 
   function renderMathInside(el) {
@@ -1044,6 +1641,7 @@
       window.renderMathInElement(el, {
         delimiters: [
           { left: "$$", right: "$$", display: true },
+          { left: "\\[", right: "\\]", display: true },
           { left: "$", right: "$", display: false },
           { left: "\\(", right: "\\)", display: false }
         ],
@@ -1107,13 +1705,14 @@
 
     let finalReply = await streamFromLocalServerAI(cleanQ, currentContext, (partialText) => {
       if (!bubbleEl) return;
-      bubbleEl.innerHTML = formatMarkdownAndMath(partialText);
+      renderStreamingBubbleMath(bubbleEl, partialText);
       if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
     });
 
     if (!finalReply) {
       finalReply = generateOfflineFallbackReply(cleanQ, currentContext);
     }
+    finalReply = enforceMax25WordsClient(finalReply, MAX_MENTOR_WORDS);
 
     streamItem.classList.remove("is-streaming");
     if (avatarEl) avatarEl.innerHTML = getAvatarHtml("nartes-avatar-sm", "guide");
@@ -1174,35 +1773,52 @@
       initNartesMentorDOM();
       const prevStopId = currentContext && currentContext.stop ? currentContext.stop.id : null;
       const prevUnitNo = currentContext && currentContext.unit ? currentContext.unit.unitNo : null;
+      const prevSubIdx = currentContext && currentContext.stop && typeof currentContext.stop.activeQuestionIndex === "number"
+        ? currentContext.stop.activeQuestionIndex
+        : null;
       const nextStopId = ctx && ctx.stop ? ctx.stop.id : null;
       const nextUnitNo = ctx && ctx.unit ? ctx.unit.unitNo : null;
-      const stopChanged = prevStopId !== nextStopId || prevUnitNo !== nextUnitNo;
+      const nextSubIdx = ctx && ctx.stop && typeof ctx.stop.activeQuestionIndex === "number"
+        ? ctx.stop.activeQuestionIndex
+        : null;
+      const stopChanged = prevStopId !== nextStopId || prevUnitNo !== nextUnitNo || prevSubIdx !== nextSubIdx;
 
-      if (gateCountdownTimer) {
+      if (gateCountdownTimer && stopChanged) {
         clearInterval(gateCountdownTimer);
         gateCountdownTimer = null;
       }
 
       currentContext = ctx || { unit: null, kaz: null, stop: null };
-      studentTrace = {
-        wrongCount: 0,
-        attemptCountsByTarget: {},
-        wrongChoices: [],
-        lastWrongValue: null,
-        lastTargetLabel: null,
-        filledBlanks: {},
-        activeBlankId: null,
-        chatTurnCount: 0,
-        chatHistory: stopChanged ? [] : studentTrace.chatHistory,
-        remediationLocked: false
-      };
-
-      const gateEl = document.getElementById("nartesStudyGateOverlay");
-      if (gateEl) gateEl.hidden = true;
+      if (stopChanged) {
+        if (activeStreamAbort) {
+          try { activeStreamAbort.abort(); } catch (_) {}
+          activeStreamAbort = null;
+        }
+        studentTrace = {
+          wrongCount: 0,
+          attemptCountsByTarget: {},
+          wrongChoices: [],
+          lastWrongValue: null,
+          lastTargetLabel: null,
+          filledBlanks: {},
+          activeBlankId: null,
+          liveScreen: null,
+          liveTask: null,
+          liveTaskSignature: "",
+          chatTurnCount: 0,
+          chatHistory: [],
+          usedMotivationIndices: [],
+          shownHintBodies: [],
+          remediationLocked: false
+        };
+        const gateEl = document.getElementById("nartesStudyGateOverlay");
+        if (gateEl) gateEl.hidden = true;
+      }
 
       const subEl = document.getElementById("nartesContextSub");
       if (subEl && currentContext.stop) {
-        subEl.textContent = `Durak ${currentContext.stop.id}: ${currentContext.stop.title}`;
+        const badgePart = currentContext.stop.subQuestionBadge ? ` • ${currentContext.stop.subQuestionBadge}` : "";
+        subEl.textContent = `Adım ${currentContext.stop.id}: ${currentContext.stop.title}${badgePart}`;
       }
 
       if (stopChanged) {
@@ -1223,14 +1839,76 @@
       refreshQuickPromptChips();
       setHeaderMascotMood("guide");
 
-      const bubble = document.getElementById("nartesSpeechBubble");
-      if (bubble) bubble.hidden = true;
+      if (stopChanged) {
+        const bubble = document.getElementById("nartesSpeechBubble");
+        if (bubble) bubble.hidden = true;
+      }
+    },
+
+    notifyScreenTask(liveTask) {
+      initNartesMentorDOM();
+      if (!liveTask || typeof liveTask !== "object") return;
+      const sig = String(liveTask.signature || `${liveTask.taskTitle || ""}:${liveTask.targetNumber || ""}:${(liveTask.numbers || []).join(",")}`);
+      const changed = studentTrace.liveTaskSignature !== sig;
+      studentTrace.liveTask = liveTask;
+      studentTrace.liveTaskSignature = sig;
+
+      if (changed) {
+        if (activeStreamAbort) {
+          try { activeStreamAbort.abort(); } catch (_) {}
+          activeStreamAbort = null;
+        }
+        studentTrace.wrongCount = 0;
+        studentTrace.attemptCountsByTarget = {};
+        studentTrace.wrongChoices = [];
+        studentTrace.lastWrongValue = null;
+        studentTrace.lastTargetLabel = null;
+        studentTrace.chatHistory = [];
+        studentTrace.shownHintBodies = [];
+        studentTrace.usedMotivationIndices = [];
+        studentTrace.remediationLocked = false;
+        if (gateCountdownTimer) {
+          clearInterval(gateCountdownTimer);
+          gateCountdownTimer = null;
+        }
+        const gateEl = document.getElementById("nartesStudyGateOverlay");
+        if (gateEl) gateEl.hidden = true;
+        const bubble = document.getElementById("nartesSpeechBubble");
+        if (bubble) bubble.hidden = true;
+        const msgBox = document.getElementById("nartesChatMessages");
+        if (msgBox) {
+          msgBox.innerHTML = "";
+          if (isPanelOpen) {
+            const label = liveTask.taskTitle || (liveTask.targetNumber ? `Hedef ${liveTask.targetNumber}` : "Yeni Görev");
+            appendMessage("bot", `Aktif ekran güncellendi: **${label}**. Takıldığın adımı sorabilirsin! ✨`, false, "guide");
+          }
+        }
+      }
+
+      const subEl = document.getElementById("nartesContextSub");
+      if (subEl) {
+        const title = liveTask.taskTitle || (currentContext.stop && currentContext.stop.title) || "Etkinlik";
+        const tPart = liveTask.targetNumber ? ` • Sayı: ${liveTask.targetNumber}` : "";
+        subEl.textContent = `${title}${tPart}`;
+      }
+      refreshQuickPromptChips();
     },
 
     updateProgress(info) {
       if (!info || typeof info !== "object") return;
       if (info.filledBlanks) studentTrace.filledBlanks = info.filledBlanks;
       if (info.activeBlankId !== undefined) studentTrace.activeBlankId = info.activeBlankId;
+      if (info.liveTask) {
+        this.notifyScreenTask(info.liveTask);
+      }
+      if (info.liveScreen) {
+        studentTrace.liveScreen = info.liveScreen;
+        const subEl = document.getElementById("nartesContextSub");
+        if (subEl && info.liveScreen.methodTitle) {
+          subEl.textContent = `${info.liveScreen.methodTitle} • Hedef: ${info.liveScreen.targetNumber || ""}`;
+        }
+        refreshQuickPromptChips();
+      }
     },
 
     onCorrect() {
@@ -1281,7 +1959,7 @@
       initNartesMentorDOM();
       playMentorSound("hint");
       showSpeechBubble(
-        `Harika! Soldaki tüm adımları inceledin. Şimdi sağ taraftaki **"${stripHtml(questionText || "Doğrulama Sorusu")}"** kartını yanıtlayarak sıradaki durağın kilidini açabilirsin! 👉`,
+        enforceMax25WordsClient(`Harika! Soldaki adımları tamamladın; şimdi sağdaki doğrulama sorusunu yanıtlayıp sıradaki durağı açabilirsin! 👉`),
         "guide",
         6500
       );

@@ -1,0 +1,19 @@
+{
+  "id": "an-u01-k06",
+  "kazanimId": "k06",
+  "baslik": "Karışık soruda önce fiil",
+  "altinBilgiId": [
+    "ab-u01-k06-01"
+  ],
+  "adimlar": [
+    "Ayır, paylaştır, artmasın, en geniş aralık: EBOB.",
+    "Buluşsun, döşensin, en kısa bütün, payda: EKOK.",
+    "Kaç böleni var veya tek sayıda bölen: tam kare ve üs formülü."
+  ],
+  "ornek": {
+    "istem": "180 cm ve 200 cm boru artmadan eş parçalara ayrılacak. En uzun parça kaç cm, en az kaç parça çıkar?",
+    "cozum": "Ayırma işi EBOB. EBOB(180, 200) = 20. Parça sayısı 180/20 + 200/20 = 9+10 = 19."
+  },
+  "tur": "anlatim",
+  "uniteId": "u01"
+}

@@ -1,0 +1,34 @@
+{
+  "id": "ab-u01-k05-02",
+  "sira": 2,
+  "kazanimId": "k05",
+  "baslik": "Ardışık sayılar ve 1 her zaman uyar",
+  "metin": "Ardışık sayma sayıları aralarında asaldır. Ardışık tek sayılar da aralarında asaldır. 1, her sayma sayısı ile aralarında asaldır. Birbirinden farklı asal sayılar aralarında asaldır.",
+  "ornek": "14 ile 15 ardışıktır, aralarında asaldır. 8 ile 10 ardışık değildir ve 2 ortaktır.",
+  "yanlis": [
+    {
+      "kod": "ciftleri-eleme",
+      "uyari": "İkisi de çiftse 2 ortaktır, aralarında asal olamazlar. Biri çift biri tek olabilir."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 33,
+      "yer": "Altın Bilgiler"
+    },
+    {
+      "kod": "mw",
+      "sayfa": 34,
+      "yer": "Altın Bilgiler"
+    },
+    {
+      "kod": "sh",
+      "sayfa": 8,
+      "yer": "Ne işe yarar"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.3"
+}

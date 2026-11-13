@@ -563,12 +563,21 @@
     document.body.classList.remove("sb-expanded-mode");
   }
 
+  let lastSbVisitKey = "";
+
   function renderSmartboardStop(opts) {
     cleanupPreviousBoard();
 
-    const stop = opts.stop;
+    const rawStop = opts.stop;
     const kaz = opts.kaz;
     const UNIT = opts.unit;
+    const visitKey = `${UNIT.id}:${rawStop.id}`;
+    const isNewVisit = !opts._keepCurrentVariant && visitKey !== lastSbVisitKey;
+    lastSbVisitKey = visitKey;
+
+    const stop = (window.NartesVariantEngine && typeof window.NartesVariantEngine.resolveSmartboardStop === "function")
+      ? window.NartesVariantEngine.resolveSmartboardStop(rawStop, { next: isNewVisit })
+      : rawStop;
     const container = opts.container;
     const safeMathHtml = opts.safeMathHtml || (s => s);
     const renderOptionMath = opts.renderOptionMath || (s => s);
@@ -583,8 +592,11 @@
       return;
     }
 
-    const ansStoreKey = `nartes_sb_ans_${UNIT.id}_${kaz.id}`;
+    const varSuffix = typeof stop._variantIndex === "number" ? `_v${stop._variantIndex}` : "";
+    const boardKey = `${stop.boardId || kaz.id}${varSuffix}`;
+    const ansStoreKey = `nartes_sb_ans_${UNIT.id}_${boardKey}`;
     const solvedMap = readStore(ansStoreKey, {});
+    const hasVariants = Array.isArray(rawStop.variantPacks) && rawStop.variantPacks.length > 1;
     let currentIdx = Math.max(0, questions.findIndex((_, idx) => !solvedMap[idx]));
     if (currentIdx >= questions.length) currentIdx = 0;
 
@@ -594,7 +606,7 @@
       <!-- Üst Akıllı Tahta Gezinti Şeridi -->
       <div class="sb-ust-bar">
         <div class="sb-ust-sol">
-          <span class="sb-konu-etiket">✏️ Akıllı Tahta • ${kaz.no}. ${kaz.title}</span>
+          <span class="sb-konu-etiket">${stop.icon || "✏️"} ${stop.typeLabel || "Uygulama Zamanı"} • ${kaz.no}. ${kaz.title}</span>
           <span class="sb-soru-etiket-pill" id="sbActiveBadge">Soru 1</span>
         </div>
 
@@ -611,11 +623,12 @@
         </div>
 
         <div class="sb-ust-sag">
+          ${hasVariants ? `<button type="button" class="sb-aksiyon-btn" id="sbRefreshVariant" title="Sayıları Değiştirerek Yeni Sorular Getir"><span>🔄</span> <span>Yeni Sorular</span></button>` : ""}
           <button type="button" class="sb-aksiyon-btn sb-cozum-ac-btn" id="sbToggleSolution" hidden>
             <span>📘</span> <span>Çözümü Gör</span>
           </button>
           <button type="button" class="sb-aksiyon-btn" id="sbExpandToggle" title="Akıllı Tahtayı Genişlet / Küçült">
-            <span id="sbExpandIcon">⛶</span> <span id="sbExpandLabel">Geniş Tahta</span>
+            <span id="sbExpandIcon">⛶</span> <span id="sbExpandLabel">Ekranı Büyüt</span>
           </button>
         </div>
       </div>
@@ -706,7 +719,7 @@
 
     let saveTimer = null;
     function getStrokeStoreKey(qIdx) {
-      return `nartes_sb_ink_${UNIT.id}_${kaz.id}_q${qIdx}`;
+      return `nartes_sb_ink_${UNIT.id}_${boardKey}_q${qIdx}`;
     }
 
     const board = new SmartboardCanvas(tuvalEl, canliEl, kagitEl, (strokes) => {
@@ -808,20 +821,40 @@
     const expandBtn = root.querySelector("#sbExpandToggle");
     const expandIcon = root.querySelector("#sbExpandIcon");
     const expandLabel = root.querySelector("#sbExpandLabel");
+    const refreshVarBtn = root.querySelector("#sbRefreshVariant");
+
+    function syncBoardResize() {
+      if (typeof window.requestAnimationFrame === "function") {
+        window.requestAnimationFrame(() => board.boyutla());
+      }
+      setTimeout(() => board.boyutla(), 60);
+      setTimeout(() => board.boyutla(), 220);
+    }
 
     function toggleExpanded(forceVal) {
       const next = typeof forceVal === "boolean"
         ? forceVal
         : !document.body.classList.contains("sb-expanded-mode");
       document.body.classList.toggle("sb-expanded-mode", next);
+      expandBtn.classList.toggle("is-expanded", next);
       expandIcon.textContent = next ? "🗗" : "⛶";
-      expandLabel.textContent = next ? "Normal Görünüm" : "Geniş Tahta";
-      setTimeout(() => board.boyutla(), 60);
+      expandLabel.textContent = next ? "Ekranı Küçült (Esc)" : "Ekranı Büyüt";
+      syncBoardResize();
     }
     expandBtn.addEventListener("click", () => {
       playTone("click");
       toggleExpanded();
     });
+
+    if (refreshVarBtn) {
+      refreshVarBtn.addEventListener("click", () => {
+        playTone("click");
+        if (window.NartesVariantEngine) {
+          window.NartesVariantEngine.enterStop(rawStop.id, rawStop.variantPacks.length);
+        }
+        renderSmartboardStop(Object.assign({}, opts, { _keepCurrentVariant: true }));
+      });
+    }
 
     // Çözüm Çekmecesi
     toggleSolBtn.addEventListener("click", () => {
@@ -836,18 +869,36 @@
     function syncActiveQuestionToMentor() {
       const q = questions[currentIdx];
       if (!q || !window.NartesMentor) return;
-      const fullStem = [q.stem || "", q.questionPrompt || ""].filter(Boolean).join(" ");
+      const fullStem = [q.stem || q.ocrText || "", q.questionPrompt || ""].filter(Boolean).join(" ");
       const virtualStop = Object.assign({}, stop, {
         type: "question",
         activeQuestionIndex: currentIdx,
+        categoryTag: q.categoryTag || stop.typeLabel || "Uygulama Zamanı",
         title: `${stop.title} (${currentIdx + 1}. Soru)`,
-        stem: fullStem,
+        stem: fullStem || `${kaz.title} — ${q.badge || (currentIdx + 1) + ". Soru"}`,
         options: q.options || [],
         correctLetter: q.correctLetter,
         hint: q.hint || "",
         solution: q.solution || ""
       });
-      window.NartesMentor.setContext({ unit: UNIT, kaz, stop: virtualStop });
+      window.NartesMentor.setContext({ unit: UNIT, kaz, stop: virtualStop, activeQuestionIndex: currentIdx });
+      if (typeof window.NartesMentor.notifyScreenTask === "function") {
+        const nums = Array.from(new Set(
+          (fullStem.match(/\b\d{1,4}\b/g) || [])
+            .map(Number)
+            .filter(n => n >= 2 && n <= 2000)
+        )).slice(0, 6);
+        window.NartesMentor.notifyScreenTask({
+          signature: `sb:${stop.id}:${stop._variantIndex || 0}:q${currentIdx}`,
+          taskTitle: `${stop.title} (${currentIdx + 1}. Soru)`,
+          promptText: fullStem,
+          numbers: nums,
+          targetNumber: nums[0] || undefined,
+          hint: q.hint || "",
+          solution: q.solution || "",
+          correctAnswer: q.correctLetter || ""
+        });
+      }
     }
 
     // Şık Seçimi ve Sokratik Doğrulama
@@ -869,13 +920,16 @@
       if (letter === q.correctLetter) {
         solvedMap[qIndex] = letter;
         writeStore(ansStoreKey, solvedMap);
-        playTone("success");
+        const solvedTotal = questions.filter((item, idx) => solvedMap[idx] === item.correctLetter).length;
+        playTone(solvedTotal === questions.length ? "fanfare" : "combo");
+        if (window.NartesSFX && typeof window.NartesSFX.burst === "function" && clickedBtn) {
+          window.NartesSFX.burst(clickedBtn);
+        }
         if (window.NartesMentor) window.NartesMentor.onCorrect();
         renderAnswerControls();
 
-        const solvedTotal = questions.filter((item, idx) => solvedMap[idx] === item.correctLetter).length;
         if (solvedTotal === questions.length) {
-          completeCurrentStop(`Harika! ${kaz.title} alt başlığının tüm Akıllı Tahta sorularını kaleminle çözüp tamamladın!`);
+          completeCurrentStop(`Harika! ${stop.typeLabel || "Uygulama Zamanı"} bölümündeki tüm soruları kaleminle çözüp tamamladın!`);
         } else {
           // Otomatik olarak sıradaki çözülmemiş soruya geç
           const nextUnanswered = questions.findIndex((item, idx) => solvedMap[idx] !== item.correctLetter);
@@ -913,8 +967,8 @@
       const q = questions[currentIdx];
       const isSolved = solvedMap[currentIdx] === q.correctLetter;
 
-      // 1) Çözüm butonu durumu
-      toggleSolBtn.hidden = !isSolved;
+      // 1) Çözüm butonu durumu (Öğretmen Modunda çözmeden de doğrudan görülebilir)
+      toggleSolBtn.hidden = !(isSolved || window.MATFLOW_TEACHER_MODE);
       solBodyEl.innerHTML = `<div class="sb-cozum-metin">${safeMathHtml(q.solution || "Doğru cevap: " + q.correctLetter)}</div>`;
       applyKaTeX(solBodyEl);
 
@@ -999,10 +1053,21 @@
       root.querySelector("#sbPrevQ").disabled = currentIdx === 0;
       root.querySelector("#sbNextQ").disabled = currentIdx >= questions.length - 1;
 
-      // Soru Kâğıdı Baskısı (Görsel soru VEYA Kitap Dizgisi + Şema)
+      // Soru Kâğıdı Baskısı (PDF Kesit Görseli VEYA Kitap Dizgisi + Şema)
+      const catBadgeHtml = q.categoryTag
+        ? `<span class="sb-kategori-etiket">${safeMathHtml(q.categoryTag)}</span>`
+        : "";
+
       if (q.image) {
         sheetEl.innerHTML = `
-          <img class="sb-soru-resim" src="${q.image}" alt="${currentIdx + 1}. Soru" draggable="false">
+          <div class="sb-pdf-kesit-cerceve">
+            <div class="sb-basili-no-satir">
+              <span class="sb-basili-no">${currentIdx + 1}. SORU</span>
+              ${catBadgeHtml}
+              <span class="sb-basili-kaz">${kaz.code || ""} • ${kaz.title}</span>
+            </div>
+            <img class="sb-soru-resim" src="${q.image}" alt="${currentIdx + 1}. Soru" draggable="false">
+          </div>
         `;
       } else {
         const optsHtml = (q.options || []).map(o => `
@@ -1016,6 +1081,7 @@
           <div class="sb-basili-soru-karti">
             <div class="sb-basili-no-satir">
               <span class="sb-basili-no">${currentIdx + 1}. SORU</span>
+              ${catBadgeHtml}
               <span class="sb-basili-kaz">${kaz.code || ""} • ${kaz.title}</span>
             </div>
             <div class="sb-basili-kok">${safeMathHtml(q.stem || "")}</div>

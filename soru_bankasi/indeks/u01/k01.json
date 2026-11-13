@@ -1,0 +1,496 @@
+{
+  "kazanimId": "k01",
+  "baslik": "Çarpanlar ve Katlar",
+  "kod": "M.8.1.1.1",
+  "altin": [
+    "ab-u01-k01-01",
+    "ab-u01-k01-02",
+    "ab-u01-k01-03",
+    "ab-u01-k01-04",
+    "ab-u01-k01-05",
+    "ab-u01-k01-06",
+    "ab-u01-k01-07"
+  ],
+  "anlatim": [
+    "an-u01-k01"
+  ],
+  "etkinlik": [
+    "et-u01-k01-01",
+    "et-u01-k01-02"
+  ],
+  "durak": 24,
+  "bantlar": [
+    {
+      "bant": "D1",
+      "durak": 6
+    },
+    {
+      "bant": "D2",
+      "durak": 0
+    },
+    {
+      "bant": "D3",
+      "durak": 2
+    },
+    {
+      "bant": "D4",
+      "durak": 1
+    },
+    {
+      "bant": "D5",
+      "durak": 15
+    }
+  ],
+  "liste": [
+    {
+      "tur": "soru",
+      "id": "mw-p009-s1",
+      "sayfaId": "mw-p009",
+      "no": "1",
+      "kazanimId": "k01",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 9,
+      "kok": "28'in kendisi dışındaki pozitif tam sayı çarpanlarının toplamı kaçtır?",
+      "cevap": "28",
+      "gorsel": "gorseller/mw/p009.png",
+      "altinBilgiId": [
+        "ab-u01-k01-02",
+        "ab-u01-k01-04"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p009-s3",
+      "sayfaId": "mw-p009",
+      "no": "3",
+      "kazanimId": "k01",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 9,
+      "kok": "45'in çarpanları küçükten büyüğe 1, 3, 5, 9, A, 45 ise A kaçtır?",
+      "cevap": "15",
+      "gorsel": "gorseller/mw/p009.png",
+      "altinBilgiId": [
+        "ab-u01-k01-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "mw-p009",
+      "kazanimId": "k01",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 9,
+      "baslik": "Pozitif Tam Sayıların Pozitif Çarpanları — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/mw/p009.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p010-s5",
+      "sayfaId": "mw-p010",
+      "no": "5",
+      "kazanimId": "k01",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 10,
+      "kok": "A6 iki basamaklı sayısının tek sayıda pozitif böleni vardır. A yerine yazılabilecek rakamların toplamı kaçtır?",
+      "cevap": "4",
+      "gorsel": "gorseller/mw/p010.png",
+      "altinBilgiId": [
+        "ab-u01-k01-05"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p010-s7",
+      "sayfaId": "mw-p010",
+      "no": "7",
+      "kazanimId": "k01",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 10,
+      "kok": "1'den 10'a kadar kapalı lambalara, her çocuk kendi katlarının düğmesine basıyor. Sonda kaç lamba açık kalır?",
+      "cevap": "3",
+      "gorsel": "gorseller/mw/p010.png",
+      "altinBilgiId": [
+        "ab-u01-k01-05"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "mw-p010",
+      "kazanimId": "k01",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 10,
+      "baslik": "Pozitif Tam Sayıların Pozitif Çarpanları — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/mw/p010.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p011-s1",
+      "sayfaId": "mw-p011",
+      "no": "1",
+      "kazanimId": "k01",
+      "bant": "D3",
+      "kaynak": "mw",
+      "basiliSayfa": 11,
+      "kok": "Alanı 20 m² ve kenarları tam sayı olan bahçenin çevresi metre cinsinden hangisi olamaz? A) 42  B) 36  C) 24  D) 18",
+      "cevap": "B",
+      "gorsel": "gorseller/mw/p011.png",
+      "altinBilgiId": [
+        "ab-u01-k01-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "mw-p011",
+      "kazanimId": "k01",
+      "bant": "D3",
+      "kaynak": "mw",
+      "basiliSayfa": 11,
+      "baslik": "Pozitif Tam Sayıların Pozitif Çarpanları — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/mw/p011.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p012",
+      "kazanimId": "k01",
+      "bant": "D4",
+      "kaynak": "mw",
+      "basiliSayfa": 12,
+      "baslik": "Pozitif Tam Sayıların Pozitif Çarpanları",
+      "gorsel": "gorseller/mw/p012.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "sh-p009-s1",
+      "sayfaId": "sh-p009",
+      "no": "1",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 9,
+      "kok": "Hangisi 24'ün çarpanıdır? A) 9  B) 7  C) 5  D) 3",
+      "cevap": "D",
+      "gorsel": "gorseller/sh/p009.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k02-03"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "sh-p009-s2",
+      "sayfaId": "sh-p009",
+      "no": "2",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 9,
+      "kok": "12'nin çarpanları 1, 2, 3, 4, A, 12 ise A kaçtır? A) 5  B) 6  C) 8  D) 10",
+      "cevap": "B",
+      "gorsel": "gorseller/sh/p009.png",
+      "altinBilgiId": [
+        "ab-u01-k01-04"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "sh-p009-s3",
+      "sayfaId": "sh-p009",
+      "no": "3",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 9,
+      "kok": "18'in bölenleri 1, 2, 3, A, B, 18 ise A+B kaçtır? A) 15  B) 12  C) 9  D) 6",
+      "cevap": "A",
+      "gorsel": "gorseller/sh/p009.png",
+      "altinBilgiId": [
+        "ab-u01-k01-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "sh-p009",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 9,
+      "baslik": "Pozitif tam sayıların çarpanları — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/sh/p009.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p010",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 10,
+      "baslik": "Pozitif tam sayıların çarpanları",
+      "gorsel": "gorseller/sh/p010.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p011",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 11,
+      "baslik": "Pozitif tam sayıların çarpanları",
+      "gorsel": "gorseller/sh/p011.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p012",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 12,
+      "baslik": "Pozitif tam sayıların çarpanları",
+      "gorsel": "gorseller/sh/p012.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p013",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 13,
+      "baslik": "Pozitif tam sayıların çarpanları",
+      "gorsel": "gorseller/sh/p013.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p014",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 14,
+      "baslik": "Pozitif tam sayıların çarpanları",
+      "gorsel": "gorseller/sh/p014.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p015",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 15,
+      "baslik": "Pozitif tam sayıların çarpanları",
+      "gorsel": "gorseller/sh/p015.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p016",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 16,
+      "baslik": "Pozitif tam sayıların çarpanları",
+      "gorsel": "gorseller/sh/p016.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p017",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 17,
+      "baslik": "Pozitif tam sayıların çarpanları",
+      "gorsel": "gorseller/sh/p017.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p018",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 18,
+      "baslik": "Pozitif tam sayıların çarpanları",
+      "gorsel": "gorseller/sh/p018.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p019",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 19,
+      "baslik": "Pozitif tam sayıların çarpanları",
+      "gorsel": "gorseller/sh/p019.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p020",
+      "kazanimId": "k01",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 20,
+      "baslik": "Pozitif tam sayıların çarpanları",
+      "gorsel": "gorseller/sh/p020.png",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k01-02",
+        "ab-u01-k01-03",
+        "ab-u01-k01-04",
+        "ab-u01-k01-05",
+        "ab-u01-k01-06",
+        "ab-u01-k01-07"
+      ]
+    }
+  ]
+}

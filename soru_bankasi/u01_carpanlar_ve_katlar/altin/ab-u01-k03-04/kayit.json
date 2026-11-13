@@ -1,0 +1,29 @@
+{
+  "id": "ab-u01-k03-04",
+  "sira": 4,
+  "kazanimId": "k03",
+  "baslik": "Ortak asal yoksa EBOB 1'dir",
+  "metin": "İki sayının ortak asal çarpanı yoksa EBOB 1'dir. Ardışık sayma sayılarının EBOB'u her zaman 1'dir.",
+  "ornek": "8 ve 9'un ortak asal çarpanı yoktur. EBOB(8, 9) = 1. EBOB(14, 15) = 1.",
+  "yanlis": [
+    {
+      "kod": "sifir-yazma",
+      "uyari": "Ortak bölen yok diye 0 yazma. 1 her zaman ortaktır. Sonuç 1'dir."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 17,
+      "yer": "Altın Bilgiler"
+    },
+    {
+      "kod": "mw",
+      "sayfa": 18,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

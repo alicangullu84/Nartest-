@@ -38,7 +38,7 @@
   --safe-right: env(safe-area-inset-right, 0px);
   --topbar-h: 48px;
   --workspace-head-h: 38px;
-  --road-h: 118px;
+  --road-h: 126px;
   --stop-circle-size: 38px;
   --road-line-h: 8px;
   --radius-xl: 18px;
@@ -609,8 +609,8 @@ body.sidebar-collapsed .sidebar {
 }
 
 .kazanim-mini-dot {
-  width: 10px;
-  height: 4.5px;
+  width: 7px;
+  height: 4px;
   border-radius: 999px;
   background: rgba(249, 115, 22, 0.34);
   transition: all 0.2s ease;
@@ -3692,10 +3692,104 @@ body:not(.auth-locked) .auth-gate-overlay {
 }
 
 .auth-gate-desc {
-  font-size: 14.5px;
+  font-size: 14px;
   color: #94a3b8;
-  line-height: 1.6;
-  margin-bottom: 26px;
+  line-height: 1.55;
+  margin-bottom: 18px;
+}
+
+/* Öğrenci Girişi / Öğretmen Girişi Seçici Kartlar */
+.auth-role-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.auth-role-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 13px;
+  border-radius: 15px;
+  border: 2px solid rgba(148, 163, 184, 0.24);
+  background: rgba(30, 41, 59, 0.72);
+  color: #cbd5e1;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+}
+
+.auth-role-btn:hover {
+  border-color: rgba(148, 163, 184, 0.5);
+  background: rgba(30, 41, 59, 0.95);
+  transform: translateY(-1px);
+}
+
+.auth-role-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.auth-role-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.auth-role-texts strong {
+  font-size: 13.8px;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.2;
+}
+
+.auth-role-texts small {
+  font-size: 11.2px;
+  font-weight: 600;
+  color: #94a3b8;
+  line-height: 1.25;
+}
+
+/* Aktif Öğrenci Girişi Vurgusu */
+.auth-role-btn[data-role="student"].is-active {
+  border-color: #22c55e;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.22) 0%, rgba(15, 23, 42, 0.92) 100%);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+.auth-role-btn[data-role="student"].is-active .auth-role-texts strong {
+  color: #4ade80;
+}
+
+.auth-role-btn[data-role="student"].is-active .auth-role-texts small {
+  color: #bbf7d0;
+}
+
+/* Aktif Öğretmen Girişi Vurgusu */
+.auth-role-btn[data-role="teacher"].is-active {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(15, 23, 42, 0.92) 100%);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.auth-role-btn[data-role="teacher"].is-active .auth-role-texts strong {
+  color: #fde047;
+}
+
+.auth-role-btn[data-role="teacher"].is-active .auth-role-texts small {
+  color: #fef08a;
+}
+
+.auth-submit-btn.is-teacher-mode {
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 55%, #d97706 100%);
+  box-shadow: 0 12px 28px -4px rgba(234, 88, 12, 0.48);
+}
+
+.auth-submit-btn.is-teacher-mode:hover {
+  box-shadow: 0 16px 34px -4px rgba(234, 88, 12, 0.62);
 }
 
 .auth-gate-form {
@@ -3829,7 +3923,8 @@ body:not(.auth-locked) .auth-gate-overlay {
 }
 
 @media (max-width: 560px) {
-  .auth-feature-grid {
+  .auth-feature-grid,
+  .auth-role-switch {
     grid-template-columns: 1fr;
   }
 }
@@ -4519,6 +4614,27 @@ body.auth-locked .nartes-mentor-root {
   box-shadow: inset 0 1px 2px rgba(249, 115, 22, 0.04);
 }
 
+.nsb-chat-link-btn {
+  width: 100%;
+  border: 1.5px dashed #fb923c;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 12.6px;
+  font-weight: 800;
+  padding: 9px 13px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.16s ease;
+}
+
+.nsb-chat-link-btn:hover {
+  background: #ffedd5;
+  border-style: solid;
+  color: #9a3412;
+  transform: translateY(-1px);
+}
+
 .nsb-timer-track {
   width: 100%;
   height: 5px;
@@ -4640,6 +4756,10 @@ body.auth-locked .nartes-mentor-root {
 }
 
 /* Geniş Tahta (Tam Sahne) Modu */
+body.sb-expanded-mode {
+  overflow: hidden;
+}
+
 body.sb-expanded-mode .topbar,
 body.sb-expanded-mode .sidebar,
 body.sb-expanded-mode .workspace-header,
@@ -4649,17 +4769,41 @@ body.sb-expanded-mode .window-head {
 }
 
 body.sb-expanded-mode .app-shell {
+  grid-template-columns: minmax(0, 1fr) !important;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+body.sb-expanded-mode .workspace {
+  grid-column: 1 / -1;
+  width: 100%;
   height: 100dvh;
 }
 
 body.sb-expanded-mode .stage-viewport {
-  padding: 6px;
+  padding: 0;
+  overflow: hidden;
 }
 
 body.sb-expanded-mode .window-card.is-smartboard-stop {
-  height: 100%;
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  width: 100vw;
+  height: 100dvh;
   max-height: none;
-  border-radius: 16px;
+  border-radius: 0;
+  border: none;
+  transform: none !important;
+  animation: none !important;
+  box-shadow: none;
+}
+
+#sbExpandToggle.is-expanded {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
 }
 
 .sb-calisma {
@@ -4849,8 +4993,8 @@ body.sb-expanded-mode .window-card.is-smartboard-stop {
 .sb-kagit-icerik {
   position: relative;
   z-index: 1;
-  width: 58%;
-  max-width: 600px;
+  width: min(58%, 680px);
+  max-width: 100%;
   height: 100%;
   padding: 14px 18px;
   pointer-events: none;
@@ -4859,15 +5003,27 @@ body.sb-expanded-mode .window-card.is-smartboard-stop {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+body.sb-expanded-mode .sb-kagit-icerik {
+  width: min(54%, 760px);
+  padding: 20px 26px;
 }
 
 .sb-soru-resim {
   display: block;
+  width: auto;
   max-width: 100%;
-  max-height: 100%;
+  max-height: calc(100% - 24px);
   object-fit: contain;
   object-position: left top;
+}
+
+.sb-basili-sema svg {
+  max-width: 100%;
+  height: auto;
 }
 
 .sb-basili-soru-karti {
@@ -5393,5 +5549,857 @@ body.sb-expanded-mode .window-card.is-smartboard-stop {
     width: 1px;
     height: 24px;
     margin: 0 3px;
+  }
+}
+
+
+/* ==========================================================================
+   14. MODÜLER ALT BAŞLIK DÖNGÜSÜ • KÜBİK EĞRİ YOL • 4 YÖNTEM ATÖLYESİ • SES & EFEKT
+   ========================================================================== */
+
+/* Sol Panelde Ünite Sonu Uygulama / TEOG / Örnek / LGS Bölümleri İçin Seçkin Vurgu */
+.kazanim-item.is-mastery-section {
+  border-left: 3px solid #f59e0b;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.96) 0%, rgba(15, 23, 42, 0.96) 100%);
+}
+.kazanim-item.is-mastery-section .kazanim-node {
+  border-color: rgba(251, 191, 36, 0.65);
+}
+
+/* Alt Bar: 3. Dereceden Denklem Eğrisi (Kübik Dalga) Yol Tasarımı */
+.journey-bar {
+  background: linear-gradient(180deg, #ffffff 0%, #eef4fb 100%);
+  border-top: 1.5px solid #cbd5e1;
+  padding: 6px 18px 8px;
+}
+
+.journey-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+#roadUnitTitleLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.road-cycle-badge {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.2px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+.road-chapter-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.road-chapter-pill {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 10.5px;
+  font-weight: 900;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+  padding: 0;
+}
+
+.road-chapter-pill:hover {
+  transform: translateY(-1px);
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+
+.road-chapter-pill.done {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #15803d;
+}
+
+.road-chapter-pill.active {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border-color: #ea580c;
+  color: #ffffff;
+  transform: scale(1.12);
+  box-shadow: 0 2px 7px rgba(234, 88, 12, 0.35);
+}
+
+.road-chapter-pill.locked {
+  opacity: 0.55;
+}
+
+.road-track-viewport {
+  position: relative;
+  padding: 3px 16px;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(56, 189, 248, 0.08), transparent 45%),
+    radial-gradient(circle at 80% 50%, rgba(34, 197, 94, 0.08), transparent 45%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1.5px solid #dbe4f0;
+  border-radius: 18px;
+}
+
+.road-stops {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 100%;
+  min-height: 78px;
+  padding: 8px 12px;
+  gap: 6px;
+}
+
+.road-cubic-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
+}
+
+.road-stop-item {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.road-stop-item.road-portal-item {
+  flex: 0 0 auto;
+}
+
+.road-stop-btn {
+  transform: translateY(var(--cubic-y, 0px));
+  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  min-width: 72px;
+}
+
+.road-stop-btn:hover {
+  transform: translateY(calc(var(--cubic-y, 0px) - 3px));
+}
+
+.road-portal-btn .portal-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 2px dashed #3b82f6;
+  color: #1d4ed8;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.road-portal-btn.is-next-portal.is-unlocked .portal-circle {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  border: 2px solid #16a34a;
+  color: #15803d;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+}
+
+.road-portal-btn.is-locked .portal-circle {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+}
+
+/* Bilge NarTES Canlı Akış Matematik Önizlemesi */
+.nartes-live-math {
+  font-family: "Cambria Math", "Times New Roman", serif;
+  font-weight: 700;
+  color: #1e3a8a;
+  padding: 0 2px;
+}
+
+/* ==========================================================================
+   SEÇENEKSİZ, ADIM ADIM İLERLEME GÖSTERGESİ (Tıklanamaz Doğrusal İlerleme Şeridi)
+   ========================================================================== */
+.linear-step-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: linear-gradient(90deg, #eff6ff 0%, #f8fafc 100%);
+  border: 1.5px solid #dbeafe;
+  border-radius: 14px;
+  padding: 8px 16px;
+  margin-bottom: 10px;
+}
+
+.linear-step-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.linear-step-pill {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.22);
+}
+
+.linear-step-name {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linear-step-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.linear-step-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: all 0.24s ease;
+}
+
+.linear-step-dot.active {
+  width: 26px;
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+}
+
+.linear-step-dot.done {
+  background: #16a34a;
+}
+
+/* ==========================================================================
+   TEK SATIRLI EŞ MERKEZLİ GÖKKUŞAĞI & FARKLI ETKİNLİK ÇEŞİTLERİ
+   ========================================================================== */
+.activity-stage-prompt {
+  text-align: center;
+  font-size: clamp(14.5px, 1.15vw, 16.5px);
+  font-weight: 700;
+  color: #1e293b;
+  margin: 2px 0 10px;
+  line-height: 1.45;
+}
+
+.activity-variety-stage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 4px 0 10px;
+}
+
+.rainbow-svg-stage {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1.5px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 8px 14px 10px;
+  max-width: 680px;
+  box-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.08);
+}
+
+.rainbow-arcs-svg {
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  max-height: 206px;
+  display: block;
+}
+
+.rainbow-interactive-node rect {
+  transition: transform 0.16s ease, stroke-width 0.16s ease;
+}
+
+/* Çeşit 2: Dikdörtgen Çarpan Çiftleri Kartları */
+.fpairs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(195px, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 720px;
+}
+
+.fpair-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1.8px solid #dbe5f1;
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 18px -10px rgba(15, 23, 42, 0.08);
+}
+
+.fpair-card.is-square-pair {
+  background: linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%);
+  border-color: #c084fc;
+}
+
+.fpair-tag {
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+
+.fpair-card.is-square-pair .fpair-tag {
+  color: #7e22ce;
+  background: #f3e8ff;
+  border: 1px solid #d8b4fe;
+}
+
+.fpair-eq {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 19px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.fpair-op {
+  color: #64748b;
+  font-weight: 800;
+}
+
+.fpair-total {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 3px 10px;
+  border-radius: 9px;
+  font-size: 17px;
+}
+
+.fpair-slot {
+  min-width: 48px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 11px;
+  border: 2.5px solid #f97316;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.fpair-slot.selected {
+  border-color: #2563eb;
+  background: #dbeafe;
+  color: #1d4ed8;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
+}
+
+.fpair-slot.solved {
+  border-color: #16a34a;
+  background: #dcfce7;
+  color: #15803d;
+  cursor: default;
+}
+
+/* Çeşit 3: Kat Merdiveni Basamak Zinciri */
+.kat-ladder-track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1.5px solid #dbe5f1;
+  border-radius: 18px;
+  padding: 18px 20px;
+  max-width: 780px;
+  width: 100%;
+  box-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.08);
+}
+
+.kat-step-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.kat-step-ord {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #64748b;
+}
+
+.kat-step-box {
+  min-width: 54px;
+  height: 48px;
+  padding: 0 12px;
+  border-radius: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.kat-step-box.static {
+  background: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  color: #0f172a;
+}
+
+.kat-step-box.slot {
+  background: #fff7ed;
+  border: 2.5px solid #f97316;
+  color: #c2410c;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.kat-step-box.slot.selected {
+  background: #dbeafe;
+  border-color: #2563eb;
+  color: #1d4ed8;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18);
+  transform: translateY(-2px);
+}
+
+.kat-step-box.slot.solved {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #15803d;
+  cursor: default;
+}
+
+.kat-jump-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 12px;
+  gap: 0;
+}
+
+.kat-jump-plus {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #16a34a;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.kat-jump-chev {
+  font-size: 16px;
+  font-weight: 900;
+  color: #94a3b8;
+  line-height: 1;
+}
+
+/* Çeşit 4: Ortak Bölen Venn Şeması */
+.venn-ebob-wrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 580px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 8px 14px;
+}
+
+.venn-ebob-svg {
+  width: 100%;
+  max-width: 520px;
+  max-height: 205px;
+  height: auto;
+  display: block;
+}
+
+/* Çeşit 5: Etkileşimli İşlem Kartları (EBOB / EKOK / Genel Kurallar) */
+.eq-cards-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 780px;
+  margin: 6px 0;
+}
+
+.eq-solve-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 2.2px solid #fdba74;
+  border-radius: 16px;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 6px 18px -10px rgba(15, 23, 42, 0.08);
+}
+
+.eq-solve-card.selected {
+  border-color: #2563eb;
+  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.16);
+  transform: translateY(-2px);
+}
+
+.eq-solve-card.solved {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  cursor: default;
+}
+
+.eq-card-lhs {
+  font-size: 16.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.eq-card-sign {
+  font-size: 18px;
+  font-weight: 900;
+  color: #64748b;
+}
+
+.eq-card-slot {
+  min-width: 46px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 900;
+  background: #fff7ed;
+  border: 2px solid #f97316;
+  color: #c2410c;
+}
+
+.eq-solve-card.selected .eq-card-slot {
+  background: #dbeafe;
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+
+.eq-solve-card.solved .eq-card-slot {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #15803d;
+}
+
+/* Adım Adım Soru Akışı & Hızlı Yanıt Kart Düzeni */
+.question-pack-outer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.options-grid.is-quick-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.option-btn.quick-pick-option {
+  justify-content: center;
+  text-align: center;
+  padding: 15px 18px;
+  border-radius: 15px;
+  font-size: 16.5px;
+  font-weight: 800;
+}
+
+.qpack-next-btn {
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.28);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.qpack-next-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.36);
+}
+
+/* ==========================================================================
+   4 YÖNTEM ADIM ADIM ATÖLYESİ (Gökkuşağı • Çarpan Çiçeği • Çarpan Ağacı • Algoritma)
+   ========================================================================== */
+.fml-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.fml-stage-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.07);
+}
+
+.fml-stage-subtitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.fml-active-target {
+  font-size: 12.5px;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 5px 14px;
+  border-radius: 999px;
+}
+
+.fml-takeaway-banner {
+  font-size: 13px;
+  font-weight: 800;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  padding: 6px 16px;
+  border-radius: 999px;
+  text-align: center;
+}
+
+.fml-svg-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.fml-diagram-svg {
+  width: 100%;
+  max-width: 540px;
+  max-height: 248px;
+  height: auto;
+  display: block;
+}
+
+.fml-algo-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+}
+
+.fml-algo-table {
+  background: #f8fafc;
+  border: 2px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 12px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fml-algo-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.fml-algo-left {
+  width: 56px;
+  text-align: right;
+  color: #0f172a;
+}
+
+.fml-algo-bar {
+  color: #ea580c;
+  font-weight: 900;
+  font-size: 22px;
+}
+
+.fml-algo-right {
+  width: 56px;
+  text-align: left;
+  color: #15803d;
+}
+
+.fml-algo-slot {
+  min-width: 48px;
+  height: 34px;
+  border-radius: 9px;
+  border: 2.2px solid #f97316;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.fml-algo-slot.selected {
+  background: #dbeafe;
+  border-color: #2563eb;
+  color: #1e40af;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.fml-algo-slot.solved {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #15803d;
+}
+
+.fml-algo-summary {
+  max-width: 240px;
+  background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%);
+  border: 1.8px solid #93c5fd;
+  border-radius: 16px;
+  padding: 14px 18px;
+  text-align: center;
+}
+
+.fml-algo-sum-badge {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #1d4ed8;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+}
+
+.fml-algo-sum-eq {
+  font-size: 20px;
+  font-weight: 900;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.fml-algo-sum-sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.4;
+}
+
+/* Akıllı Tahta (Uygulama Zamanı) Kategori Etiketi & Kırpılmış PDF Görsel Çerçevesi */
+.sb-kategori-etiket {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+.sb-pdf-kesit-cerceve {
+  margin: 8px 0 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.sb-pdf-kesit-gorsel {
+  max-width: 100%;
+  max-height: 250px;
+  object-fit: contain;
+  display: block;
+  border-radius: 6px;
+}
+
+/* Kutlama Konfeti / Yıldız Parçacık Efekti */
+.nartes-fx-particle {
+  position: fixed;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--fx-color, #22c55e);
+  pointer-events: none;
+  z-index: 2200;
+  transform: translate(-50%, -50%);
+  animation: nartesParticleFly 0.72s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes nartesParticleFly {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, -40px))) scale(0.25);
+  }
+}
+
+@media (max-width: 760px) {
+  .options-grid.is-quick-pick-grid {
+    grid-template-columns: 1fr;
+  }
+  .linear-step-banner {
+    padding: 7px 12px;
   }
 }

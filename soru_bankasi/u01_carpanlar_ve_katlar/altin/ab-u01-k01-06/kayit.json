@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k01-06",
+  "sira": 6,
+  "kazanimId": "k01",
+  "baslik": "Asalın 2, karesinin 3 böleni vardır",
+  "metin": "Asal sayının tam 2 pozitif çarpanı vardır: 1 ve kendisi. Bir asal sayının karesinin tam 3 pozitif çarpanı vardır: 1, asalın kendisi ve karesi.",
+  "ornek": "7 asaldır, çarpanları 1 ve 7. 49 = 7² çarpanları 1, 7 ve 49.",
+  "yanlis": [
+    {
+      "kod": "biri-asal-sanma",
+      "uyari": "1'in tek çarpanı vardır. Asal olmak için tam iki çarpan gerekir. 1 asal değildir."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 10,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.1"
+}

@@ -1,0 +1,20 @@
+{
+  "id": "sh-p041",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k08",
+  "bant": "D5",
+  "baslik": "Açık uçlu sorular",
+  "kaynak": "sh",
+  "pdfSayfa": 41,
+  "basiliSayfa": 41,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k06-01",
+    "ab-u01-k03-05",
+    "ab-u01-k04-06",
+    "ab-u01-k05-04",
+    "ab-u01-k01-05"
+  ],
+  "gorsel": "gorseller/sh/p041.png"
+}

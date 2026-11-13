@@ -1,0 +1,53 @@
+{
+  "id": "mw-p029",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k04",
+  "bant": "D1",
+  "baslik": "EKOK (En Küçük Ortak Kat) Problemleri",
+  "kaynak": "mw",
+  "pdfSayfa": 29,
+  "basiliSayfa": 29,
+  "altinVar": true,
+  "sorular": [
+    {
+      "no": "1a",
+      "kok": "Yükseklikleri 10 cm ve 12 cm olan tuğlalarla, boşluksuz örülebilecek en kısa duvar kaç metredir?",
+      "cevap": "0,6",
+      "cozum": "EKOK(10, 12) = 60 cm = 0,6 m.",
+      "altinBilgiId": [
+        "ab-u01-k04-05"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "2a",
+      "kok": "Bir kenara 15 m, diğer kenara 12 m aralıkla ve uçlara da fidan dikilirse yol en az kaç metre olur?",
+      "cevap": "60",
+      "cozum": "En kısa ortak uzunluk EKOK(15, 12) = 60 metredir.",
+      "altinBilgiId": [
+        "ab-u01-k04-05"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "2b",
+      "kok": "60 metrelik yolun iki kenarına, 15 m ve 12 m aralıkla, başa ve sona da fidan dikilirse toplam en az kaç fidan gerekir?",
+      "cevap": "10",
+      "cozum": "Bir kenar 60/15+1 = 5, diğer kenar 60/12+1 = 5. Toplam 10. Baş ve son düz yolda 1 eklenir.",
+      "altinBilgiId": [
+        "ab-u01-k04-06"
+      ],
+      "yanlis": {}
+    }
+  ],
+  "altinBilgiId": [
+    "ab-u01-k04-01",
+    "ab-u01-k04-02",
+    "ab-u01-k04-03",
+    "ab-u01-k04-04",
+    "ab-u01-k04-05",
+    "ab-u01-k04-06"
+  ],
+  "gorsel": "gorseller/mw/p029.png"
+}

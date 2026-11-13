@@ -1,0 +1,28 @@
+{
+  "id": "ab-u01-k01-02",
+  "sira": 2,
+  "kazanimId": "k01",
+  "baslik": "En küçük çarpan 1, en büyük kendisidir",
+  "metin": "Her pozitif tam sayının en küçük pozitif çarpanı 1, en büyük çarpanı kendisidir. 'Kendisi dışında' denince kendisi toplama veya listeye katılmaz.",
+  "ornek": "28'in pozitif çarpanları 1, 2, 4, 7, 14 ve 28'dir. Kendisi dışında kalanların toplamı 1+2+4+7+14 = 28 eder.",
+  "yanlis": [
+    {
+      "kod": "kendini-katma",
+      "uyari": "'Kendisi dışında' ifadesi varsa sayının kendisini toplama ekleme."
+    },
+    {
+      "kod": "biri-unuttum",
+      "uyari": "Listede 1 yoksa liste eksiktir. Her sayının çarpanı 1'dir."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 9,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.1"
+}

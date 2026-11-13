@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k01-01",
+  "sira": 1,
+  "kazanimId": "k01",
+  "baslik": "Çarpan, bölen demektir",
+  "metin": "Bir doğal sayıyı kalansız bölen pozitif tam sayılar, o sayının çarpanıdır. Çarpan ile bölen aynı anlamdadır. Kalan 0 değilse o sayı çarpan değildir.",
+  "ornek": "24 ÷ 6 = 4 ve kalan 0 olduğu için 6, 24'ün çarpanıdır. 24 ÷ 5 = 4 kalan 4 olduğu için 5, 24'ün çarpanı değildir.",
+  "yanlis": [
+    {
+      "kod": "kalanli",
+      "uyari": "Bölme yapılmış olması yetmez. Kalan 0 değilse çarpan sayma."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 9,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.1"
+}

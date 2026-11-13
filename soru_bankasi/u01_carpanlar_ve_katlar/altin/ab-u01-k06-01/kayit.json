@@ -1,0 +1,34 @@
+{
+  "id": "ab-u01-k06-01",
+  "sira": 1,
+  "kazanimId": "k06",
+  "baslik": "Önce aracı seç",
+  "metin": "Karışık soruda işlemden önce araç seçilir. Eşit parçaya ayırma, artmama, en büyük ortak bölen veya en geniş aralık EBOB'tur. Birlikte tekrar, en kısa bütün, döşeme ve payda eşitleme EKOK'tur. Ortak bölen yalnız 1 ise aralarında asaldır. Bölenin kaç tane olduğu veya tek sayıda bölen soruluyorsa bölen sayısı formülü ve tam kare kuralı kullanılır.",
+  "ornek": "İki ip artmadan eşit kesilecekse EBOB. İki zil birlikte çalacaksa EKOK. İki sayının ortak böleni yalnız 1 mi diye soruluyorsa aralarında asal. Kaç böleni var deniyorsa (üs+1) çarpımı.",
+  "yanlis": [
+    {
+      "kod": "araci-karistirma",
+      "uyari": "Parçala diyorsa EBOB, birleştir veya buluştur diyorsa EKOK. Sorunun fiiline bak."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "sh",
+      "sayfa": 8,
+      "yer": "Ne işe yarar"
+    },
+    {
+      "kod": "mw",
+      "sayfa": 21,
+      "yer": "Altın Bilgiler"
+    },
+    {
+      "kod": "mw",
+      "sayfa": 29,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1"
+}

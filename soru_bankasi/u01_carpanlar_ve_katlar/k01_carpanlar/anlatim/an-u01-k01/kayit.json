@@ -1,0 +1,23 @@
+{
+  "id": "an-u01-k01",
+  "kazanimId": "k01",
+  "baslik": "Çarpanı ikili ikili yaz",
+  "altinBilgiId": [
+    "ab-u01-k01-01",
+    "ab-u01-k01-02",
+    "ab-u01-k01-04",
+    "ab-u01-k01-05",
+    "ab-u01-k01-07"
+  ],
+  "adimlar": [
+    "1'den başla. Sayıyı bölen her böleni, eşiyle birlikte yaz.",
+    "İkili ortadan buluşunca dur. Tam karede ortadaki çarpan tek kalır.",
+    "Bölen sayısı sorulursa önce asal çarpanlara ayır, her üsse 1 ekleyip çarp."
+  ],
+  "ornek": {
+    "istem": "36'nın bütün pozitif çarpanlarını yazıp kaç tane olduğunu bul.",
+    "cozum": "1×36, 2×18, 3×12, 4×9, 6×6. Çarpanlar: 1, 2, 3, 4, 6, 9, 12, 18, 36. 9 tanedir. 36 = 2²·3² olduğundan (2+1)(2+1) = 9. Tam kare olduğu için adet tektir."
+  },
+  "tur": "anlatim",
+  "uniteId": "u01"
+}

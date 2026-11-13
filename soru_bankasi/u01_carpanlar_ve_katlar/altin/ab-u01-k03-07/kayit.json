@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k03-07",
+  "sira": 7,
+  "kazanimId": "k03",
+  "baslik": "İki sayıda EBOB çarpı EKOK, çarpıma eşittir",
+  "metin": "İki doğal sayı için EBOB(a, b) × EKOK(a, b) = a × b. Biri biliniyorsa diğeri çarpımdan bulunur. Bu eşitlik üç sayıya doğrudan uygulanmaz.",
+  "ornek": "EBOB(12, 18) = 6 ve EKOK(12, 18) = 36. 6 × 36 = 216 ve 12 × 18 = 216.",
+  "yanlis": [
+    {
+      "kod": "uc-sayida-kullanma",
+      "uyari": "Bu çarpım kuralını üç sayıya birden uygulama. Kural iki sayı içindir."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 25,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "an-u01-k05",
+  "kazanimId": "k05",
+  "baslik": "Ortak asal var mı, ona bak",
+  "altinBilgiId": [
+    "ab-u01-k05-01",
+    "ab-u01-k05-02",
+    "ab-u01-k05-04"
+  ],
+  "adimlar": [
+    "EBOB 1 mi diye bak. 1 ise aralarında asaldır.",
+    "Ardışık iki sayı görürsen yeniden bölme; aralarında asaldır.",
+    "Çarpım ve toplam sorusunda yalnız ortak asalı olmayan ikilileri tut."
+  ],
+  "ornek": {
+    "istem": "8 ile 15 aralarında asal mıdır?",
+    "cozum": "8 = 2³, 15 = 3·5. Ortak asal yok. EBOB = 1. Aralarında asaldır. EKOK = 8×15 = 120."
+  },
+  "tur": "anlatim",
+  "uniteId": "u01"
+}

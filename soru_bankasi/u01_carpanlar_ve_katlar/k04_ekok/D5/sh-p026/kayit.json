@@ -1,0 +1,21 @@
+{
+  "id": "sh-p026",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k04",
+  "bant": "D5",
+  "baslik": "EKOK hesaplama",
+  "kaynak": "sh",
+  "pdfSayfa": 26,
+  "basiliSayfa": 26,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k04-01",
+    "ab-u01-k04-02",
+    "ab-u01-k04-03",
+    "ab-u01-k04-04",
+    "ab-u01-k04-05",
+    "ab-u01-k04-06"
+  ],
+  "gorsel": "gorseller/sh/p026.png"
+}

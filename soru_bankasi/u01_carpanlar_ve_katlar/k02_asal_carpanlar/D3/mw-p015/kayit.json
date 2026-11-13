@@ -1,0 +1,22 @@
+{
+  "id": "mw-p015",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k02",
+  "bant": "D3",
+  "baslik": "Asal Çarpanlara Ayırma",
+  "kaynak": "mw",
+  "pdfSayfa": 15,
+  "basiliSayfa": 15,
+  "altinVar": false,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k02-01",
+    "ab-u01-k02-02",
+    "ab-u01-k02-03",
+    "ab-u01-k02-04",
+    "ab-u01-k02-05",
+    "ab-u01-k02-06"
+  ],
+  "gorsel": "gorseller/mw/p015.png"
+}

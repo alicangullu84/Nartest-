@@ -8,32 +8,76 @@
   const units2to12 = window.MATFLOW_UNITS_2_12 || [];
   const ALL_UNITS = [unit1, ...units2to12];
 
-  // Alt başlık (kazanım) sonlarına tanımlanan Akıllı Tahta Soru Çözüm duraklarını otomatik yerleştir
+  // Alt başlık (kazanım) sonlarına tanımlanan Uygulama Zamanı / Akıllı Tahta duraklarını otomatik yerleştir
   function injectSmartboardStopsIntoUnits(units) {
     const bank = window.NARTES_SMARTBOARD_BANK || {};
     units.forEach(unit => {
       if (!unit || unit._smartboardInjected) return;
       const unitBank = bank[unit.id];
-      if (!unitBank) return;
 
       const rebuiltStops = [];
       (unit.kazanimlar || []).forEach(kaz => {
         const currentKazStops = (unit.stops || []).filter(s => s.kazanimId === kaz.id);
-        currentKazStops.forEach(s => rebuiltStops.push(s));
+        const sbRaw = unitBank ? unitBank[kaz.id] : null;
+        const sbList = Array.isArray(sbRaw) ? sbRaw : (sbRaw ? [sbRaw] : []);
 
-        const sbEntry = unitBank[kaz.id];
-        if (sbEntry && Array.isArray(sbEntry.questions) && sbEntry.questions.length > 0) {
+        const beforeFinal = sbList.filter(sb => sb && sb.insertBeforeFinalGame && Array.isArray(sb.questions) && sb.questions.length > 0);
+        const afterAll = sbList.filter(sb => sb && !sb.insertBeforeFinalGame && Array.isArray(sb.questions) && sb.questions.length > 0);
+
+        if (beforeFinal.length > 0 && currentKazStops.length > 0 && currentKazStops[currentKazStops.length - 1].gameType === "final_marathon") {
+          const finalGameStop = currentKazStops[currentKazStops.length - 1];
+          currentKazStops.slice(0, -1).forEach(s => rebuiltStops.push(s));
+          beforeFinal.forEach((sbEntry, bIdx) => {
+            rebuiltStops.push({
+              id: 0,
+              kazanimId: kaz.id,
+              boardId: sbEntry.boardId || `${kaz.id}_b${bIdx}`,
+              type: "smartboard",
+              icon: sbEntry.icon || "✏️",
+              roadLabel: sbEntry.roadLabel || "Uygula",
+              typeLabel: sbEntry.typeLabel || "Uygulama Zamanı",
+              title: sbEntry.title || `Uygulama Zamanı: ${kaz.title}`,
+              subtitle: sbEntry.subtitle || "Bu alt başlığı tamamlamak için kaleminle tahtada soruları çöz!",
+              variantPacks: sbEntry.variantPacks || null,
+              questions: sbEntry.questions
+            });
+          });
+          rebuiltStops.push(finalGameStop);
+        } else {
+          currentKazStops.forEach(s => rebuiltStops.push(s));
+          beforeFinal.concat(afterAll).forEach((sbEntry, bIdx) => {
+            rebuiltStops.push({
+              id: 0,
+              kazanimId: kaz.id,
+              boardId: sbEntry.boardId || (sbList.length > 1 ? `${kaz.id}_${bIdx + 1}` : kaz.id),
+              type: "smartboard",
+              icon: sbEntry.icon || "✏️",
+              roadLabel: sbEntry.roadLabel || "Uygula",
+              typeLabel: sbEntry.typeLabel || "Uygulama Zamanı",
+              title: sbEntry.title || `Uygulama Zamanı: ${kaz.title}`,
+              subtitle: sbEntry.subtitle || "Bu alt başlığı tamamlamak için kaleminle tahtada soruları çöz!",
+              variantPacks: sbEntry.variantPacks || null,
+              questions: sbEntry.questions
+            });
+          });
+          return;
+        }
+
+        afterAll.forEach((sbEntry, bIdx) => {
           rebuiltStops.push({
             id: 0,
             kazanimId: kaz.id,
+            boardId: sbEntry.boardId || `${kaz.id}_a${bIdx}`,
             type: "smartboard",
-            icon: "✏️",
-            typeLabel: "Akıllı Tahta Soru Çözümü",
-            title: sbEntry.title || `Konu Sonu Akıllı Tahta: ${kaz.title}`,
-            subtitle: sbEntry.subtitle || "Bu alt başlığı tamamlamak için kaleminle akıllı tahtada soruları çöz!",
+            icon: sbEntry.icon || "✏️",
+            roadLabel: sbEntry.roadLabel || "Uygula",
+            typeLabel: sbEntry.typeLabel || "Uygulama Zamanı",
+            title: sbEntry.title || `Uygulama Zamanı: ${kaz.title}`,
+            subtitle: sbEntry.subtitle || "Bu alt başlığı tamamlamak için kaleminle tahtada soruları çöz!",
+            variantPacks: sbEntry.variantPacks || null,
             questions: sbEntry.questions
           });
-        }
+        });
       });
 
       rebuiltStops.forEach((s, idx) => {
@@ -128,65 +172,106 @@
     root.style.setProperty('--vv-offset-left', Math.round(offsetLeft) + 'px');
   }
 
-  // Web Audio API ile Temiz Ses Efektleri
+  // Web Audio API ile Zenginleştirilmiş Öğretici Ses Efektleri & Kutlama Parçacıkları
   let audioCtx = null;
   function playTone(type) {
     if (!state.soundEnabled) return;
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
       const now = audioCtx.currentTime;
-      if (type === "click") {
+
+      const note = (freq, startOff, dur, wave, vol, slideTo) => {
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(520, now);
-        osc.frequency.exponentialRampToValueAtTime(680, now + 0.06);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        osc.type = wave || "sine";
+        osc.frequency.setValueAtTime(freq, now + startOff);
+        if (slideTo) {
+          osc.frequency.exponentialRampToValueAtTime(slideTo, now + startOff + dur);
+        }
+        gain.gain.setValueAtTime(vol || 0.09, now + startOff);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + startOff + dur);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.07);
+        osc.start(now + startOff);
+        osc.stop(now + startOff + dur + 0.01);
+      };
+
+      if (type === "click") {
+        note(540, 0, 0.065, "sine", 0.075, 720);
+      } else if (type === "pop") {
+        note(420, 0, 0.085, "triangle", 0.12, 840);
+        note(840, 0.03, 0.09, "sine", 0.07, 1120);
+      } else if (type === "combo") {
+        [587.33, 783.99, 1046.5].forEach((f, idx) => {
+          note(f, idx * 0.065, 0.2, "triangle", 0.11);
+        });
+      } else if (type === "magic") {
+        [523.25, 659.25, 783.99, 1174.66].forEach((f, idx) => {
+          note(f, idx * 0.045, 0.24, "sine", 0.08);
+        });
+      } else if (type === "fanfare") {
+        [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, idx) => {
+          note(f, idx * 0.075, 0.32, "triangle", 0.12);
+        });
       } else if (type === "success") {
-        [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = "triangle";
-          osc.frequency.setValueAtTime(freq, now + idx * 0.07);
-          gain.gain.setValueAtTime(0.11, now + idx * 0.07);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.22);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(now + idx * 0.07);
-          osc.stop(now + idx * 0.07 + 0.22);
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+          note(f, idx * 0.07, 0.23, "triangle", 0.11);
         });
       } else if (type === "error") {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(210, now);
-        osc.frequency.linearRampToValueAtTime(150, now + 0.18);
-        gain.gain.setValueAtTime(0.09, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.2);
+        note(240, 0, 0.13, "triangle", 0.09, 175);
+        note(185, 0.09, 0.14, "sine", 0.07, 145);
       }
     } catch (e) {}
   }
 
-  function speakText(text) {
-    if (!state.voiceEnabled || !("speechSynthesis" in window)) return;
+  function spawnCelebrationBurst(anchorEl) {
+    if (!anchorEl || typeof anchorEl.getBoundingClientRect !== "function") return;
+    try {
+      const rect = anchorEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const colors = ["#22c55e", "#f97316", "#38bdf8", "#facc15", "#a855f7", "#ec4899"];
+      for (let i = 0; i < 14; i++) {
+        const p = document.createElement("span");
+        p.className = "nartes-fx-particle";
+        const angle = (Math.PI * 2 * i) / 14 + (Math.random() - 0.5) * 0.3;
+        const dist = 42 + Math.random() * 48;
+        p.style.left = `${cx}px`;
+        p.style.top = `${cy}px`;
+        p.style.background = colors[i % colors.length];
+        p.style.setProperty("--tx", `${Math.round(Math.cos(angle) * dist)}px`);
+        p.style.setProperty("--ty", `${Math.round(Math.sin(angle) * dist - 14)}px`);
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 820);
+      }
+    } catch (e) {}
+  }
+
+  function speakText(text, forceSpeak) {
+    if ((!state.voiceEnabled && !forceSpeak) || !("speechSynthesis" in window)) return;
     try {
       window.speechSynthesis.cancel();
-      const clean = text.replace(/<[^>]+>/g, "");
+      const clean = String(text || "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/×/g, " çarpı ")
+        .replace(/÷/g, " bölü ")
+        .replace(/·/g, " çarpı ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!clean) return;
       const utter = new SpeechSynthesisUtterance(clean);
       utter.lang = "tr-TR";
-      utter.rate = 1.02;
+      utter.rate = 1.01;
       window.speechSynthesis.speak(utter);
     } catch (e) {}
   }
+
+  window.NartesSFX = {
+    play: playTone,
+    burst: spawnCelebrationBurst,
+    speak: (txt) => speakText(txt, true)
+  };
 
   // ==========================================================================
   // KATEX MATEMATİKSEL İFADE DÖNÜŞTÜRÜCÜ VE RENDER MOTORU
@@ -429,6 +514,15 @@
           };
         }
       }
+      // 10 adımlı modüler yapıya (schemaVersion: 2) geçişte eski 1. Ünite durak indekslerini sıfırla
+      const u1Prog = state.unitProgress[unit1.id];
+      if (u1Prog && u1Prog.schemaVersion !== 2) {
+        u1Prog.currentStopId = 1;
+        u1Prog.completedStops = [];
+        u1Prog.schemaVersion = 2;
+      } else if (u1Prog) {
+        u1Prog.schemaVersion = 2;
+      }
     } catch (e) {}
   }
 
@@ -554,6 +648,7 @@
       const item = document.createElement("div");
       item.className = [
         "kazanim-item",
+        kaz.isMasterySection ? "is-mastery-section" : "",
         done ? "status-done" : "status-todo",
         isCurrent ? "is-current" : "",
         unlocked ? "is-unlocked" : "is-locked"
@@ -588,7 +683,9 @@
       item.addEventListener("click", () => {
         const firstStop = kaz.stops[0];
         const firstIncomplete = kaz.stops.find(s => !isStopDone(s, UNIT)) || firstStop;
-        const target = isStopUnlocked(firstIncomplete, UNIT) ? firstIncomplete : firstStop;
+        const target = state.teacherUnlock
+          ? firstStop
+          : (isStopUnlocked(firstIncomplete, UNIT) ? firstIncomplete : firstStop);
         if (!isStopUnlocked(target, UNIT)) {
           playTone("error");
           showToast(`🔒 Sırayla ilerlenir! Önce Durak ${getMaxUnlockedStopId(UNIT)} görevini tamamla.`);
@@ -610,48 +707,175 @@
   }
 
   function getFriendlyStopShortLabel(stop) {
-    if (!stop) return "Durak";
+    if (!stop) return "Adım";
+    if (stop.roadLabel) return stop.roadLabel;
     const tl = String(stop.typeLabel || "");
-    if (/Maraton/i.test(tl)) return "Maraton";
+    if (/Maraton/i.test(tl)) return "Final Kupası";
     if (stop.type === "concept") return "Keşif";
     if (stop.type === "video") return "Anlatım";
     if (stop.type === "activity") return "Etkinlik";
     if (stop.type === "game") return "Oyun";
     if (stop.type === "question") return "Soru";
-    if (stop.type === "smartboard") return "Tahta Testi";
-    return tl.split(" ")[0] || "Durak";
+    if (stop.type === "smartboard") return "Uygula";
+    return tl.split(" ")[0] || "Adım";
   }
 
   // ==========================================================================
-  // ALT KISIM: 30 DURAKLI YOL HARİTASI Render
+  // ALT KISIM: MODÜLER ALT BAŞLIK DÖNGÜSÜ & 3. DERECEDEN EĞRİ YOL HARİTASI
+  //   - Her alt başlıkta (kazanım) döngü 1. adımdan yeniden başlar:
+  //     1. Keşif → 2. Anlatım → 3. Etkinlik → 4. Oyun → 5. Soru → 6. Uygula
+  //   - Düz çizgi yerine y(u) = A·(3.1u³ − 2.35u) kübik denklem eğrisi boyunca
+  //     hafif yükseliş ve hafif alçalışlarla dalgalanan şık SVG yol çizer.
   // ==========================================================================
+  function computeCubicWaveOffsetPx(idx, total) {
+    if (total <= 1) return 0;
+    const u = (2 * idx) / (total - 1) - 1; // [-1, +1]
+    // 3. dereceden polinom eğrisi: hafif yükseliş, büküm noktası ve hafif alçalış
+    const poly = 3.1 * u * u * u - 2.35 * u;
+    return Math.round(poly * 10.5 * 10) / 10;
+  }
+
+  function drawCubicRoadSvg() {
+    const roadEl = document.getElementById("roadStops");
+    const svgEl = document.getElementById("roadCubicSvg");
+    if (!roadEl || !svgEl) return;
+
+    const stopBtns = Array.from(roadEl.querySelectorAll(".road-stop-btn:not(.road-portal-btn)"));
+    if (stopBtns.length < 2) {
+      svgEl.innerHTML = "";
+      return;
+    }
+
+    const roadRect = roadEl.getBoundingClientRect();
+    if (roadRect.width < 20) return;
+
+    const pts = stopBtns.map(btn => {
+      const circle = btn.querySelector(".stop-circle") || btn;
+      const r = circle.getBoundingClientRect();
+      return {
+        x: r.left - roadRect.left + r.width / 2,
+        y: r.top - roadRect.top + r.height / 2,
+        done: btn.classList.contains("status-done"),
+        current: btn.classList.contains("is-current")
+      };
+    });
+
+    const w = Math.max(roadEl.scrollWidth, Math.ceil(roadRect.width));
+    const h = Math.max(roadEl.offsetHeight, Math.ceil(roadRect.height), 68);
+    svgEl.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    svgEl.setAttribute("width", String(w));
+    svgEl.setAttribute("height", String(h));
+
+    // Pürüzsüz Catmull-Rom -> Kübik Bézier (C) dönüşümü
+    function buildSmoothSegment(i) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(pts.length - 1, i + 2)];
+      const tension = 0.32;
+      const cp1x = p1.x + (p2.x - p0.x) * tension;
+      const cp1y = p1.y + (p2.y - p0.y) * tension;
+      const cp2x = p2.x - (p3.x - p1.x) * tension;
+      const cp2y = p2.y - (p3.y - p1.y) * tension;
+      return `M ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+
+    let fullPath = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(pts.length - 1, i + 2)];
+      const tension = 0.32;
+      const cp1x = p1.x + (p2.x - p0.x) * tension;
+      const cp1y = p1.y + (p2.y - p0.y) * tension;
+      const cp2x = p2.x - (p3.x - p1.x) * tension;
+      const cp2y = p2.y - (p3.y - p1.y) * tension;
+      fullPath += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+
+    let segPathsHtml = "";
+    for (let i = 0; i < pts.length - 1; i++) {
+      const segD = buildSmoothSegment(i);
+      const isSegDone = pts[i].done && (pts[i + 1].done || pts[i + 1].current);
+      if (isSegDone) {
+        segPathsHtml += `<path d="${segD}" fill="none" stroke="url(#cubicDoneGrad)" stroke-width="6.5" stroke-linecap="round"/>`;
+      } else {
+        segPathsHtml += `<path d="${segD}" fill="none" stroke="url(#cubicTodoGrad)" stroke-width="4.5" stroke-dasharray="8 7" stroke-linecap="round"/>`;
+      }
+    }
+
+    svgEl.innerHTML = `
+      <defs>
+        <linearGradient id="cubicDoneGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#22c55e"/>
+          <stop offset="50%" stop-color="#10b981"/>
+          <stop offset="100%" stop-color="#16a34a"/>
+        </linearGradient>
+        <linearGradient id="cubicTodoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#fb923c"/>
+          <stop offset="100%" stop-color="#f59e0b"/>
+        </linearGradient>
+      </defs>
+      <!-- Yumuşak Kübik Eğri Yatak İzi -->
+      <path d="${fullPath}" fill="none" stroke="rgba(148, 163, 184, 0.24)" stroke-width="13" stroke-linecap="round"/>
+      <path d="${fullPath}" fill="none" stroke="#ffffff" stroke-width="8.5" stroke-linecap="round" opacity="0.9"/>
+      ${segPathsHtml}
+    `;
+  }
+
   function renderRoad() {
     const UNIT = getActiveUnit();
     const uState = getUnitState(UNIT);
     const roadEl = document.getElementById("roadStops");
-    roadEl.innerHTML = "";
+    if (!roadEl) return;
+    roadEl.innerHTML = `<svg class="road-cubic-svg" id="roadCubicSvg" aria-hidden="true"></svg>`;
+
+    const currentStop = UNIT.stops.find(s => s.id === uState.currentStopId) || UNIT.stops[0];
+    const activeKazIdx = Math.max(0, UNIT.kazanimlar.findIndex(k => k.id === currentStop.kazanimId));
+    const activeKaz = UNIT.kazanimlar[activeKazIdx] || UNIT.kazanimlar[0];
+    const kazStops = UNIT.stops.filter(s => s.kazanimId === activeKaz.id);
+    const kazDoneCount = kazStops.filter(s => isStopDone(s.id, UNIT)).length;
 
     const roadLabel = document.getElementById("roadUnitTitleLabel");
     if (roadLabel) {
-      roadLabel.textContent = `${UNIT.unitNo}. Ünite (${UNIT.title}) Yol Haritası — ${UNIT.stops.length} Durak`;
+      roadLabel.innerHTML = `
+        <span class="road-cycle-badge">Bölüm ${activeKaz.no} / ${UNIT.kazanimlar.length}</span>
+        <strong>${activeKaz.title}</strong>
+      `;
     }
 
-    UNIT.stops.forEach((stop, idx) => {
+    // Önceki Alt Başlık Geçiş Kapsülü (2. ve sonraki alt başlıklarda)
+    if (activeKazIdx > 0) {
+      const prevKaz = UNIT.kazanimlar[activeKazIdx - 1];
+      const prevLastStopId = prevKaz.stops[prevKaz.stops.length - 1];
+      const prevWrap = document.createElement("div");
+      prevWrap.className = "road-stop-item road-portal-item";
+      const prevBtn = document.createElement("button");
+      prevBtn.type = "button";
+      prevBtn.className = "road-stop-btn road-portal-btn is-prev-portal";
+      prevBtn.title = `Önceki Bölüm: ${prevKaz.no}. ${prevKaz.title}`;
+      prevBtn.innerHTML = `
+        <div class="stop-circle portal-circle">‹</div>
+        <span class="stop-label">Bölüm ${prevKaz.no}</span>
+      `;
+      prevBtn.addEventListener("click", () => goToStop(prevLastStopId, "prev"));
+      prevWrap.appendChild(prevBtn);
+      roadEl.appendChild(prevWrap);
+    }
+
+    // Aktif Alt Başlığın Kendi Modüler Döngüsü (Her Alt Başlıkta 1..N'den Başlar!)
+    kazStops.forEach((stop, localIdx) => {
       const done = isStopDone(stop.id, UNIT);
       const isCurrent = stop.id === uState.currentStopId;
       const unlocked = isStopUnlocked(stop.id, UNIT);
+      const yOffset = computeCubicWaveOffsetPx(localIdx, kazStops.length);
 
       const wrap = document.createElement("div");
       wrap.className = "road-stop-item";
 
-      if (idx > 0) {
-        const prevDone = isStopDone(UNIT.stops[idx - 1].id, UNIT);
-        const conn = document.createElement("div");
-        conn.className = `road-connector ${prevDone ? "done" : ""} ${unlocked ? "unlocked" : ""}`;
-        wrap.appendChild(conn);
-      }
-
       const btn = document.createElement("button");
+      btn.type = "button";
       btn.className = [
         "road-stop-btn",
         done ? "status-done" : "status-todo",
@@ -659,17 +883,18 @@
         unlocked ? "is-unlocked" : "is-locked"
       ].filter(Boolean).join(" ");
       btn.id = `road-stop-${stop.id}`;
-      btn.title = `${stop.id}. Durak: ${stop.title} (${stop.typeLabel})`;
+      btn.style.setProperty("--cubic-y", `${yOffset}px`);
+      btn.title = `${activeKaz.title} — ${localIdx + 1}. Adım: ${stop.title} (${stop.typeLabel})`;
 
       btn.innerHTML = `
         <div class="stop-circle">${done ? "✓" : stop.icon}</div>
-        <span class="stop-label">${stop.id}. ${getFriendlyStopShortLabel(stop)}</span>
+        <span class="stop-label">${localIdx + 1}. ${getFriendlyStopShortLabel(stop)}</span>
       `;
 
       btn.addEventListener("click", () => {
         if (!unlocked) {
           playTone("error");
-          showToast(`🔒 Sırayla gitmek zorundasın! Önce ${getMaxUnlockedStopId(UNIT)}. durağı tamamla.`);
+          showToast(`🔒 Sırayla ilerlenir! Önce sıradaki adımı tamamla.`);
           return;
         }
         goToStop(stop.id);
@@ -679,23 +904,51 @@
       roadEl.appendChild(wrap);
     });
 
-    setTimeout(() => {
+    // Sonraki Alt Başlık Döngü Başlatıcı Kapsülü
+    if (activeKazIdx < UNIT.kazanimlar.length - 1) {
+      const nextKaz = UNIT.kazanimlar[activeKazIdx + 1];
+      const nextFirstId = nextKaz.stops[0];
+      const nextUnlocked = isStopUnlocked(nextFirstId, UNIT);
+      const nextWrap = document.createElement("div");
+      nextWrap.className = "road-stop-item road-portal-item";
+      const nextBtn = document.createElement("button");
+      nextBtn.type = "button";
+      nextBtn.className = `road-stop-btn road-portal-btn is-next-portal ${nextUnlocked ? "is-unlocked" : "is-locked"}`;
+      nextBtn.title = `Sıradaki Bölümde Döngü Yeniden Başlar: ${nextKaz.no}. ${nextKaz.title}`;
+      nextBtn.innerHTML = `
+        <div class="stop-circle portal-circle">↻</div>
+        <span class="stop-label">${nextKaz.no}. Bölüme Geç</span>
+      `;
+      nextBtn.addEventListener("click", () => {
+        if (!nextUnlocked) {
+          playTone("error");
+          showToast(`🔒 "${nextKaz.title}" döngüsünü açmak için önce bu bölümün 6 adımını tamamla!`);
+          return;
+        }
+        goToStop(nextFirstId, "next");
+      });
+      nextWrap.appendChild(nextBtn);
+      roadEl.appendChild(nextWrap);
+    }
+
+    requestAnimationFrame(() => {
+      drawCubicRoadSvg();
       const activeBtn = document.getElementById(`road-stop-${uState.currentStopId}`);
       if (activeBtn) {
         activeBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
       }
-    }, 60);
+    });
+    setTimeout(drawCubicRoadSvg, 120);
 
-    const doneCount = uState.completedStops.length;
-    const roadPct = Math.round((doneCount / UNIT.stops.length) * 100);
+    const kazPct = kazStops.length > 0 ? Math.round((kazDoneCount / kazStops.length) * 100) : 0;
     const roadFill = document.getElementById("roadProgressFill");
-    if (roadFill) roadFill.style.width = `${roadPct}%`;
+    if (roadFill) roadFill.style.width = `${kazPct}%`;
     const roadPctEl = document.getElementById("roadProgressPct");
-    if (roadPctEl) roadPctEl.textContent = `%${roadPct}`;
+    if (roadPctEl) roadPctEl.textContent = `%${kazPct}`;
 
-    const maxUnlocked = getMaxUnlockedStopId(UNIT);
+    const localStepNo = Math.max(1, kazStops.findIndex(s => s.id === uState.currentStopId) + 1);
     document.getElementById("roadStatusSummary").textContent =
-      `Aktif: ${uState.currentStopId}. Durak • Açık: ${maxUnlocked}/${UNIT.stops.length} • Biten: ${doneCount}/${UNIT.stops.length}`;
+      `Adım ${localStepNo}/${kazStops.length} • Bölüm: ${kazDoneCount}/${kazStops.length} • Ünite: ${uState.completedStops.length}/${UNIT.stops.length}`;
   }
 
   // ==========================================================================
@@ -712,17 +965,28 @@
     if (stopId < 1 || stopId > UNIT.stops.length) return;
     if (!isStopUnlocked(stopId, UNIT)) {
       playTone("error");
-      showToast(`🔒 Sırayla ilerlenir! Önce ${getMaxUnlockedStopId(UNIT)}. durağı tamamla.`);
+      showToast(`🔒 Sırayla ilerlenir! Önce aktif adımı tamamla.`);
       return;
     }
 
     if (document.body.classList.contains("sidebar-drawer-open")) {
       document.body.classList.remove("sidebar-drawer-open");
     }
+    const prevStop = UNIT.stops.find(s => s.id === uState.currentStopId);
+    const nextStopObj = UNIT.stops.find(s => s.id === stopId);
     const dir = direction || (stopId >= uState.currentStopId ? "next" : "prev");
     uState.currentStopId = stopId;
     saveState();
-    playTone("click");
+
+    if (prevStop && nextStopObj && prevStop.kazanimId !== nextStopObj.kazanimId) {
+      playTone("magic");
+      const enteredKaz = UNIT.kazanimlar.find(k => k.id === nextStopObj.kazanimId);
+      if (enteredKaz) {
+        showToast(`🚀 ${enteredKaz.no}. Bölüm: "${enteredKaz.title}" — Adım döngüsü 1. Keşif'ten başladı!`);
+      }
+    } else {
+      playTone("click");
+    }
 
     const card = document.getElementById("windowCard");
     card.classList.remove("slide-in-right", "slide-in-left");
@@ -739,12 +1003,19 @@
     const UNIT = getActiveUnit();
     const uState = getUnitState(UNIT);
     const id = uState.currentStopId;
+    const currentStopObj = UNIT.stops.find(s => s.id === id);
+    const currentKaz = currentStopObj && UNIT.kazanimlar.find(k => k.id === currentStopObj.kazanimId);
     const alreadyDone = isStopDone(id, UNIT);
     if (!alreadyDone) {
       uState.completedStops.push(id);
       saveState();
     }
-    playTone("success");
+
+    const isLastInKaz = currentKaz && currentKaz.stops[currentKaz.stops.length - 1] === id;
+    playTone(isLastInKaz ? "fanfare" : "success");
+    const nextBtnAnchor = document.getElementById("btnNextStop");
+    if (nextBtnAnchor) spawnCelebrationBurst(nextBtnAnchor);
+
     if (window.NartesMentor) window.NartesMentor.onCorrect();
     renderSidebar();
     renderRoad();
@@ -761,7 +1032,7 @@
 
     if (fb) {
       fb.className = "foot-feedback success";
-      fb.innerHTML = `🎉 ${customMsg || "Harika! Bu durağı tamamladın, sıradaki pencereye geçiliyor..."}`;
+      fb.innerHTML = `🎉 ${customMsg || (isLastInKaz ? "Bölüm tamamlandı! Sıradaki alt başlık döngüsüne geçiliyor..." : "Harika! Bu adımı tamamladın, sıradaki adıma geçiliyor...")}`;
     }
     if (nextBtn) {
       nextBtn.disabled = false;
@@ -775,7 +1046,7 @@
       clearTimeout(state.autoAdvanceTimer);
       state.autoAdvanceTimer = setTimeout(() => {
         goToStop(id + 1, "next");
-      }, 1350);
+      }, 1400);
     } else {
       showUnitCompletedModal(UNIT);
     }
@@ -784,12 +1055,27 @@
   // ==========================================================================
   // ORTA PENCERE SAHNESİNİ RENDER ETME
   // ==========================================================================
-  function renderWindow() {
+  let lastRenderedVisitKey = "";
+
+  function renderWindow(forceNewVariant) {
     const UNIT = getActiveUnit();
     const uState = getUnitState(UNIT);
-    const stop = UNIT.stops.find(s => s.id === uState.currentStopId) || UNIT.stops[0];
+    const rawStop = UNIT.stops.find(s => s.id === uState.currentStopId) || UNIT.stops[0];
+    const visitKey = `${UNIT.id}:${rawStop.id}`;
+    const isNewVisit = Boolean(forceNewVariant) || (visitKey !== lastRenderedVisitKey);
+    lastRenderedVisitKey = visitKey;
+
+    const stop = (window.NartesVariantEngine && rawStop.type !== "smartboard")
+      ? window.NartesVariantEngine.resolveStop(rawStop, { next: isNewVisit })
+      : rawStop;
+
     const kaz = UNIT.kazanimlar.find(k => k.id === stop.kazanimId) || UNIT.kazanimlar[0];
+    const kazStops = UNIT.stops.filter(s => s.kazanimId === kaz.id);
+    const localStepNo = Math.max(1, kazStops.findIndex(s => s.id === stop.id) + 1);
+    const isLastInKaz = localStepNo === kazStops.length && stop.id < UNIT.stops.length;
     const done = isStopDone(stop.id, UNIT);
+
+    window.__nartesActiveVoiceText = `${stop.title}. ${stop.subtitle || ""}`;
 
     const uBadge = document.getElementById("crumbUnitBadge");
     if (uBadge) uBadge.textContent = `${UNIT.unitNo}. Ünite`;
@@ -797,21 +1083,36 @@
     const typeBadge = document.getElementById("crumbType");
     typeBadge.className = `crumb-badge type-${stop.type}`;
     typeBadge.textContent = `${stop.icon} ${stop.typeLabel}`;
-    document.getElementById("crumbStopNo").textContent = `Durak ${stop.id} / ${UNIT.stops.length}`;
+    document.getElementById("crumbStopNo").textContent = `Adım ${localStepNo} / ${kazStops.length} • Durak ${stop.id}`;
 
     const statusPill = document.getElementById("stepStatusPill");
     if (statusPill) {
+      const hasVar = Boolean(rawStop.variantSpec || (Array.isArray(rawStop.variants) && rawStop.variants.length > 1));
+      const varBtnHtml = (hasVar && rawStop.type !== "smartboard")
+        ? ` <button type="button" id="btnRefreshStopVariant" class="btn-variant-refresh" title="Farklı sayılarla yeniden çöz" style="margin-left:8px;padding:3px 10px;border-radius:999px;border:1.5px solid #cbd5e1;background:#ffffff;color:#1e293b;font-size:11.5px;font-weight:800;cursor:pointer;">🔄 Yeni Örnek</button>`
+        : "";
       if (done) {
         statusPill.className = "step-status-pill done";
-        statusPill.innerHTML = '<span class="pill-dot">✓</span> <span class="pill-txt">Tamamlandı</span>';
+        statusPill.innerHTML = `<span class="pill-dot">✓</span> <span class="pill-txt">Tamamlandı</span>${varBtnHtml}`;
       } else {
         statusPill.className = "step-status-pill todo";
-        statusPill.innerHTML = '<span class="pill-dot">🟠</span> <span class="pill-txt">Devam Ediyor</span>';
+        statusPill.innerHTML = `<span class="pill-dot">🟠</span> <span class="pill-txt">Devam Ediyor</span>${varBtnHtml}`;
+      }
+      const refBtn = document.getElementById("btnRefreshStopVariant");
+      if (refBtn) {
+        refBtn.addEventListener("click", () => {
+          playTone("click");
+          renderWindow(true);
+        });
       }
     }
 
     document.getElementById("windowTitle").textContent = stop.title;
     document.getElementById("windowSubtitle").textContent = stop.subtitle;
+
+    // Üst başlıkta seslendir butonu bulunmasın (varsa temizle)
+    const staleListenBtn = document.getElementById("btnListenStop");
+    if (staleListenBtn) staleListenBtn.remove();
 
     const arrowPrev = document.getElementById("arrowPrev");
     const arrowNext = document.getElementById("arrowNext");
@@ -824,14 +1125,24 @@
 
     const fb = document.getElementById("footFeedback");
     const nextBtn = document.getElementById("btnNextStop");
+    const nextBtnLabel = nextBtn ? nextBtn.querySelector("span") : null;
+    if (nextBtnLabel) {
+      nextBtnLabel.textContent = isLastInKaz ? "Sıradaki Bölüme Geç ↻" : "Sonraki Adıma Geç";
+    }
     if (done) {
       fb.className = "foot-feedback success";
-      fb.innerHTML = "✓ Bu durağı tamamladın! İstersen tekrar inceleyebilir veya sağa geçebilirsin.";
+      fb.innerHTML = isLastInKaz
+        ? "✓ Bu bölümü tamamladın! Sıradaki alt başlık döngüsüne geçebilirsin."
+        : "✓ Bu adımı tamamladın! İstersen tekrar inceleyebilir veya sağa geçebilirsin.";
+      nextBtn.disabled = false;
+    } else if (state.teacherUnlock) {
+      fb.className = "foot-feedback";
+      fb.innerHTML = "👩‍🏫 <strong>Öğretmen Modu:</strong> Alt yol haritasındaki tüm bölümlere ve oklara ilerlemek zorunda kalmadan istediğiniz an tıklayabilirsiniz.";
       nextBtn.disabled = false;
     } else {
       fb.className = "foot-feedback";
-      fb.innerHTML = "👆 Sıradaki durağın kilidini açmak için bu penceredeki etkinliği tamamla.";
-      nextBtn.disabled = !state.teacherUnlock;
+      fb.innerHTML = "👆 Sıradaki adımın kilidini açmak için bu penceredeki etkinliği tamamla.";
+      nextBtn.disabled = true;
     }
 
     if (window.NartesSmartboard) {
@@ -842,10 +1153,38 @@
       winCardElRef.classList.toggle("is-smartboard-stop", stop.type === "smartboard");
     }
 
+    // Temel bağlamı önce bildir; ardından alt render fonksiyonları (Soru Paketi, Yöntem Atölyesi, Akıllı Tahta) daha detaylı ekran verisiyle günceller
+    if (stop.type !== "smartboard" && window.NartesMentor) {
+      window.NartesMentor.setContext({ unit: UNIT, kaz, stop });
+      if (typeof window.NartesMentor.notifyScreenTask === "function") {
+        const rawText = [
+          stop.title,
+          stop.subtitle,
+          Array.isArray(stop.explanation) ? stop.explanation.join(" ") : "",
+          stop.sentenceHtml || "",
+          stop.quickQuestion || "",
+          stop.stem || ""
+        ].map(stripPlain).join(" ");
+        const nums = Array.from(new Set((rawText.match(/\b\d{1,4}\b/g) || []).map(Number).filter(n => n >= 2 && n <= 2000))).slice(0, 6);
+        window.NartesMentor.notifyScreenTask({
+          signature: `stop:${UNIT.unitNo}:${stop.id}:v${stop._variantIndex || 0}`,
+          taskTitle: stop.title,
+          promptText: [stop.subtitle, stop.sentenceHtml, stop.quickQuestion, stop.stem].filter(Boolean).map(stripPlain).join(" "),
+          numbers: nums,
+          targetNumber: stop.targetNumber || (stop.gridModel && stop.gridModel.total) || nums[0] || undefined,
+          hint: stop.hint || "",
+          solution: stop.solution || ""
+        });
+      }
+    }
+
     const body = document.getElementById("windowBody");
     body.innerHTML = "";
 
     if (stop.type === "concept") {
+      if (Array.isArray(stop.explanation)) {
+        window.__nartesActiveVoiceText = `${stop.title}. ${stop.explanation.map(stripPlain).join(" ")}`;
+      }
       renderConceptStop(stop, kaz, body, UNIT);
     } else if (stop.type === "video") {
       renderVideoStop(stop, kaz, body, UNIT);
@@ -871,9 +1210,6 @@
     }
 
     applyKaTeX(document.getElementById("windowCard"));
-    if (stop.type !== "smartboard" && window.NartesMentor) {
-      window.NartesMentor.setContext({ unit: UNIT, kaz, stop });
-    }
     speakText(`${stop.title}. ${stop.subtitle}`);
   }
 
@@ -889,29 +1225,32 @@
     leftCol.innerHTML = stop.explanation.map(p => `<p>${safeMathHtml(p)}</p>`).join("");
 
     if (stop.barsDemo) {
+      const bCfg = typeof stop.barsDemo === "object"
+        ? stop.barsDemo
+        : { total: stop.targetNumber || 24, goodDiv: 6, badDiv: 5 };
+      const tot = bCfg.total;
+      const gDiv = bCfg.goodDiv;
+      const gCount = Math.floor(tot / gDiv);
+      const bDiv = bCfg.badDiv;
+      const bCount = Math.floor(tot / bDiv);
+      const bRem = tot % bDiv;
       const bars = document.createElement("div");
       bars.className = "factor-bars-demo";
       bars.innerHTML = `
         <div class="bar-card">
           <div class="bar-row">
-            <div class="bar-seg" style="flex:6;background:#f97316">6</div>
-            <div class="bar-seg" style="flex:6;background:#f97316">6</div>
-            <div class="bar-seg" style="flex:6;background:#f97316">6</div>
-            <div class="bar-seg" style="flex:6;background:#f97316">6</div>
+            ${Array.from({ length: gCount }, () => `<div class="bar-seg" style="flex:${gDiv};background:#f97316">${gDiv}</div>`).join("")}
           </div>
-          <div class="bar-total" style="background:#a21caf">24</div>
-          <div class="bar-caption">✓ 24 sayısı 6'ya tam bölünür (4 × 6 = 24)</div>
+          <div class="bar-total" style="background:#a21caf">${tot}</div>
+          <div class="bar-caption">✓ ${tot} sayısı ${gDiv}'ya tam bölünür (${gCount} × ${gDiv} = ${tot})</div>
         </div>
         <div class="bar-card">
           <div class="bar-row">
-            <div class="bar-seg" style="flex:5;background:#16a34a">5</div>
-            <div class="bar-seg" style="flex:5;background:#16a34a">5</div>
-            <div class="bar-seg" style="flex:5;background:#16a34a">5</div>
-            <div class="bar-seg" style="flex:5;background:#16a34a">5</div>
-            <div class="bar-seg bar-seg-overflow" style="flex:5;background:#16a34a;opacity:0.45">5 (Taştı)</div>
+            ${Array.from({ length: bCount }, () => `<div class="bar-seg" style="flex:${bDiv};background:#16a34a">${bDiv}</div>`).join("")}
+            <div class="bar-seg bar-seg-overflow" style="flex:${bDiv};background:#16a34a;opacity:0.45">${bDiv} (Taştı)</div>
           </div>
-          <div class="bar-total" style="background:#2563eb;width:92%">24</div>
-          <div class="bar-caption">✗ 24 sayısı 5'e kalansız bölünemez (Kalan: 4)</div>
+          <div class="bar-total" style="background:#2563eb;width:92%">${tot}</div>
+          <div class="bar-caption">✗ ${tot} sayısı ${bDiv}'e kalansız bölünemez (Kalan: ${bRem})</div>
         </div>
       `;
       leftCol.appendChild(bars);
@@ -990,6 +1329,22 @@
       }
 
       renderGridModel();
+    } else if (stop.visualData && Array.isArray(stop.visualData.numbers)) {
+      rightCol.className = "flow-visual-box";
+      rightCol.innerHTML = `
+        <div style="width:100%;padding:12px;background:#f8fafc;border-radius:14px;border:1.5px solid #cbd5e1;">
+          <div style="font-weight:900;font-size:13px;color:#0f172a;margin-bottom:8px;">📐 ${escSvg(stop.visualData.title || kaz.title)}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:8px;">
+            ${stop.visualData.numbers.map(it => `
+              <div style="padding:8px 10px;border-radius:10px;background:${it.prime ? "#fef9c3" : "#eff6ff"};border:1.5px solid ${it.prime ? "#facc15" : "#bfdbfe"};text-align:center;">
+                <div style="font-weight:900;font-size:14px;color:#0f172a;">${escSvg(it.val)}</div>
+                <div style="font-size:11px;font-weight:700;color:#475569;">${escSvg(it.note || "")}</div>
+              </div>
+            `).join("")}
+          </div>
+          ${stop.visualData.summary ? `<div style="margin-top:8px;font-size:12px;font-weight:700;color:#15803d;">${escSvg(stop.visualData.summary)}</div>` : ""}
+        </div>
+      `;
     } else {
       rightCol.className = "flow-visual-box";
       const imgPath = kaz.visual || UNIT.coverImage;
@@ -1214,16 +1569,9 @@
 
       tabsEl.innerHTML = stop.steps.map((_, idx) => {
         const active = idx === stepIdx;
-        return `<button type="button" data-step="${idx}" style="border:1.5px solid ${active ? "#38bdf8" : "rgba(255,255,255,0.18)"};background:${active ? "rgba(56,189,248,0.22)" : "rgba(255,255,255,0.06)"};color:${active ? "#fde047" : "#cbd5e1"};padding:5px 12px;border-radius:999px;font-size:12px;font-weight:800;cursor:pointer;">${idx + 1}. Adım</button>`;
+        const passed = idx < stepIdx;
+        return `<span style="border:1.5px solid ${active ? "#38bdf8" : (passed ? "rgba(74,222,128,0.5)" : "rgba(255,255,255,0.16)")};background:${active ? "rgba(56,189,248,0.22)" : (passed ? "rgba(34,197,94,0.16)" : "rgba(255,255,255,0.05)")};color:${active ? "#fde047" : (passed ? "#86efac" : "#94a3b8")};padding:4px 11px;border-radius:999px;font-size:11.5px;font-weight:800;user-select:none;">${passed ? "✓ " : ""}${idx + 1}. Adım</span>`;
       }).join("");
-
-      tabsEl.querySelectorAll("button").forEach(b => {
-        b.addEventListener("click", () => {
-          playTone("click");
-          currentStepIdx = parseInt(b.getAttribute("data-step"), 10);
-          drawVisualStep(currentStepIdx);
-        });
-      });
 
       player.querySelector("#videoProgFill").style.width = `${((stepIdx + 1) / stop.steps.length) * 100}%`;
       const btn = player.querySelector("#btnNextVideoStep");
@@ -1232,19 +1580,22 @@
         ? `▶ Sonraki Adım (${stepIdx + 1}/${stop.steps.length})`
         : `🎯 Yandaki Soruya Geç (${stop.steps.length}/${stop.steps.length}) →`;
 
-      speakText(step.text);
-
-      if (stop.videoScene === "rectangles_24" || stop.videoScene === "rectangles_18") {
-        const configs = [
-          { r: 1, c: 24, color: "#38bdf8", label: "1 × 24 = 24 br²" },
-          { r: 2, c: 12, color: "#22c55e", label: "2 × 12 = 24 br²" },
-          { r: 3, c: 8,  color: "#f97316", label: "3 × 8 = 24 br²" },
-          { r: 4, c: 6,  color: "#a855f7", label: "4 × 6 = 24 br²" },
-          { r: 0, c: 0,  color: "#eab308", label: "Çarpanlar: 1, 2, 3, 4, 6, 8, 12, 24" }
-        ];
+      if (stop.videoScene === "rectangles_24" || stop.videoScene === "rectangles_18" || stop.videoScene === "rectangles_dynamic") {
+        const dynN = Number(stop.targetNumber || (stop.visualData && stop.visualData.numbers && stop.visualData.numbers[0] ? 0 : 0)) || 24;
+        const divs = window.NartesVariantEngine
+          ? window.NartesVariantEngine.divisorsOf(dynN)
+          : [1, 2, 3, 4, 6, 8, 12, 24];
+        const colors = ["#38bdf8", "#22c55e", "#f97316", "#a855f7", "#ec4899"];
+        const configs = [];
+        for (let i = 0; i < Math.ceil(divs.length / 2); i++) {
+          const r = divs[i];
+          const c = dynN / r;
+          configs.push({ r, c, color: colors[i % colors.length], label: `${r} × ${c} = ${dynN} br²` });
+        }
+        configs.push({ r: 0, c: 0, color: "#eab308", label: `${dynN} Çarpanları: ${divs.join(", ")}` });
         const cfg = configs[stepIdx] || configs[0];
         if (cfg.r > 0) {
-          const cellSize = cfg.c > 12 ? 17 : 22;
+          const cellSize = cfg.c > 12 ? 15 : 22;
           let cells = "";
           for (let i = 0; i < cfg.r * cfg.c; i++) {
             cells += `<div style="width:${cellSize}px;height:${cellSize}px;background:${cfg.color};border-radius:4px;"></div>`;
@@ -1259,9 +1610,9 @@
         } else {
           stage.innerHTML = `
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;">
-              ${[1, 2, 3, 4, 6, 8, 12, 24].map(n => `<div style="width:44px;height:44px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;">${n}</div>`).join("")}
+              ${divs.map(n => `<div style="width:44px;height:44px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;">${n}</div>`).join("")}
             </div>
-            <div style="margin-top:12px;font-weight:800;font-size:16px;color:#86efac;">Baştan ve sondan çarpımlar: 1×24 = 2×12 = 3×8 = 4×6 = 24</div>
+            <div style="margin-top:12px;font-weight:800;font-size:16px;color:#86efac;">${cfg.label}</div>
             <div style="margin-top:8px;font-size:14.5px;color:#e2e8f0;text-align:center;">${step.text}</div>
           `;
         }
@@ -1288,6 +1639,44 @@
           </div>
           <div style="margin-top:12px;font-size:14.5px;color:#e2e8f0;text-align:center;max-width:560px;">${step.text}</div>
         `;
+      } else if (stop.videoScene === "coprime_concept") {
+        const scenesHtml = [
+          `
+            <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center;">
+              <div style="background:rgba(56,189,248,0.16);border:2px solid #38bdf8;border-radius:14px;padding:14px 20px;text-align:center;">
+                <div style="font-size:22px;font-weight:900;color:#f8fafc;">9 = 3²</div>
+                <div style="font-size:12px;color:#bae6fd;font-weight:700;">Asal Bölen: Yalnız 3</div>
+              </div>
+              <div style="font-size:22px;font-weight:900;color:#4ade80;">✓ Ortak Asal Yok</div>
+              <div style="background:rgba(34,197,94,0.16);border:2px solid #4ade80;border-radius:14px;padding:14px 20px;text-align:center;">
+                <div style="font-size:22px;font-weight:900;color:#f8fafc;">16 = 2⁴</div>
+                <div style="font-size:12px;color:#bbf7d0;font-weight:700;">Asal Bölen: Yalnız 2</div>
+              </div>
+            </div>
+          `,
+          `
+            <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center;">
+              <div style="background:rgba(249,115,22,0.18);border:2px solid #fb923c;border-radius:14px;padding:14px 20px;text-align:center;">
+                <div style="font-size:22px;font-weight:900;color:#fde047;">14 ve 22</div>
+                <div style="font-size:12.5px;color:#fed7aa;font-weight:700;">İkisi de Çift ⇒ 2'ye Bölünür ✗</div>
+              </div>
+              <div style="background:rgba(34,197,94,0.18);border:2px solid #4ade80;border-radius:14px;padding:14px 20px;text-align:center;">
+                <div style="font-size:22px;font-weight:900;color:#86efac;">14 ve 15</div>
+                <div style="font-size:12.5px;color:#dcfce7;font-weight:700;">Ardışık Sayılar ⇒ Daima Asal ✓</div>
+              </div>
+            </div>
+          `,
+          `
+            <div style="background:rgba(255,255,255,0.08);border:2px solid #38bdf8;border-radius:14px;padding:16px 24px;text-align:center;">
+              <div style="font-size:20px;font-weight:900;color:#f8fafc;margin-bottom:6px;">(x + 1) / (y − 2) = 15 / 25  ⇒  <span style="color:#4ade80;">3 / 5</span></div>
+              <div style="font-size:13.5px;color:#fde047;font-weight:800;">5 ile sadeleştir ⇒ x + 1 = 3 (x = 2) ve y − 2 = 5 (y = 7)</div>
+            </div>
+          `
+        ];
+        stage.innerHTML = `
+          ${scenesHtml[stepIdx] || scenesHtml[0]}
+          <div style="margin-top:14px;font-size:14.5px;color:#e2e8f0;text-align:center;max-width:580px;">${step.text}</div>
+        `;
       } else {
         const imgPath = kaz.visual || UNIT.coverImage;
         stage.innerHTML = `
@@ -1303,6 +1692,18 @@
             </div>
           </div>
         `;
+      }
+      window.__nartesActiveVoiceText = `${step.text} Doğrulama sorusu: ${stop.quickQuestion}`;
+      if (window.NartesMentor) {
+        window.NartesMentor.updateProgress({
+          liveScreen: {
+            mode: "video",
+            stepIndex: stepIdx + 1,
+            stepTotal: stop.steps.length,
+            activeText: step.text,
+            questionText: stop.quickQuestion
+          }
+        });
       }
       applyKaTeX(stage);
     }
@@ -1322,127 +1723,1103 @@
       }
     });
 
-    const choicesBox = checkPanel.querySelector("#videoQuickChoices");
-    const letters = ["A", "B", "C", "D"];
-    stop.quickChoices.forEach((ch, idx) => {
-      const btn = document.createElement("button");
-      btn.className = "option-btn vcp-option-btn";
-      btn.innerHTML = `<span class="option-letter">${letters[idx] || "•"}</span><span class="vcp-option-text">${renderOptionMath(ch)}</span>`;
-      btn.addEventListener("click", () => {
-        if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
-        if (String(ch) === String(stop.quickCorrect)) {
-          choicesBox.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
-          btn.classList.add("correct");
-          completeCurrentStop("Anlatımı ve doğrulama sorusunu başarıyla tamamladın!");
-        } else {
-          playTone("error");
-          btn.classList.add("wrong-flash");
-          if (window.NartesMentor) {
-            window.NartesMentor.onWrong({
-              wrongValue: ch,
-              targetKey: "video_verify",
-              targetLabel: stop.quickQuestion,
-              correctAnswerToMask: stop.quickCorrect,
-              customHint: "Soldaki animasyon adımlarında oluşan farklı durumların sayısına ve son adımdaki özete tekrar dikkat et."
-            }, () => {
-              btn.classList.remove("wrong-flash");
-            });
+    const quickList = Array.isArray(stop.quickQuestions) && stop.quickQuestions.length > 0
+      ? stop.quickQuestions.map(q => ({
+          prompt: q.prompt || stop.quickQuestion,
+          choices: q.choices || stop.quickChoices || [],
+          correct: typeof q.correctIndex === "number" ? (q.choices || [])[q.correctIndex] : (q.correct || stop.quickCorrect),
+          feedback: q.feedback || "Doğru!",
+          hint: q.hint || stop.hint || "Soldaki adımlara ve verilere tekrar dikkat et."
+        }))
+      : [{
+          prompt: stop.quickQuestion,
+          choices: stop.quickChoices || [],
+          correct: stop.quickCorrect,
+          feedback: "Anlatımı ve doğrulama sorusunu başarıyla tamamladın!",
+          hint: "Soldaki animasyon adımlarında oluşan farklı durumların sayısına ve son adımdaki özete tekrar dikkat et."
+        }];
+    let activeQuickIdx = 0;
+
+    function renderQuickCheckQuestion() {
+      const qObj = quickList[activeQuickIdx] || quickList[0];
+      const titleEl = checkPanel.querySelector(".vcp-question-title");
+      const helperEl = checkPanel.querySelector("#vcpHelperSub");
+      const badgeEl = checkPanel.querySelector(".vcp-badge");
+      if (badgeEl) {
+        badgeEl.textContent = quickList.length > 1
+          ? `🎯 Adım Sonu Doğrulama (${activeQuickIdx + 1} / ${quickList.length})`
+          : "🎯 Adım Sonu Doğrulama";
+      }
+      if (titleEl) titleEl.innerHTML = safeMathHtml(qObj.prompt || "");
+      if (helperEl) {
+        helperEl.textContent = quickList.length > 1
+          ? `Soru ${activeQuickIdx + 1} / ${quickList.length} — Doğru seçeneği işaretle:`
+          : "Soldaki adımları inceledikten sonra doğru seçeneği işaretle:";
+      }
+
+      if (window.NartesMentor && typeof window.NartesMentor.notifyScreenTask === "function") {
+        const plainQ = stripPlain(qObj.prompt || "");
+        const qNums = Array.from(new Set((plainQ.match(/\b\d{1,4}\b/g) || []).map(Number).filter(n => n >= 2 && n <= 2000))).slice(0, 6);
+        window.NartesMentor.notifyScreenTask({
+          signature: `video:${UNIT.unitNo}:${stop.id}:v${stop._variantIndex || 0}:q${activeQuickIdx}`,
+          taskTitle: `${stop.title} (Soru ${activeQuickIdx + 1})`,
+          promptText: plainQ,
+          numbers: qNums,
+          targetNumber: stop.targetNumber || qNums[0] || undefined,
+          options: qObj.choices,
+          correctAnswer: qObj.correct,
+          hint: qObj.hint
+        });
+      }
+
+      const choicesBox = checkPanel.querySelector("#videoQuickChoices");
+      choicesBox.innerHTML = "";
+      const letters = ["A", "B", "C", "D"];
+      (qObj.choices || []).forEach((ch, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn vcp-option-btn";
+        btn.innerHTML = `<span class="option-letter">${letters[idx] || "•"}</span><span class="vcp-option-text">${renderOptionMath(ch)}</span>`;
+        btn.addEventListener("click", () => {
+          if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
+          if (String(ch) === String(qObj.correct)) {
+            choicesBox.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
+            btn.classList.add("correct");
+            spawnCelebrationBurst(btn);
+            if (activeQuickIdx < quickList.length - 1) {
+              playTone("combo");
+              setTimeout(() => {
+                activeQuickIdx++;
+                renderQuickCheckQuestion();
+              }, 700);
+            } else {
+              completeCurrentStop(qObj.feedback || "Anlatımı ve doğrulama sorusunu başarıyla tamamladın!");
+            }
+          } else {
+            playTone("error");
+            btn.classList.add("wrong-flash");
+            if (window.NartesMentor) {
+              window.NartesMentor.onWrong({
+                wrongValue: ch,
+                targetKey: `video_verify_${activeQuickIdx}`,
+                targetLabel: qObj.prompt,
+                correctAnswerToMask: qObj.correct,
+                customHint: qObj.hint
+              }, () => {
+                btn.classList.remove("wrong-flash");
+              });
+            }
           }
-        }
+        });
+        choicesBox.appendChild(btn);
       });
-      choicesBox.appendChild(btn);
-    });
+      applyKaTeX(checkPanel);
+    }
+
+    renderQuickCheckQuestion();
   }
 
   // ==========================================================================
-  // TÜR 3: 🧩 ETKİLEŞİMLİ ETKİNLİK
+  // YARDIMCI: TEK SATIRLI ETKİLEŞİMLİ EŞ MERKEZLİ GÖKKUŞAĞI YAYLARI (SVG)
+  //   - Eliptik yaylar (A rx ry 0 0 1) kullanıldığı için yaylar ASLA üst üste binmez.
+  //   - Sayı düğümleri doğrudan SVG içinde tıklanabilir; altta ikinci bir kutu satırı yoktur.
+  // ==========================================================================
+  function buildRainbowArcsSvgHtml(seq, targetStates, targetNum, activeTargetIdx) {
+    const isNumericList = seq.every(v => v === "?" || typeof v === "number" || /^[0-9]+$/.test(String(v)));
+    if (!isNumericList || seq.length < 4) return "";
+
+    const n = seq.length;
+    const stepX = n <= 8 ? 72 : Math.max(58, Math.floor(528 / (n - 1)));
+    const padX = 48;
+    const width = padX * 2 + (n - 1) * stepX;
+    const pairCount = Math.floor(n / 2);
+    const hasCenterSquare = (n % 2 === 1);
+
+    const innerRy = hasCenterSquare ? 42 : 28;
+    const stepRy = 22;
+    const maxRy = innerRy + Math.max(0, pairCount - 1) * stepRy;
+
+    const topMargin = 42;
+    const yAnchor = topMargin + maxRy;
+    const nodeCy = yAnchor + 25;
+    const svgHeight = nodeCy + 34;
+
+    const colors = ["#ef4444", "#f97316", "#eab308", "#10b981", "#0ea5e9", "#8b5cf6"];
+
+    let arcsHtml = "";
+    for (let i = 0; i < pairCount; i++) {
+      const j = n - 1 - i;
+      const x1 = padX + i * stepX;
+      const x2 = padX + j * stepX;
+      const rx = (x2 - x1) / 2;
+      const ry = innerRy + (pairCount - 1 - i) * stepRy;
+
+      const mLeft = targetStates.find(m => m.index === i);
+      const mRight = targetStates.find(m => m.index === j);
+      const pairComplete = (!mLeft || mLeft.solved) && (!mRight || mRight.solved);
+      const pairHasFocus =
+        (mLeft && !mLeft.solved && targetStates.indexOf(mLeft) === activeTargetIdx) ||
+        (mRight && !mRight.solved && targetStates.indexOf(mRight) === activeTargetIdx);
+      const col = colors[i % colors.length];
+
+      arcsHtml += `
+        <path d="M ${x1} ${yAnchor} A ${rx} ${ry} 0 0 1 ${x2} ${yAnchor}"
+              fill="none" stroke="${pairHasFocus ? "#2563eb" : col}"
+              stroke-width="${pairComplete ? 3.8 : (pairHasFocus ? 3.2 : 2.5)}"
+              stroke-dasharray="${pairComplete ? "none" : "7 5"}"
+              opacity="${pairComplete ? 0.96 : (pairHasFocus ? 0.9 : 0.48)}"
+              stroke-linecap="round"/>
+      `;
+    }
+
+    if (hasCenterSquare) {
+      const midIdx = Math.floor(n / 2);
+      const mx = padX + midIdx * stepX;
+      const mMid = targetStates.find(m => m.index === midIdx);
+      const midSolved = !mMid || mMid.solved;
+      const midFocused = Boolean(mMid && !mMid.solved && targetStates.indexOf(mMid) === activeTargetIdx);
+      arcsHtml += `
+        <path d="M ${mx - 13} ${yAnchor} A 14 23 0 1 1 ${mx + 13} ${yAnchor}"
+              fill="none" stroke="${midFocused ? "#2563eb" : "#9333ea"}"
+              stroke-width="${midSolved ? 3.2 : 2.4}"
+              stroke-dasharray="${midSolved ? "none" : "5 4"}"
+              opacity="${midSolved ? 0.96 : 0.65}" stroke-linecap="round"/>
+        <text x="${mx}" y="${yAnchor - 28}" text-anchor="middle" font-size="10.5" font-weight="900" fill="#7e22ce">Tam Kare</text>
+      `;
+    }
+
+    const nodesHtml = seq.map((item, idx) => {
+      const x = padX + idx * stepX;
+      const miss = targetStates.find(m => m.index === idx);
+      if (!miss) {
+        return `
+          <g>
+            <rect x="${x - 23}" y="${nodeCy - 22}" width="46" height="44" rx="13" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2.2"/>
+            <text x="${x}" y="${nodeCy + 6}" text-anchor="middle" font-size="16" font-weight="900" fill="#0f172a">${escSvg(item)}</text>
+          </g>
+        `;
+      }
+      const mIdx = targetStates.indexOf(miss);
+      const isSelected = !miss.solved && mIdx === activeTargetIdx;
+      const valTxt = miss.solved ? miss.answer : "?";
+      const fillBg = miss.solved ? "#dcfce7" : (isSelected ? "#dbeafe" : "#fff7ed");
+      const strokeCol = miss.solved ? "#16a34a" : (isSelected ? "#2563eb" : "#f97316");
+      const txtCol = miss.solved ? "#15803d" : (isSelected ? "#1d4ed8" : "#c2410c");
+      const haloRing = isSelected
+        ? `<rect x="${x - 28}" y="${nodeCy - 27}" width="56" height="54" rx="16" fill="none" stroke="rgba(37,99,235,0.22)" stroke-width="4"/>`
+        : "";
+      return `
+        <g class="rainbow-interactive-node" data-slot-idx="${mIdx}" style="cursor:${miss.solved ? "default" : "pointer"};">
+          ${haloRing}
+          <rect x="${x - 23}" y="${nodeCy - 22}" width="46" height="44" rx="13" fill="${fillBg}" stroke="${strokeCol}" stroke-width="${isSelected ? 3.2 : 2.6}"/>
+          <text x="${x}" y="${nodeCy + 6}" text-anchor="middle" font-size="16.5" font-weight="900" fill="${txtCol}">${escSvg(valTxt)}</text>
+        </g>
+      `;
+    }).join("");
+
+    return `
+      <div class="rainbow-svg-stage">
+        <svg viewBox="0 0 ${width} ${svgHeight}" class="rainbow-arcs-svg" role="img" aria-label="${targetNum || ""} Gökkuşağı Çarpan Modeli">
+          <text x="${width / 2}" y="22" text-anchor="middle" font-size="13.5" font-weight="800" fill="#334155">
+            Simetrik Çarpan Eşleşmesi ${targetNum ? `(Her Yayın Çarpımı = ${targetNum})` : ""}
+          </text>
+          ${arcsHtml}
+          ${nodesHtml}
+        </svg>
+      </div>
+    `;
+  }
+
+  function buildNonClickableStepBannerHtml(stepNo, totalSteps, badgeTitle, completedFlags) {
+    if (totalSteps <= 1) return "";
+    const dotsHtml = Array.from({ length: totalSteps }, (_, idx) => {
+      const isDone = completedFlags && completedFlags[idx];
+      const isActive = idx === stepNo - 1;
+      return `<span class="linear-step-dot ${isDone ? "done" : ""} ${isActive ? "active" : ""}"></span>`;
+    }).join("");
+    return `
+      <div class="linear-step-banner">
+        <div class="linear-step-left">
+          <span class="linear-step-pill">ADIM ${stepNo} / ${totalSteps}</span>
+          <span class="linear-step-name">${escSvg(badgeTitle || `${stepNo}. Görev`)}</span>
+        </div>
+        <div class="linear-step-dots" aria-hidden="true">${dotsHtml}</div>
+      </div>
+    `;
+  }
+
+  // ==========================================================================
+  // TÜR 3: 🧩 ADIM ADIM İLERLEYEN ÇOK ÇEŞİTLİ ETKİNLİKLER & 4 YÖNTEM ATÖLYESİ
   // ==========================================================================
   function renderActivityStop(stop, kaz, container) {
     const board = document.createElement("div");
     board.className = "interactive-board";
 
-    if (stop.activityMode === "rainbow_pairs") {
-      const targetStates = stop.missingTargets.map(m => ({ ...m, solved: false }));
-      let solvedCount = 0;
-      const totalMissing = targetStates.length;
-      let activeMissingIdx = 0;
+    if (stop.activityMode === "rainbow_pairs" || stop.activityMode === "multi_stage_rainbow") {
+      const stages = stop.activityMode === "multi_stage_rainbow" && Array.isArray(stop.stages)
+        ? stop.stages
+        : [{
+            badge: stop.title,
+            prompt: "Seçili kutu için alttaki doğru değere tıkla:",
+            targetNumber: stop.targetNumber,
+            sequence: stop.sequence,
+            missingTargets: stop.missingTargets,
+            pool: stop.pool
+          }];
 
-      const seqRow = document.createElement("div");
-      seqRow.style.cssText = "display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:14px 0;";
-
-      const poolWrap = document.createElement("div");
-      poolWrap.className = "chip-grid";
-
-      function renderSlots() {
-        seqRow.innerHTML = "";
-        stop.sequence.forEach((item, idx) => {
-          const missObj = targetStates.find(m => m.index === idx);
-          const box = document.createElement("div");
-          if (missObj) {
-            const isSolved = missObj.solved;
-            const isSelected = targetStates[activeMissingIdx] === missObj;
-            box.style.cssText = `padding:12px 18px;border-radius:12px;font-weight:900;font-size:15.5px;cursor:pointer;border:2.5px solid ${isSolved ? "#16a34a" : (isSelected ? "#2563eb" : "#f97316")};background:${isSolved ? "#dcfce7" : (isSelected ? "#dbeafe" : "#fff7ed")};color:#0f172a;`;
-            const rawText = isSolved ? `${item.toString().replace("?", missObj.answer)}` : String(item);
-            box.innerHTML = renderOptionMath(rawText);
-            box.addEventListener("click", () => {
-              if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
-              if (!isSolved) {
-                activeMissingIdx = targetStates.indexOf(missObj);
-                renderSlots();
-              }
-            });
-          } else {
-            box.style.cssText = "padding:12px 18px;border-radius:12px;font-weight:800;font-size:15.5px;background:#e2e8f0;color:#1e293b;";
-            box.innerHTML = renderOptionMath(item);
-          }
-          seqRow.appendChild(box);
-        });
-        applyKaTeX(seqRow);
-      }
-
-      renderSlots();
-      board.innerHTML = `<div style="text-align:center;font-weight:700;color:#334155;">Mavi seçili kutu için alttaki doğru değere tıkla:</div>`;
-      board.appendChild(seqRow);
-
-      stop.pool.forEach(val => {
-        const chip = document.createElement("button");
-        chip.className = "num-chip";
-        chip.innerHTML = renderOptionMath(val);
-        chip.addEventListener("click", () => {
-          if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
-          const currentTarget = targetStates[activeMissingIdx];
-          if (!currentTarget || currentTarget.solved) return;
-          if (String(val) === String(currentTarget.answer)) {
-            playTone("click");
-            currentTarget.solved = true;
-            chip.classList.add("correct");
-            chip.disabled = true;
-            solvedCount++;
-            const nextUnsolved = targetStates.findIndex(m => !m.solved);
-            if (nextUnsolved !== -1) activeMissingIdx = nextUnsolved;
-            renderSlots();
-            if (solvedCount === totalMissing) {
-              completeCurrentStop("Tüm eşleştirmeleri doğru tamamladın!");
-            }
-          } else {
-            playTone("error");
-            chip.classList.add("wrong-flash");
-            if (window.NartesMentor) {
-              window.NartesMentor.onWrong({
-                wrongValue: val,
-                targetKey: `rainbow_${activeMissingIdx}`,
-                targetLabel: String(stop.sequence[currentTarget.index] || "Seçili Kutu"),
-                correctAnswerToMask: currentTarget.answer,
-                customHint: currentTarget.hint
-              }, () => {
-                chip.classList.remove("wrong-flash");
+      const stageModels = stages.map(st => {
+        // NartesVariantEngine items dizisi verirse missingTargets'ı otomatik üret
+        let seq = st.sequence;
+        let mTargets = st.missingTargets;
+        if (!Array.isArray(seq) && Array.isArray(st.items) && (typeof st.target === "number" || typeof st.base === "number")) {
+          const fullSeq = window.NartesVariantEngine
+            ? (st.base ? Array.from({ length: st.items.length }, (_, k) => st.base * (k + 1)) : window.NartesVariantEngine.divisorsOf(st.target))
+            : st.items;
+          seq = st.items.map(v => (v === null ? "?" : v));
+          mTargets = [];
+          st.items.forEach((v, idx) => {
+            if (v === null) {
+              mTargets.push({
+                index: idx,
+                answer: fullSeq[idx],
+                hint: st.hint || `Sıradaki kutunun değerini kurala göre hesapla.`
               });
             }
-          }
-        });
-        poolWrap.appendChild(chip);
+          });
+        }
+        return {
+          ...st,
+          variety: st.variety || (st.base ? "kat_ladder" : undefined),
+          stepBase: st.stepBase || st.base,
+          badge: st.badge || st.title,
+          targetNumber: st.targetNumber || st.target || st.base || stop.targetNumber,
+          sequence: seq || [],
+          targets: (mTargets || []).map(m => ({ ...m, solved: false })),
+          completed: false
+        };
       });
-      board.appendChild(poolWrap);
+      let activeStageIdx = 0;
+
+      function detectStageVariety(st) {
+        if (st.variety) return st.variety;
+        const seq = st.sequence || [];
+        const isNum = seq.length >= 4 && seq.every(v => v === "?" || typeof v === "number" || /^[0-9]+$/.test(String(v)));
+        return isNum ? "rainbow" : "equation_cards";
+      }
+
+      function renderActiveStage() {
+        const st = stageModels[activeStageIdx];
+        const variety = detectStageVariety(st);
+        let activeMissingIdx = st.targets.findIndex(m => !m.solved);
+        if (activeMissingIdx === -1) activeMissingIdx = 0;
+
+        board.innerHTML = "";
+
+        if (stageModels.length > 1) {
+          const cleanBadge = String(st.badge || `${activeStageIdx + 1}. Görev`).replace(/^Adım\s*\d+\s*\/\s*\d+\s*•\s*/i, "");
+          const bannerWrap = document.createElement("div");
+          bannerWrap.innerHTML = buildNonClickableStepBannerHtml(
+            activeStageIdx + 1,
+            stageModels.length,
+            cleanBadge,
+            stageModels.map(m => m.completed)
+          );
+          if (bannerWrap.firstElementChild) board.appendChild(bannerWrap.firstElementChild);
+        }
+
+        const promptEl = document.createElement("div");
+        promptEl.className = "activity-stage-prompt";
+        promptEl.innerHTML = safeMathHtml(st.prompt || "Mavi seçili kutu için alttaki doğru değere tıkla:");
+        board.appendChild(promptEl);
+
+        const stageVisualArea = document.createElement("div");
+        stageVisualArea.className = "activity-variety-stage";
+        board.appendChild(stageVisualArea);
+
+        const poolWrap = document.createElement("div");
+        poolWrap.className = "chip-grid";
+        board.appendChild(poolWrap);
+
+        function syncStageMentor() {
+          const currT = st.targets[activeMissingIdx];
+          if (window.NartesMentor) {
+            const pTxt = stripPlain(st.prompt || "");
+            const seqNums = (st.sequence || [])
+              .map(v => parseInt(v, 10))
+              .filter(n => !isNaN(n) && n >= 2 && n <= 2000);
+            const tNum = Number(st.targetNumber || 0) || undefined;
+            const stageNums = Array.from(new Set([...(tNum ? [tNum] : []), ...seqNums])).slice(0, 8);
+            if (typeof window.NartesMentor.notifyScreenTask === "function") {
+              window.NartesMentor.notifyScreenTask({
+                signature: `act:${stop.id}:v${stop._variantIndex || 0}:st${activeStageIdx}`,
+                taskTitle: `${stop.title} • ${st.badge || (activeStageIdx + 1) + ". Aşama"}`,
+                promptText: `${pTxt} (Dizi: ${(st.sequence || []).join(", ")})`,
+                numbers: stageNums,
+                targetNumber: tNum,
+                missingTargets: st.targets.filter(t => !t.solved),
+                hint: currT ? currT.hint : (st.hint || "")
+              });
+            }
+            window.NartesMentor.updateProgress({
+              liveScreen: {
+                mode: stop.activityMode,
+                variety,
+                stageBadge: st.badge || stop.title,
+                stageIndex: activeStageIdx + 1,
+                stageTotal: stageModels.length,
+                prompt: pTxt,
+                targetNumber: st.targetNumber,
+                activeSlotLabel: currT ? String((st.sequence && st.sequence[currT.index]) || "Seçili Kutu") : "Tamamlandı",
+                activeSlotHint: currT ? currT.hint : ""
+              }
+            });
+          }
+        }
+
+        function bindSlotClickHandlers() {
+          stageVisualArea.querySelectorAll("[data-slot-idx]").forEach(el => {
+            el.addEventListener("click", () => {
+              if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
+              const idx = parseInt(el.getAttribute("data-slot-idx"), 10);
+              if (st.targets[idx] && !st.targets[idx].solved) {
+                playTone("click");
+                activeMissingIdx = idx;
+                refreshStageVisual();
+                syncStageMentor();
+              }
+            });
+          });
+        }
+
+        function refreshStageVisual() {
+          if (variety === "rainbow") {
+            stageVisualArea.innerHTML = buildRainbowArcsSvgHtml(st.sequence, st.targets, st.targetNumber, activeMissingIdx);
+          } else if (variety === "factor_pairs") {
+            const pairs = st.pairs || [];
+            stageVisualArea.innerHTML = `
+              <div class="fpairs-grid">
+                ${pairs.map((p) => {
+                  const hasSlot = typeof p.targetIdx === "number";
+                  const tObj = hasSlot ? st.targets[p.targetIdx] : null;
+                  const isSel = hasSlot && !tObj.solved && p.targetIdx === activeMissingIdx;
+                  const renderTerm = (val, isMissingSide) => {
+                    if (!isMissingSide || !tObj) {
+                      return `<span class="fpair-num">${escSvg(val)}</span>`;
+                    }
+                    return `<button type="button" class="fpair-slot ${tObj.solved ? "solved" : ""} ${isSel ? "selected" : ""}" data-slot-idx="${p.targetIdx}">
+                      ${tObj.solved ? tObj.answer : "?"}
+                    </button>`;
+                  };
+                  return `
+                    <div class="fpair-card ${p.isSquare ? "is-square-pair" : ""}">
+                      <span class="fpair-tag">${p.isSquare ? "Tam Kare" : "Çarpan Çifti"}</span>
+                      <div class="fpair-eq">
+                        ${renderTerm(p.left, p.left === "?")}
+                        <span class="fpair-op">×</span>
+                        ${renderTerm(p.right, p.right === "?")}
+                        <span class="fpair-op">=</span>
+                        <span class="fpair-total">${escSvg(st.targetNumber)}</span>
+                      </div>
+                    </div>
+                  `;
+                }).join("")}
+              </div>
+            `;
+          } else if (variety === "kat_ladder") {
+            const stepBase = st.stepBase || st.sequence[0] || 8;
+            stageVisualArea.innerHTML = `
+              <div class="kat-ladder-track">
+                ${st.sequence.map((item, idx) => {
+                  const missObj = st.targets.find(m => m.index === idx);
+                  const mIdx = missObj ? st.targets.indexOf(missObj) : -1;
+                  const isSel = missObj && !missObj.solved && mIdx === activeMissingIdx;
+                  const jumpArrow = idx < st.sequence.length - 1
+                    ? `<div class="kat-jump-arrow"><span class="kat-jump-plus">+${escSvg(stepBase)}</span><span class="kat-jump-chev">→</span></div>`
+                    : "";
+                  if (!missObj) {
+                    return `
+                      <div class="kat-step-unit">
+                        <span class="kat-step-ord">${idx + 1}. kat</span>
+                        <div class="kat-step-box static">${escSvg(item)}</div>
+                      </div>
+                      ${jumpArrow}
+                    `;
+                  }
+                  return `
+                    <div class="kat-step-unit">
+                      <span class="kat-step-ord">${idx + 1}. kat</span>
+                      <button type="button" class="kat-step-box slot ${missObj.solved ? "solved" : ""} ${isSel ? "selected" : ""}" data-slot-idx="${mIdx}">
+                        ${missObj.solved ? missObj.answer : "?"}
+                      </button>
+                    </div>
+                    ${jumpArrow}
+                  `;
+                }).join("")}
+              </div>
+            `;
+          } else if (variety === "venn_ebob") {
+            const sCommon1 = st.targets[0];
+            const sCommon2 = st.targets[1];
+            const sel0 = !sCommon1.solved && activeMissingIdx === 0;
+            const sel1 = !sCommon2.solved && activeMissingIdx === 1;
+            stageVisualArea.innerHTML = `
+              <div class="venn-ebob-wrap">
+                <svg viewBox="0 0 520 212" class="venn-ebob-svg" role="img" aria-label="${st.numA} ve ${st.numB} Ortak Bölen Kesişim Şeması">
+                  <circle cx="192" cy="112" r="82" fill="rgba(59, 130, 246, 0.12)" stroke="#2563eb" stroke-width="2.4"/>
+                  <circle cx="328" cy="112" r="82" fill="rgba(249, 115, 22, 0.12)" stroke="#ea580c" stroke-width="2.4"/>
+                  <text x="144" y="22" text-anchor="middle" font-size="13" font-weight="900" fill="#1d4ed8">${st.numA}'in Bölenleri</text>
+                  <text x="376" y="22" text-anchor="middle" font-size="13" font-weight="900" fill="#c2410c">${st.numB}'ün Bölenleri</text>
+                  <text x="260" y="22" text-anchor="middle" font-size="12" font-weight="900" fill="#15803d">Ortak Bölenler</text>
+
+                  <!-- Yalnız A bölgesi -->
+                  <text x="142" y="96" text-anchor="middle" font-size="16" font-weight="900" fill="#1e3a8a">${escSvg(st.onlyA[0] || "")}</text>
+                  <text x="142" y="136" text-anchor="middle" font-size="16" font-weight="900" fill="#1e3a8a">${escSvg(st.onlyA[1] || "")}</text>
+
+                  <!-- Yalnız B bölgesi -->
+                  <text x="374" y="82" text-anchor="middle" font-size="15.5" font-weight="900" fill="#9a3412">${escSvg(st.onlyB[0] || "")}</text>
+                  <text x="392" y="112" text-anchor="middle" font-size="15.5" font-weight="900" fill="#9a3412">${escSvg(st.onlyB[1] || "")}</text>
+                  <text x="374" y="142" text-anchor="middle" font-size="15.5" font-weight="900" fill="#9a3412">${escSvg(st.onlyB[2] || "")}</text>
+                  <text x="352" y="168" text-anchor="middle" font-size="15.5" font-weight="900" fill="#9a3412">${escSvg(st.onlyB[3] || "")}</text>
+
+                  <!-- Ortak Bölge (dinamik ortak bölenler + EBOB) -->
+                  ${(() => { const cf = st.commonFixed || [1, 2]; return `
+                  <circle cx="242" cy="76" r="15" fill="#f0fdf4" stroke="#86efac" stroke-width="1.8"/>
+                  <text x="242" y="81" text-anchor="middle" font-size="13.5" font-weight="900" fill="#14532d">${escSvg(cf[0] ?? 1)}</text>
+                  <circle cx="278" cy="76" r="15" fill="#f0fdf4" stroke="#86efac" stroke-width="1.8"/>
+                  <text x="278" y="81" text-anchor="middle" font-size="13.5" font-weight="900" fill="#14532d">${escSvg(cf[1] ?? "")}</text>
+                  `; })()}
+
+                  <g data-slot-idx="0" style="cursor:${sCommon1.solved ? "default" : "pointer"};">
+                    <rect x="236" y="100" width="48" height="32" rx="10"
+                          fill="${sCommon1.solved ? "#dcfce7" : (sel0 ? "#dbeafe" : "#fff7ed")}"
+                          stroke="${sCommon1.solved ? "#16a34a" : (sel0 ? "#2563eb" : "#f97316")}" stroke-width="2.6"/>
+                    <text x="260" y="121" text-anchor="middle" font-size="14.5" font-weight="900" fill="#0f172a">${sCommon1.solved ? sCommon1.answer : "?"}</text>
+                  </g>
+
+                  <g data-slot-idx="1" style="cursor:${sCommon2.solved ? "default" : "pointer"};">
+                    <rect x="226" y="140" width="68" height="34" rx="11"
+                          fill="${sCommon2.solved ? "#dcfce7" : (sel1 ? "#dbeafe" : "#fff7ed")}"
+                          stroke="${sCommon2.solved ? "#16a34a" : (sel1 ? "#2563eb" : "#f97316")}" stroke-width="2.8"/>
+                    <text x="260" y="162" text-anchor="middle" font-size="13.5" font-weight="900" fill="#0f172a">${sCommon2.solved ? `★ ${sCommon2.answer}` : "EBOB ?"}</text>
+                  </g>
+                </svg>
+              </div>
+            `;
+          } else {
+            // equation_cards: "EBOB(20, 30) = ?" veya genel denklem kartları
+            stageVisualArea.innerHTML = `
+              <div class="eq-cards-grid">
+                ${st.sequence.map((item, idx) => {
+                  const missObj = st.targets.find(m => m.index === idx);
+                  const mIdx = missObj ? st.targets.indexOf(missObj) : -1;
+                  const isSel = missObj && !missObj.solved && mIdx === activeMissingIdx;
+                  const rawStr = String(item);
+                  const eqParts = rawStr.includes("=") ? rawStr.split("=") : [rawStr, ""];
+                  const leftLabel = eqParts[0].trim();
+                  if (!missObj) {
+                    return `
+                      <div class="eq-solve-card static">
+                        <span class="eq-card-lhs">${renderOptionMath(rawStr)}</span>
+                      </div>
+                    `;
+                  }
+                  return `
+                    <button type="button" class="eq-solve-card ${missObj.solved ? "solved" : ""} ${isSel ? "selected" : ""}" data-slot-idx="${mIdx}">
+                      <span class="eq-card-lhs">${renderOptionMath(leftLabel)}</span>
+                      <span class="eq-card-sign">=</span>
+                      <span class="eq-card-slot">${missObj.solved ? renderOptionMath(missObj.answer) : "?"}</span>
+                    </button>
+                  `;
+                }).join("")}
+              </div>
+            `;
+          }
+
+          bindSlotClickHandlers();
+          applyKaTeX(stageVisualArea);
+        }
+
+        refreshStageVisual();
+        syncStageMentor();
+
+        st.pool.forEach(val => {
+          const chip = document.createElement("button");
+          chip.className = "num-chip";
+          const alreadyExhausted = !st.targets.some(t => !t.solved && String(t.answer) === String(val)) &&
+            st.targets.some(t => t.solved && String(t.answer) === String(val));
+          if (alreadyExhausted) {
+            chip.classList.add("correct");
+            chip.disabled = true;
+          }
+          chip.innerHTML = renderOptionMath(val);
+          chip.addEventListener("click", () => {
+            if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
+            const currentTarget = st.targets[activeMissingIdx];
+            if (!currentTarget || currentTarget.solved) return;
+            if (String(val) === String(currentTarget.answer)) {
+              currentTarget.solved = true;
+              const stillNeeded = st.targets.some(t => !t.solved && String(t.answer) === String(val));
+              if (!stillNeeded) {
+                chip.classList.add("correct");
+                chip.disabled = true;
+              }
+              const nextUnsolved = st.targets.findIndex(m => !m.solved);
+              if (nextUnsolved !== -1) {
+                playTone("pop");
+                activeMissingIdx = nextUnsolved;
+                refreshStageVisual();
+                syncStageMentor();
+              } else {
+                st.completed = true;
+                playTone("combo");
+                spawnCelebrationBurst(chip);
+                refreshStageVisual();
+                const nextStage = stageModels.findIndex(sModel => !sModel.completed);
+                if (nextStage !== -1) {
+                  clearTimeout(state.autoAdvanceTimer);
+                  state.autoAdvanceTimer = setTimeout(() => {
+                    activeStageIdx = nextStage;
+                    renderActiveStage();
+                  }, 780);
+                } else {
+                  completeCurrentStop("Tüm etkinlik adımlarını başarıyla tamamladın!");
+                }
+              }
+            } else {
+              playTone("error");
+              chip.classList.add("wrong-flash");
+              if (window.NartesMentor) {
+                window.NartesMentor.onWrong({
+                  wrongValue: val,
+                  targetKey: `stage_${activeStageIdx}_${activeMissingIdx}`,
+                  targetLabel: `${st.badge || stop.title} — ${String((st.sequence && st.sequence[currentTarget.index]) || "Seçili Kutu")}`,
+                  correctAnswerToMask: currentTarget.answer,
+                  customHint: currentTarget.hint
+                }, () => {
+                  chip.classList.remove("wrong-flash");
+                });
+              }
+            }
+          });
+          poolWrap.appendChild(chip);
+        });
+        applyKaTeX(board);
+      }
+
+      renderActiveStage();
+    } else if (stop.activityMode === "factor_methods_lab") {
+      // ======================================================================
+      // DİNAMİK 5 YÖNTEM ATÖLYESİ (Üstte Sekme Yok — İlerledikçe Sırayla Gelir!)
+      // 1) 🌈 Gökkuşağı -> 2) 🌸 Çarpan Çiçeği -> 3) 🌳 Asal Çarpan Ağacı
+      // -> 4) 📏 Bölen Listesi -> 5) ✨ Üslü İfade Sentezi
+      // ======================================================================
+      const targetN = Number(stop.targetNumber || (stop.methodsData && stop.methodsData.target) || 24);
+      const md = stop.methodsData || (window.NartesVariantEngine ? window.NartesVariantEngine.make5MethodSet(targetN) : null);
+      if (!md) {
+        board.innerHTML = `<div class="lead-text"><p>Yöntem verisi yüklenemedi.</p></div>`;
+        container.appendChild(board);
+        return;
+      }
+
+      const rbDivs = md.divisors || [1, 2, 3, 4, 6, 8, 12, 24];
+      const rbItems = md.rainbow && Array.isArray(md.rainbow.items)
+        ? md.rainbow.items
+        : rbDivs.map((v, i) => (i === 2 || i === rbDivs.length - 3 ? null : v));
+      const rbSequence = rbItems.map(v => (v === null ? "?" : v));
+      const rbSlots = [];
+      rbItems.forEach((v, idx) => {
+        if (v === null) {
+          const ans = rbDivs[idx];
+          const partner = targetN / ans;
+          rbSlots.push({
+            index: idx,
+            answer: ans,
+            label: `${idx + 1}. kutu (? × ${partner} = ${targetN})`,
+            hint: `${targetN} ÷ ${partner} = ${ans} olur; küçükten büyüğe sırada bu kutuya ${ans} gelir.`,
+            solved: false
+          });
+        }
+      });
+
+      // Çarpan Çiçeği Dinamik Yapraklar & Slotlar
+      const fCount = rbDivs.length;
+      const flSlots = [];
+      const flPetalMeta = rbDivs.map((d, i) => ({
+        val: d,
+        angle: -90 + (360 / fCount) * i,
+        pairIdx: Math.min(i, fCount - 1 - i)
+      }));
+      const slotCandidateIndices = fCount >= 8 ? [fCount - 4, fCount - 3, fCount - 2] : [fCount - 3, fCount - 2];
+      slotCandidateIndices.forEach((pIdx) => {
+        if (pIdx > 0 && pIdx < fCount - 1) {
+          const ans = rbDivs[pIdx];
+          const mate = targetN / ans;
+          flSlots.push({
+            petalIdx: pIdx,
+            answer: ans,
+            label: `${mate} yaprağının karşısı (${mate} × ? = ${targetN})`,
+            hint: `Çarpan çiçeğinde ${mate} yaprağının tam karşısında ${targetN} ÷ ${mate} = ${ans} yazar.`,
+            solved: false
+          });
+        }
+      });
+      const lastPrimeLeaf = md.uniquePrimes[md.uniquePrimes.length - 1] || 3;
+      const leafSlotIdx = flSlots.length;
+      flSlots.push({
+        key: "primeLeaf",
+        answer: lastPrimeLeaf,
+        label: `Sağdaki yeşil asal çarpan yaprağı`,
+        hint: `${targetN} sayısının çarpanları içinden asal olanlar: ${md.uniquePrimes.join(" ve ")}.`,
+        solved: false
+      });
+      const flPoolNums = Array.from(new Set(flSlots.map(s => s.answer).concat((md.flower && md.flower.pool ? md.flower.pool.map(Number) : [2, 3, 4, 6, 8, 9, 12])))).filter(x => Number.isFinite(x)).sort((a, b) => a - b);
+
+      // Asal Çarpan Ağacı Dinamik Düğüm Zinciri
+      const allPrimes = md.allPrimes || [2, 2, 2, 3];
+      const treeSteps = [];
+      let curNodeVal = targetN;
+      for (let i = 0; i < allPrimes.length - 1; i++) {
+        const p = allPrimes[i];
+        const nextVal = curNodeVal / p;
+        treeSteps.push({ parent: curNodeVal, leftPrime: p, rightVal: nextVal, isLastLeaf: i === allPrimes.length - 2 });
+        curNodeVal = nextVal;
+      }
+      const treeSlots = treeSteps.map((ts, i) => ({
+        stepIdx: i,
+        answer: ts.rightVal,
+        label: `${i + 1}. Basamak: ${ts.parent} = ${ts.leftPrime} × [ ? ]`,
+        hint: `${ts.parent} sayısını ${ts.leftPrime}'e böldüğümüzde sağ dala ${ts.parent} ÷ ${ts.leftPrime} = ${ts.rightVal} gelir.`,
+        solved: false
+      }));
+      const treePool = Array.from(new Set(
+        treeSlots.map(s => s.answer).concat(allPrimes, [Math.max(2, targetN / 2 - 2), allPrimes[0] + 3])
+      )).filter(n => Number.isFinite(n) && n >= 2).sort((a, b) => a - b).slice(0, 7);
+
+      // Bölen Listesi (Algoritma) Dinamik Satırlar
+      const algoRows = (md.algo && md.algo.rows) || [];
+      const rowSecondIdx = Math.min(1, Math.max(0, algoRows.length - 1));
+      const rowLastIdx = Math.max(0, algoRows.length - 1);
+      const algoSlots = [];
+      if (algoRows.length >= 2) {
+        algoSlots.push({
+          rowIdx: rowSecondIdx,
+          col: "dividend",
+          answer: algoRows[rowSecondIdx].dividend,
+          label: `Sol sütun ${rowSecondIdx + 1}. satır (${algoRows[rowSecondIdx - 1].dividend} ÷ ${algoRows[rowSecondIdx - 1].divisor})`,
+          hint: `${algoRows[rowSecondIdx - 1].dividend} sayısını sağdaki ${algoRows[rowSecondIdx - 1].divisor} asalına bölüp altına yaz.`,
+          solved: false
+        });
+      }
+      if (algoRows.length >= 3) {
+        algoSlots.push({
+          rowIdx: rowLastIdx,
+          col: "dividend",
+          answer: algoRows[rowLastIdx].dividend,
+          label: `Sol sütun ${rowLastIdx + 1}. satır bölümü`,
+          hint: `Üstteki ${algoRows[rowLastIdx - 1].dividend} sayısını sağındaki ${algoRows[rowLastIdx - 1].divisor} asalıyla böl.`,
+          solved: false
+        });
+      }
+      if (algoRows.length >= 1) {
+        algoSlots.push({
+          rowIdx: rowLastIdx,
+          col: "divisor",
+          answer: algoRows[rowLastIdx].divisor,
+          label: `Sağ sütun son asal bölen (${algoRows[rowLastIdx].dividend} ÷ ? = 1)`,
+          hint: `Sol sütundaki ${algoRows[rowLastIdx].dividend} sayısını 1 yapmak için kendisine bölen asal sayıyı seç.`,
+          solved: false
+        });
+      }
+      const algoPool = Array.from(new Set(
+        algoSlots.map(s => s.answer).concat(md.uniquePrimes, [Math.floor(targetN / 2), 9, 15].filter(x => x >= 2))
+      )).filter(n => Number.isFinite(n)).sort((a, b) => a - b).slice(0, 7);
+
+      const synthData = md.synth || {
+        target: targetN,
+        prompt: `${targetN} sayısının asal çarpanlarının çarpımı (üslü ifade) biçimindeki doğru gösterimini seç:`,
+        choices: [`2^2 × 3`, md.expText, `2 × 3^2`, `2^3 × 5`],
+        correctIndex: 1,
+        feedback: `Harika! ${targetN} = ${md.expText}.`,
+        hint: `Asal bölenlerin kaç kez tekrar ettiğini üs olarak yaz.`
+      };
+
+      const methods = [
+        {
+          id: "rainbow",
+          icon: "🌈",
+          shortTitle: `Gökkuşağı Yöntemi (${targetN})`,
+          targetNumber: targetN,
+          subtitle: `<strong>${targetN}</strong> sayısının küçükten büyüğe dizilmiş çarpanlarında simetrik yayların uçlarındaki eksikleri bul:`,
+          takeaway: `✓ ${targetN}'in ${rbDivs.length} pozitif çarpanı vardır • En küçük ve en büyük: 1 × ${targetN}`,
+          sequence: rbSequence,
+          slots: rbSlots,
+          pool: (md.rainbow && md.rainbow.pool) || [3, 4, 6, 8, 9, 12],
+          completed: false
+        },
+        {
+          id: "flower",
+          icon: "🌸",
+          shortTitle: `Çarpan Çiçeği (${targetN})`,
+          targetNumber: targetN,
+          subtitle: `Göbeğinde <strong>${targetN}</strong> yazan <strong>Çarpan Çiçeği</strong>nde karşılıklı yaprakların çarpımı ${targetN} olacak şekilde eksikleri ve yeşil <strong>asal yaprağı</strong> tamamla:`,
+          takeaway: `✓ ${targetN} Çarpan Çiçeği tamamlandı! Asal yapraklar: ${md.uniquePrimes.join(" ve ")}`,
+          slots: flSlots,
+          pool: flPoolNums,
+          completed: false
+        },
+        {
+          id: "tree",
+          icon: "🌳",
+          shortTitle: `Asal Çarpan Ağacı (${targetN})`,
+          targetNumber: targetN,
+          subtitle: `En tepesinde <strong>${targetN}</strong> bulunan <strong>Asal Çarpan Ağacı</strong>ndaki eksik sağ dalları yukarıdan aşağıya tamamla:`,
+          takeaway: `✓ Asal yaprakların çarpımı: ${targetN} = ${allPrimes.join(" × ")}!`,
+          slots: treeSlots,
+          pool: treePool,
+          completed: false
+        },
+        {
+          id: "algo",
+          icon: "📏",
+          shortTitle: `Bölen Listesi / Algoritma (${targetN})`,
+          targetNumber: targetN,
+          subtitle: `<strong>${targetN}</strong> sayısının dikey <strong>asal çarpanlar algoritmasında</strong> eksik kalan bölüm ve asal bölenleri yerleştir:`,
+          takeaway: `✓ Sağ sütundaki asal bölenler: ${allPrimes.join(", ")} ⇒ ${targetN} = ${md.expText}!`,
+          slots: algoSlots,
+          pool: algoPool,
+          completed: false
+        },
+        {
+          id: "synth",
+          icon: "✨",
+          shortTitle: `Üslü İfade Sentezi (${targetN})`,
+          targetNumber: targetN,
+          subtitle: safeMathHtml(synthData.prompt),
+          takeaway: synthData.feedback || `✓ ${targetN} = ${md.expText}!`,
+          slots: [],
+          choices: synthData.choices || [],
+          correctChoice: (synthData.choices || [])[synthData.correctIndex || 0],
+          synthHint: synthData.hint || `Her asal bölenin tekrar sayısını üs olarak yaz.`,
+          pool: [],
+          completed: false
+        }
+      ];
+
+      let activeMethodIdx = 0;
+      let activeSlotIdx = 0;
+
+      function renderWorkshop() {
+        const m = methods[activeMethodIdx];
+        const firstUnsolved = m.slots.findIndex(s => !s.solved);
+        if (firstUnsolved !== -1 && (!m.slots[activeSlotIdx] || m.slots[activeSlotIdx].solved)) {
+          activeSlotIdx = firstUnsolved;
+        }
+        const currSlot = m.slots[activeSlotIdx] || m.slots[0];
+        const doneMethodsCount = methods.filter(x => x.completed).length;
+
+        if (window.NartesMentor) {
+          if (typeof window.NartesMentor.notifyScreenTask === "function") {
+            window.NartesMentor.notifyScreenTask({
+              signature: `fml:${stop.id}:v${stop._variantIndex || 0}:t${targetN}:m${activeMethodIdx}`,
+              taskTitle: m.shortTitle,
+              promptText: stripPlain(m.subtitle),
+              numbers: [m.targetNumber],
+              targetNumber: m.targetNumber,
+              missingTargets: m.slots.filter(s => !s.solved).map(s => ({ answer: s.answer, hint: s.hint })),
+              hint: currSlot ? currSlot.hint : (m.synthHint || "")
+            });
+          }
+          window.NartesMentor.updateProgress({
+            liveScreen: {
+              mode: "factor_methods_lab",
+              methodId: m.id,
+              methodTitle: m.shortTitle,
+              targetNumber: m.targetNumber,
+              completedMethods: `${doneMethodsCount}/${methods.length}`,
+              activeSlotLabel: currSlot && !currSlot.solved ? currSlot.label : (m.id === "synth" ? "Üslü Sentez Seçimi" : "Tamamlandı"),
+              activeSlotHint: currSlot ? currSlot.hint : (m.synthHint || m.takeaway)
+            }
+          });
+        }
+
+        let diagramHtml = "";
+        if (m.id === "rainbow") {
+          diagramHtml = buildRainbowArcsSvgHtml(m.sequence, m.slots, m.targetNumber, activeSlotIdx);
+        } else if (m.id === "flower") {
+          const cx = 172, cy = 128, rad = 86;
+          const pairColors = ["#fecaca", "#fed7aa", "#fef08a", "#d9f99d", "#bae6fd", "#e9d5ff"];
+          const petalsSvg = flPetalMeta.map((pm, pIdx) => {
+            const radAng = (pm.angle * Math.PI) / 180;
+            const px = Math.round(cx + rad * Math.cos(radAng));
+            const py = Math.round(cy + rad * Math.sin(radAng));
+            const sIdx = m.slots.findIndex(sl => sl.petalIdx === pIdx);
+            if (sIdx !== -1) {
+              const sl = m.slots[sIdx];
+              const isSel = activeSlotIdx === sIdx && !sl.solved;
+              const fill = sl.solved ? "#dcfce7" : (isSel ? "#dbeafe" : "#fff7ed");
+              const stroke = sl.solved ? "#16a34a" : (isSel ? "#2563eb" : "#f97316");
+              return `
+                <line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" stroke="#94a3b8" stroke-width="2.2" stroke-dasharray="4 3"/>
+                <g class="fml-svg-slot" data-slot-idx="${sIdx}" style="cursor:pointer;">
+                  <circle cx="${px}" cy="${py}" r="21" fill="${fill}" stroke="${stroke}" stroke-width="${isSel ? 3.2 : 2.6}"/>
+                  <text x="${px}" y="${py + 5}" text-anchor="middle" font-size="14.5" font-weight="900" fill="#0f172a">${sl.solved ? sl.answer : "?"}</text>
+                </g>
+              `;
+            }
+            return `
+              <line x1="${cx}" y1="${cy}" x2="${px}" y2="${py}" stroke="#cbd5e1" stroke-width="2.2"/>
+              <circle cx="${px}" cy="${py}" r="20" fill="${pairColors[pm.pairIdx % pairColors.length]}" stroke="#64748b" stroke-width="1.8"/>
+              <text x="${px}" y="${py + 5}" text-anchor="middle" font-size="14" font-weight="900" fill="#0f172a">${pm.val}</text>
+            `;
+          }).join("");
+
+          const leafSlot = m.slots[leafSlotIdx];
+          const leafSel = leafSlot && activeSlotIdx === leafSlotIdx && !leafSlot.solved;
+          const fixedPrimes = md.uniquePrimes.slice(0, -1);
+          const extraNote = md.uniquePrimes.length > 2 ? ` (+ ${fixedPrimes.join(", ")})` : "";
+          diagramHtml = `
+            <div class="fml-svg-wrap">
+              <svg viewBox="0 0 530 256" class="fml-diagram-svg" role="img" aria-label="${targetN} Çarpan Çiçeği Modeli">
+                <path d="M ${cx} ${cy + 32} Q 252 236 336 184" fill="none" stroke="#15803d" stroke-width="5" stroke-linecap="round"/>
+                ${petalsSvg}
+                <circle cx="${cx}" cy="${cy}" r="32" fill="#facc15" stroke="#ca8a04" stroke-width="3.2"/>
+                <text x="${cx}" y="${cy + 7}" text-anchor="middle" font-size="21" font-weight="900" fill="#713f12">${targetN}</text>
+
+                <rect x="326" y="42" width="186" height="170" rx="18" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+                <text x="419" y="68" text-anchor="middle" font-size="12.5" font-weight="900" fill="#15803d">🌿 ASAL YAPRAKLAR</text>
+                <text x="419" y="86" text-anchor="middle" font-size="11" font-weight="700" fill="#166534">(${targetN}'in Asal Çarpanları${extraNote})</text>
+
+                <ellipse cx="378" cy="138" rx="28" ry="20" fill="#4ade80" stroke="#15803d" stroke-width="2.2"/>
+                <text x="378" y="144" text-anchor="middle" font-size="16" font-weight="900" fill="#052e16">${fixedPrimes[0] || md.uniquePrimes[0]}</text>
+
+                <g class="fml-svg-slot" data-slot-idx="${leafSlotIdx}" style="cursor:pointer;">
+                  <ellipse cx="458" cy="138" rx="29" ry="20"
+                    fill="${leafSlot.solved ? "#4ade80" : (leafSel ? "#dbeafe" : "#fff7ed")}"
+                    stroke="${leafSlot.solved ? "#15803d" : (leafSel ? "#2563eb" : "#f97316")}" stroke-width="${leafSel ? 3.2 : 2.6}"/>
+                  <text x="458" y="144" text-anchor="middle" font-size="16" font-weight="900" fill="#0f172a">${leafSlot.solved ? leafSlot.answer : "?"}</text>
+                </g>
+                <text x="419" y="192" text-anchor="middle" font-size="11.5" font-weight="800" fill="#15803d">Karşılıklı Yapraklar = ${targetN}</text>
+              </svg>
+            </div>
+          `;
+        } else if (m.id === "tree") {
+          const rowH = 68;
+          const totalRows = treeSteps.length;
+          const svgH = Math.max(230, 56 + totalRows * rowH);
+          let linesSvg = "";
+          let nodesSvg = "";
+          let rootX = 250;
+          let rootY = 30;
+          nodesSvg += `
+            <rect x="${rootX - 34}" y="${rootY - 19}" width="68" height="38" rx="12" fill="#1e293b"/>
+            <text x="${rootX}" y="${rootY + 6}" text-anchor="middle" font-size="17.5" font-weight="900" fill="#fde047">${targetN}</text>
+          `;
+          let parentX = rootX;
+          let parentY = rootY;
+          treeSteps.forEach((ts, sIdx) => {
+            const leftX = Math.max(85, parentX - 82);
+            const rightX = Math.min(455, parentX + 74);
+            const nextY = parentY + rowH;
+            linesSvg += `
+              <line x1="${parentX}" y1="${parentY + 19}" x2="${leftX}" y2="${nextY - 19}" stroke="#64748b" stroke-width="2.4"/>
+              <line x1="${parentX}" y1="${parentY + 19}" x2="${rightX}" y2="${nextY - 19}" stroke="#64748b" stroke-width="2.4"/>
+            `;
+            nodesSvg += `
+              <circle cx="${leftX}" cy="${nextY}" r="19" fill="#dcfce7" stroke="#16a34a" stroke-width="2.4"/>
+              <text x="${leftX}" y="${nextY + 6}" text-anchor="middle" font-size="15.5" font-weight="900" fill="#14532d">${ts.leftPrime}</text>
+            `;
+            const sObj = m.slots[sIdx];
+            const sel = sObj && activeSlotIdx === sIdx && !sObj.solved;
+            const fill = sObj && sObj.solved ? "#dcfce7" : (sel ? "#dbeafe" : "#fff7ed");
+            const stroke = sObj && sObj.solved ? "#16a34a" : (sel ? "#2563eb" : "#f97316");
+            nodesSvg += `
+              <g class="fml-svg-slot" data-slot-idx="${sIdx}" style="cursor:pointer;">
+                <rect x="${rightX - 30}" y="${nextY - 19}" width="60" height="38" rx="11" fill="${fill}" stroke="${stroke}" stroke-width="${sel ? 3.2 : 2.6}"/>
+                <text x="${rightX}" y="${nextY + 6}" text-anchor="middle" font-size="15.5" font-weight="900" fill="#0f172a">${sObj && sObj.solved ? sObj.answer : "?"}</text>
+              </g>
+            `;
+            parentX = rightX;
+            parentY = nextY;
+          });
+          diagramHtml = `
+            <div class="fml-svg-wrap">
+              <svg viewBox="0 0 540 ${svgH}" class="fml-diagram-svg" role="img" aria-label="${targetN} Asal Çarpan Ağacı">
+                ${linesSvg}
+                ${nodesSvg}
+              </svg>
+            </div>
+          `;
+        } else if (m.id === "algo") {
+          const renderAlgoBtn = (sObj, idx) => {
+            const sel = activeSlotIdx === idx && !sObj.solved;
+            return `<button type="button" class="fml-algo-slot ${sObj.solved ? "solved" : ""} ${sel ? "selected" : ""}" data-slot-idx="${idx}">
+              ${sObj.solved ? sObj.answer : "?"}
+            </button>`;
+          };
+          const rowsHtml = algoRows.map((row, rIdx) => {
+            const dSlotIdx = m.slots.findIndex(sl => sl.rowIdx === rIdx && sl.col === "dividend");
+            const pSlotIdx = m.slots.findIndex(sl => sl.rowIdx === rIdx && sl.col === "divisor");
+            const leftCell = dSlotIdx !== -1 ? renderAlgoBtn(m.slots[dSlotIdx], dSlotIdx) : row.dividend;
+            const rightCell = pSlotIdx !== -1 ? renderAlgoBtn(m.slots[pSlotIdx], pSlotIdx) : row.divisor;
+            return `<div class="fml-algo-row"><span class="fml-algo-left">${leftCell}</span><span class="fml-algo-bar">|</span><span class="fml-algo-right">${rightCell}</span></div>`;
+          }).join("") + `<div class="fml-algo-row"><span class="fml-algo-left">1</span><span class="fml-algo-bar">|</span><span class="fml-algo-right"></span></div>`;
+
+          diagramHtml = `
+            <div class="fml-algo-layout">
+              <div class="fml-algo-table">
+                ${rowsHtml}
+              </div>
+              <div class="fml-algo-summary">
+                <div class="fml-algo-sum-badge">ÜSLÜ ÇARPIM BİÇİMİ</div>
+                <div class="fml-algo-sum-eq">${m.completed ? `${targetN} = ${md.expHtml}` : `${targetN} = ?`}</div>
+                <div class="fml-algo-sum-sub">Her satırda soldaki sayıyı sağdaki asal sayıya bölerek alt satıra yazarız.</div>
+              </div>
+            </div>
+          `;
+        } else if (m.id === "synth") {
+          diagramHtml = `
+            <div class="vcp-choices-list" id="fmlSynthChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:8px;">
+              ${(m.choices || []).map((ch, idx) => `
+                <button type="button" class="option-btn vcp-option-btn fml-synth-btn" data-choice="${escSvg(ch)}">
+                  <span class="option-letter">${["A", "B", "C", "D"][idx] || "•"}</span>
+                  <span class="vcp-option-text">${renderOptionMath(ch)}</span>
+                </button>
+              `).join("")}
+            </div>
+          `;
+        }
+
+        board.innerHTML = `
+          <div class="fml-wrap">
+            ${buildNonClickableStepBannerHtml(
+              activeMethodIdx + 1,
+              methods.length,
+              `${m.icon} ${m.shortTitle}`,
+              methods.map(mt => mt.completed)
+            )}
+            <div class="fml-stage-card">
+              <div class="fml-stage-subtitle">${safeMathHtml(m.subtitle)}</div>
+              ${m.id !== "synth"
+                ? (currSlot && !currSlot.solved
+                  ? `<div class="fml-active-target">🎯 Seçili Kutu: <strong>${escSvg(currSlot.label)}</strong></div>`
+                  : `<div class="fml-takeaway-banner">${escSvg(m.takeaway)}</div>`)
+                : `<div class="fml-active-target">✨ Son Adım: Asal çarpanların çarpımını tek üslü ifade olarak seç!</div>`}
+              ${diagramHtml}
+              ${m.id !== "synth" ? `<div class="chip-grid fml-pool-grid" id="fmlPoolGrid"></div>` : ""}
+            </div>
+          </div>
+        `;
+
+        if (m.id === "synth") {
+          board.querySelectorAll(".fml-synth-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+              if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
+              const picked = btn.getAttribute("data-choice");
+              if (String(picked) === String(m.correctChoice)) {
+                m.completed = true;
+                playTone("fanfare");
+                btn.classList.add("correct");
+                board.querySelectorAll(".fml-synth-btn").forEach(b => b.disabled = true);
+                spawnCelebrationBurst(btn);
+                completeCurrentStop(`Muhteşem! ${targetN} sayısı için 5 yöntemin tamamını ve üslü sentezini başarıyla bitirdin!`);
+              } else {
+                playTone("error");
+                btn.classList.add("wrong-flash");
+                if (window.NartesMentor) {
+                  window.NartesMentor.onWrong({
+                    wrongValue: picked,
+                    targetKey: `fml_synth_${targetN}`,
+                    targetLabel: m.shortTitle,
+                    targetNumber: targetN,
+                    correctAnswerToMask: m.correctChoice,
+                    customHint: m.synthHint
+                  }, () => {
+                    btn.classList.remove("wrong-flash");
+                  });
+                }
+              }
+            });
+          });
+          applyKaTeX(board);
+          return;
+        }
+
+        board.querySelectorAll("[data-slot-idx]").forEach(el => {
+          el.addEventListener("click", () => {
+            if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
+            const idx = parseInt(el.getAttribute("data-slot-idx"), 10);
+            if (m.slots[idx] && !m.slots[idx].solved) {
+              playTone("click");
+              activeSlotIdx = idx;
+              renderWorkshop();
+            }
+          });
+        });
+
+        const poolEl = board.querySelector("#fmlPoolGrid");
+        if (poolEl) {
+          m.pool.forEach(val => {
+            const btn = document.createElement("button");
+            btn.className = "num-chip";
+            const neededMore = m.slots.some(s => !s.solved && String(s.answer) === String(val));
+            const usedBefore = m.slots.some(s => s.solved && String(s.answer) === String(val));
+            if (!neededMore && usedBefore) {
+              btn.classList.add("correct");
+              btn.disabled = true;
+            }
+            btn.innerHTML = renderOptionMath(val);
+            btn.addEventListener("click", () => {
+              if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
+              const target = m.slots[activeSlotIdx];
+              if (!target || target.solved) return;
+              if (String(val) === String(target.answer)) {
+                target.solved = true;
+                const nextOpen = m.slots.findIndex(s => !s.solved);
+                if (nextOpen !== -1) {
+                  playTone("pop");
+                  activeSlotIdx = nextOpen;
+                  renderWorkshop();
+                } else {
+                  m.completed = true;
+                  playTone("combo");
+                  spawnCelebrationBurst(btn);
+                  renderWorkshop();
+                  const nextMethod = methods.findIndex(mt => !mt.completed);
+                  if (nextMethod !== -1) {
+                    clearTimeout(state.autoAdvanceTimer);
+                    state.autoAdvanceTimer = setTimeout(() => {
+                      activeMethodIdx = nextMethod;
+                      activeSlotIdx = 0;
+                      renderWorkshop();
+                    }, 900);
+                  } else {
+                    completeCurrentStop(`Muhteşem! ${targetN} sayısı için 5 yöntemi de adım adım tamamladın!`);
+                  }
+                }
+              } else {
+                playTone("error");
+                btn.classList.add("wrong-flash");
+                if (window.NartesMentor) {
+                  window.NartesMentor.onWrong({
+                    wrongValue: val,
+                    targetKey: `fml_${m.id}_${activeSlotIdx}`,
+                    targetLabel: `${m.shortTitle} — ${target.label}`,
+                    targetNumber: m.targetNumber,
+                    correctAnswerToMask: target.answer,
+                    customHint: target.hint
+                  }, () => {
+                    btn.classList.remove("wrong-flash");
+                  });
+                }
+              }
+            });
+            poolEl.appendChild(btn);
+          });
+        }
+
+        applyKaTeX(board);
+      }
+
+      renderWorkshop();
     } else if (stop.activityMode === "factor_tree") {
       let solved = 0;
       board.innerHTML = `<div style="font-weight:700;color:#334155;margin-bottom:12px;">${stop.treeDescription}</div>`;
@@ -1484,16 +2861,20 @@
           const target = nodeStates[activeNodeIdx];
           if (!target || target.done) return;
           if (String(num) === String(target.answer)) {
-            playTone("click");
+            playTone("pop");
             target.done = true;
-            btn.classList.add("correct");
-            btn.disabled = true;
+            const stillNeeded = nodeStates.some(x => !x.done && String(x.answer) === String(num));
+            if (!stillNeeded) {
+              btn.classList.add("correct");
+              btn.disabled = true;
+            }
             solved++;
             const nextIdx = nodeStates.findIndex(x => !x.done);
             if (nextIdx !== -1) activeNodeIdx = nextIdx;
             drawTreeNodes();
             if (solved === nodeStates.length) {
-              completeCurrentStop("60 = 2² · 3 · 5 çarpan ağacını başarıyla kurdun!");
+              spawnCelebrationBurst(btn);
+              completeCurrentStop("Çarpan ağacını başarıyla kurdun!");
             }
           } else {
             playTone("error");
@@ -1522,6 +2903,18 @@
 
       function renderCardItem() {
         const item = stop.items[currentIdx];
+        window.__nartesActiveVoiceText = `Kart ${currentIdx + 1}: ${stripPlain(item.text)}`;
+        if (window.NartesMentor) {
+          window.NartesMentor.updateProgress({
+            liveScreen: {
+              mode: stop.activityMode,
+              cardIndex: currentIdx + 1,
+              cardTotal: stop.items.length,
+              questionText: stripPlain(item.text),
+              choices
+            }
+          });
+        }
         board.innerHTML = `
           <div style="text-align:center;padding:12px;">
             <div style="font-size:12px;font-weight:800;color:#f97316;margin-bottom:6px;">KART ${currentIdx + 1} / ${stop.items.length}</div>
@@ -1540,8 +2933,9 @@
           b.addEventListener("click", () => {
             if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
             if (String(c) === String(item.answer)) {
-              playTone("click");
+              playTone("pop");
               b.classList.add("correct");
+              spawnCelebrationBurst(b);
               currentIdx++;
               if (currentIdx < stop.items.length) {
                 setTimeout(renderCardItem, 350);
@@ -1868,6 +3262,72 @@
     const lower = plain.toLocaleLowerCase("tr-TR");
     const hasPhoto = Boolean(stop.questionVisual);
     const vbH = hasPhoto ? 162 : 210;
+
+    // 0) ÖZEL YÖNTEM ŞEMALARI: ÇARPAN ÇİÇEĞİ, ÇARPAN AĞACI VE GÖKKUŞAĞI
+    if (stop.schematicType === "factor_flower") {
+      const centerNum = stop.schematicNum || 28;
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 ${vbH}" role="img" aria-label="${centerNum} Çarpan Çiçeği Modeli">
+          <line x1="128" y1="82" x2="54" y2="48" stroke="#94a3b8" stroke-width="2"/>
+          <line x1="128" y1="82" x2="202" y2="116" stroke="#94a3b8" stroke-width="2"/>
+          <line x1="128" y1="82" x2="202" y2="48" stroke="#94a3b8" stroke-width="2"/>
+          <line x1="128" y1="82" x2="54" y2="116" stroke="#94a3b8" stroke-width="2"/>
+          <line x1="128" y1="82" x2="128" y2="26" stroke="#2563eb" stroke-width="2.4" stroke-dasharray="4 3"/>
+          <line x1="128" y1="82" x2="128" y2="138" stroke="#2563eb" stroke-width="2.4" stroke-dasharray="4 3"/>
+          <circle cx="54" cy="48" r="16" fill="#fed7aa" stroke="#ea580c" stroke-width="1.8"/><text x="54" y="53" text-anchor="middle" font-size="12" font-weight="900" fill="#0f172a">1</text>
+          <circle cx="202" cy="116" r="16" fill="#fed7aa" stroke="#ea580c" stroke-width="1.8"/><text x="202" y="121" text-anchor="middle" font-size="11.5" font-weight="900" fill="#0f172a">${centerNum}</text>
+          <circle cx="202" cy="48" r="16" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.8"/><text x="202" y="53" text-anchor="middle" font-size="12" font-weight="900" fill="#0f172a">2</text>
+          <circle cx="54" cy="116" r="16" fill="#bbf7d0" stroke="#16a34a" stroke-width="1.8"/><text x="54" y="121" text-anchor="middle" font-size="11.5" font-weight="900" fill="#0f172a">${centerNum / 2}</text>
+          <circle cx="128" cy="26" r="16" fill="#dbeafe" stroke="#2563eb" stroke-width="2.2"/><text x="128" y="31" text-anchor="middle" font-size="12.5" font-weight="900" fill="#1e3a8a">4</text>
+          <circle cx="128" cy="138" r="16" fill="#fff7ed" stroke="#f97316" stroke-width="2.4"/><text x="128" y="143" text-anchor="middle" font-size="13" font-weight="900" fill="#c2410c">?</text>
+          <circle cx="128" cy="82" r="23" fill="#facc15" stroke="#ca8a04" stroke-width="2.6"/><text x="128" y="88" text-anchor="middle" font-size="15" font-weight="900" fill="#713f12">${centerNum}</text>
+          <rect x="234" y="32" width="112" height="100" rx="12" fill="#f0fdf4" stroke="#86efac" stroke-width="1.8"/>
+          <text x="290" y="54" text-anchor="middle" font-size="11" font-weight="900" fill="#15803d">🌿 Asal Yapraklar</text>
+          <ellipse cx="268" cy="88" rx="18" ry="13" fill="#4ade80" stroke="#15803d" stroke-width="1.8"/><text x="268" y="92" text-anchor="middle" font-size="12" font-weight="900" fill="#052e16">?</text>
+          <ellipse cx="314" cy="88" rx="18" ry="13" fill="#4ade80" stroke="#15803d" stroke-width="1.8"/><text x="314" y="92" text-anchor="middle" font-size="12" font-weight="900" fill="#052e16">?</text>
+          <text x="290" y="120" text-anchor="middle" font-size="10" font-weight="800" fill="#166534">Karşı Yapraklar = ${centerNum}</text>
+        </svg>
+      `;
+    }
+
+    if (stop.schematicType === "factor_tree") {
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 ${vbH}" role="img" aria-label="Asal Çarpan Ağacı Modeli">
+          <line x1="180" y1="36" x2="116" y2="82" stroke="#64748b" stroke-width="2.4"/>
+          <line x1="180" y1="36" x2="244" y2="82" stroke="#64748b" stroke-width="2.4"/>
+          <line x1="244" y1="108" x2="202" y2="144" stroke="#64748b" stroke-width="2.4"/>
+          <line x1="244" y1="108" x2="286" y2="144" stroke="#64748b" stroke-width="2.4"/>
+          <rect x="152" y="12" width="56" height="30" rx="9" fill="#dbeafe" stroke="#2563eb" stroke-width="2.2"/>
+          <text x="180" y="32" text-anchor="middle" font-size="14" font-weight="900" fill="#1e3a8a">K = ?</text>
+          <circle cx="116" cy="94" r="16" fill="#dcfce7" stroke="#16a34a" stroke-width="2.2"/>
+          <text x="116" y="99" text-anchor="middle" font-size="13.5" font-weight="900" fill="#14532d">3</text>
+          <rect x="216" y="78" width="56" height="30" rx="9" fill="#fff7ed" stroke="#f97316" stroke-width="2.2"/>
+          <text x="244" y="98" text-anchor="middle" font-size="14" font-weight="900" fill="#c2410c">L = ?</text>
+          <circle cx="202" cy="144" r="15" fill="#dcfce7" stroke="#16a34a" stroke-width="2.2"/>
+          <text x="202" y="149" text-anchor="middle" font-size="13" font-weight="900" fill="#14532d">3</text>
+          <circle cx="286" cy="144" r="15" fill="#dcfce7" stroke="#16a34a" stroke-width="2.2"/>
+          <text x="286" y="149" text-anchor="middle" font-size="13" font-weight="900" fill="#14532d">5</text>
+        </svg>
+      `;
+    }
+
+    if (stop.schematicType === "rainbow") {
+      const targetN = stop.schematicNum || 20;
+      return `
+        <svg class="q-schematic-svg" viewBox="0 0 360 ${vbH}" role="img" aria-label="${targetN} Gökkuşağı Çarpan Kuşağı">
+          <path d="M 46 106 A 134 76 0 0 1 314 106" fill="none" stroke="#ef4444" stroke-width="2.8" stroke-linecap="round"/>
+          <path d="M 98 106 A 82 50 0 0 1 262 106" fill="none" stroke="#f97316" stroke-width="2.6" stroke-dasharray="6 4" stroke-linecap="round"/>
+          <path d="M 152 106 A 28 24 0 0 1 208 106" fill="none" stroke="#16a34a" stroke-width="2.6" stroke-dasharray="6 4" stroke-linecap="round"/>
+          <circle cx="46" cy="122" r="16" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/><text x="46" y="127" text-anchor="middle" font-size="12.5" font-weight="900" fill="#0f172a">1</text>
+          <circle cx="98" cy="122" r="16" fill="#fff7ed" stroke="#f97316" stroke-width="2"/><text x="98" y="127" text-anchor="middle" font-size="12.5" font-weight="900" fill="#0f172a">2</text>
+          <circle cx="152" cy="122" r="16" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/><text x="152" y="127" text-anchor="middle" font-size="12.5" font-weight="900" fill="#1e3a8a">?</text>
+          <circle cx="208" cy="122" r="16" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/><text x="208" y="127" text-anchor="middle" font-size="12.5" font-weight="900" fill="#1e3a8a">?</text>
+          <circle cx="262" cy="122" r="16" fill="#fff7ed" stroke="#f97316" stroke-width="2"/><text x="262" y="127" text-anchor="middle" font-size="12.5" font-weight="900" fill="#0f172a">?</text>
+          <circle cx="314" cy="122" r="16" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/><text x="314" y="127" text-anchor="middle" font-size="12.5" font-weight="900" fill="#0f172a">${targetN}</text>
+          <text x="180" y="${vbH - 6}" text-anchor="middle" font-size="11.5" font-weight="800" fill="#334155">Simetrik çarpan çiftlerinin çarpımı = ${targetN}</text>
+        </svg>
+      `;
+    }
 
     // 1) DİKDÖRTGEN PROBLEMLERİ (ör. U1S5 ABCD Bahçe 36 m², U1S16 KLMN Park 40 m & 64 m, U2S15, U3S26, U6S10, U12S10)
     if (lower.includes("dikdörtgen") && !lower.includes("yan yana ve alt alta")) {
@@ -2286,96 +3746,203 @@
   }
 
   function renderQuestionStop(stop, kaz, container, UNIT) {
-    const layout = document.createElement("div");
-    layout.className = "question-layout";
+    const hasPack = Array.isArray(stop.questionPack) && stop.questionPack.length > 0;
+    const pack = hasPack ? stop.questionPack : [stop];
+    const solvedFlags = pack.map(() => false);
+    let activeQIdx = 0;
 
-    const meta = extractQuestionSummaryMeta(stop);
-    const givenBadgesHtml = meta.givenPills.length > 0
-      ? meta.givenPills.map(g => `<span class="q-book-given-pill">${renderOptionMath(g)}</span>`).join("")
-      : `<span class="q-book-given-pill">${escSvg(kaz.title)}</span>`;
+    const outer = document.createElement("div");
+    outer.className = "question-pack-outer";
+    container.appendChild(outer);
 
-    const left = document.createElement("div");
-    left.className = "question-left-col";
-    left.innerHTML = `
-      <article class="question-book-card">
-        <div class="question-book-top">
-          <span class="question-book-ribbon">📘 SORU KARTI • DURAK ${stop.id}</span>
-          <span class="question-book-topic">${escSvg(kaz.title)}</span>
-        </div>
-        <div class="question-book-stem">
-          <p>${safeMathHtml(stop.stem)}</p>
-        </div>
-        <div class="question-book-summary">
-          <span class="q-book-sum-label">Önemli Veriler:</span>
-          <div class="q-book-sum-pills">${givenBadgesHtml}</div>
-        </div>
-      </article>
-      <div class="options-grid" id="qOptionsGrid"></div>
-    `;
+    function renderActiveSubQuestion() {
+      const curQ = pack[activeQIdx];
+      const isQuickPick = curQ.qFormat === "quick_pick";
+      const modelStopView = {
+        ...stop,
+        ...curQ,
+        title: curQ.badge || stop.title,
+        questionVisual: curQ.questionVisual || (hasPack ? "" : stop.questionVisual)
+      };
 
-    const right = document.createElement("div");
-    right.className = "question-right-col";
-    right.innerHTML = `
-      ${buildQuestionModelCardHtml(stop, kaz, UNIT)}
-      <div id="solutionArea"></div>
-    `;
-
-    const grid = left.querySelector("#qOptionsGrid");
-    const solArea = right.querySelector("#solutionArea");
-
-    if (isStopDone(stop.id, UNIT)) {
-      solArea.innerHTML = `
-        <div class="solution-box">
-          <h4>✓ Adım Adım Çözüm</h4>
-          <p>${safeMathHtml(stop.solution)}</p>
-        </div>
-      `;
-    }
-
-    stop.options.forEach(opt => {
-      const btn = document.createElement("button");
-      btn.className = "option-btn";
-      if (isStopDone(stop.id, UNIT) && opt.letter === stop.correctLetter) {
-        btn.classList.add("correct");
-      }
-      btn.innerHTML = `<span class="option-letter">${opt.letter}</span><span class="option-text-body">${renderOptionMath(opt.text)}</span>`;
-
-      btn.addEventListener("click", () => {
-        if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
-        if (opt.letter === stop.correctLetter) {
-          grid.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
-          btn.classList.add("correct");
-          solArea.innerHTML = `
-            <div class="solution-box">
-              <h4>✓ Adım Adım Çözüm</h4>
-              <p>${safeMathHtml(stop.solution)}</p>
-            </div>
-          `;
-          applyKaTeX(solArea);
-          completeCurrentStop("Soruyu doğru çözdün!");
-        } else {
-          playTone("error");
-          btn.classList.add("wrong-flash");
-          const wrongLabel = `${opt.letter}) ${opt.text}`;
-          if (window.NartesMentor) {
-            window.NartesMentor.onWrong({
-              wrongValue: wrongLabel,
-              targetKey: `question_${stop.id}`,
-              targetLabel: stop.stem,
-              customHint: stop.hint
-            }, () => {
-              btn.classList.remove("wrong-flash");
-            });
+      if (window.NartesMentor) {
+        window.NartesMentor.setContext({
+          unit: UNIT,
+          kaz,
+          activeQuestionIndex: activeQIdx,
+          stop: {
+            ...stop,
+            stem: curQ.stem,
+            options: curQ.options,
+            correctLetter: curQ.correctLetter,
+            hint: curQ.hint,
+            solution: curQ.solution,
+            activeQuestionIndex: activeQIdx,
+            packTotal: pack.length,
+            subQuestionBadge: curQ.badge || `Soru ${activeQIdx + 1}`
           }
+        });
+        if (typeof window.NartesMentor.notifyScreenTask === "function") {
+          const stemPlain = stripPlain(curQ.stem || "");
+          const qNums = Array.from(new Set((stemPlain.match(/\b\d{1,4}\b/g) || []).map(Number).filter(n => n >= 2 && n <= 2000))).slice(0, 6);
+          window.NartesMentor.notifyScreenTask({
+            signature: `q:${stop.id}:v${stop._variantIndex || 0}:idx${activeQIdx}`,
+            taskTitle: `${stop.title} (${curQ.badge || (activeQIdx + 1) + ". Soru"})`,
+            promptText: stemPlain,
+            numbers: qNums,
+            targetNumber: qNums[0] || undefined,
+            options: (curQ.options || []).map(o => `${o.letter}) ${stripPlain(o.text)}`),
+            correctAnswer: curQ.correctLetter || "",
+            hint: curQ.hint || "",
+            solution: curQ.solution || ""
+          });
         }
+      }
+
+      outer.innerHTML = "";
+
+      const layout = document.createElement("div");
+      layout.className = "question-layout";
+
+      const meta = extractQuestionSummaryMeta(modelStopView);
+      const givenBadgesHtml = meta.givenPills.length > 0
+        ? meta.givenPills.map(g => `<span class="q-book-given-pill">${renderOptionMath(g)}</span>`).join("")
+        : `<span class="q-book-given-pill">${escSvg(kaz.title)}</span>`;
+
+      const stepDotsHtml = hasPack && pack.length > 1
+        ? `<div class="linear-step-dots" aria-hidden="true">${pack.map((_, idx) => `<span class="linear-step-dot ${solvedFlags[idx] ? "done" : ""} ${idx === activeQIdx ? "active" : ""}"></span>`).join("")}</div>`
+        : "";
+
+      const left = document.createElement("div");
+      left.className = "question-left-col";
+      left.innerHTML = `
+        <article class="question-book-card ${isQuickPick ? "is-quick-pick-card" : ""}">
+          <div class="question-book-top">
+            <span class="question-book-ribbon">📘 ${escSvg(curQ.badge || (hasPack && pack.length > 1 ? `Adım ${activeQIdx + 1} / ${pack.length}` : "Kazanım Sorusu"))}</span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              ${stepDotsHtml}
+              <span class="question-book-topic">${escSvg(kaz.title)}</span>
+            </div>
+          </div>
+          <div class="question-book-stem">
+            <p>${safeMathHtml(curQ.stem)}</p>
+          </div>
+          <div class="question-book-summary">
+            <span class="q-book-sum-label">Önemli Veriler:</span>
+            <div class="q-book-sum-pills">${givenBadgesHtml}</div>
+          </div>
+        </article>
+        <div class="options-grid ${isQuickPick ? "is-quick-pick-grid" : ""}" id="qOptionsGrid"></div>
+      `;
+
+      const right = document.createElement("div");
+      right.className = "question-right-col";
+      right.innerHTML = `
+        ${buildQuestionModelCardHtml(modelStopView, kaz, UNIT)}
+        <div id="solutionArea"></div>
+      `;
+
+      const grid = left.querySelector("#qOptionsGrid");
+      const solArea = right.querySelector("#solutionArea");
+
+      function advanceToNextQuestion() {
+        if (activeQIdx < pack.length - 1) {
+          clearTimeout(state.autoAdvanceTimer);
+          state.autoAdvanceTimer = null;
+          activeQIdx++;
+          renderActiveSubQuestion();
+        }
+      }
+
+      function renderSolvedBox(autoStepping) {
+        const hasMoreInPack = activeQIdx < pack.length - 1;
+        solArea.innerHTML = `
+          <div class="solution-box">
+            <h4>✓ Adım Adım Çözüm</h4>
+            <p>${safeMathHtml(curQ.solution)}</p>
+            ${hasMoreInPack ? `
+              <button type="button" class="qpack-next-btn" id="btnNextPackQuestion">
+                ${autoStepping ? `Sıradaki Soruya Geçiliyor (${activeQIdx + 2} / ${pack.length}) →` : `Sıradaki Soruya Geç (${activeQIdx + 2} / ${pack.length}) →`}
+              </button>
+            ` : ""}
+          </div>
+        `;
+        const nextPackBtn = solArea.querySelector("#btnNextPackQuestion");
+        if (nextPackBtn) {
+          nextPackBtn.addEventListener("click", () => {
+            playTone("pop");
+            advanceToNextQuestion();
+          });
+        }
+        applyKaTeX(solArea);
+      }
+
+      if (solvedFlags[activeQIdx]) {
+        renderSolvedBox(false);
+      }
+
+      curQ.options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.className = `option-btn ${isQuickPick ? "quick-pick-option" : ""}`;
+        if (solvedFlags[activeQIdx]) {
+          btn.disabled = true;
+          if (opt.letter === curQ.correctLetter) btn.classList.add("correct");
+        }
+        if (isQuickPick) {
+          btn.innerHTML = `<span class="option-text-body">${renderOptionMath(opt.text)}</span>`;
+        } else {
+          btn.innerHTML = `<span class="option-letter">${opt.letter}</span><span class="option-text-body">${renderOptionMath(opt.text)}</span>`;
+        }
+
+        btn.addEventListener("click", () => {
+          if (window.NartesMentor && window.NartesMentor.isRemediationLocked()) return;
+          if (opt.letter === curQ.correctLetter) {
+            solvedFlags[activeQIdx] = true;
+            grid.querySelectorAll(".option-btn").forEach(b => b.disabled = true);
+            btn.classList.add("correct");
+            spawnCelebrationBurst(btn);
+
+            const allPackSolved = solvedFlags.every(Boolean);
+            if (allPackSolved) {
+              renderSolvedBox(false);
+              completeCurrentStop(hasPack && pack.length > 1
+                ? `Harika! ${pack.length} soruluk adımı başarıyla tamamladın!`
+                : "Soruyu doğru çözdün!");
+            } else {
+              playTone("combo");
+              renderSolvedBox(true);
+              clearTimeout(state.autoAdvanceTimer);
+              state.autoAdvanceTimer = setTimeout(() => {
+                advanceToNextQuestion();
+              }, 1650);
+            }
+          } else {
+            playTone("error");
+            btn.classList.add("wrong-flash");
+            const wrongLabel = isQuickPick ? opt.text : `${opt.letter}) ${opt.text}`;
+            if (window.NartesMentor) {
+              window.NartesMentor.onWrong({
+                wrongValue: wrongLabel,
+                targetKey: `question_${stop.id}_${activeQIdx}`,
+                targetLabel: curQ.stem,
+                customHint: curQ.hint
+              }, () => {
+                btn.classList.remove("wrong-flash");
+              });
+            }
+          }
+        });
+
+        grid.appendChild(btn);
       });
 
-      grid.appendChild(btn);
-    });
+      layout.appendChild(left);
+      layout.appendChild(right);
+      outer.appendChild(layout);
+      applyKaTeX(outer);
+    }
 
-    layout.appendChild(left);
-    layout.appendChild(right);
-    container.appendChild(layout);
+    renderActiveSubQuestion();
   }
 
   // ==========================================================================
@@ -2384,6 +3951,7 @@
   function openAllUnitsModal() {
     const modal = document.getElementById("infoModal");
     const modalContent = document.getElementById("infoModalContent");
+    const totalStopsAll = ALL_UNITS.reduce((acc, u) => acc + u.stops.length, 0);
 
     const cardsHtml = ALL_UNITS.map(u => {
       const uState = getUnitState(u);
@@ -2395,7 +3963,7 @@
           <div class="unit-card-thumb" style="background-image:url('${u.coverImage}')">
             <span class="unit-card-no">${u.unitNo}. ÜNİTE</span>
             <span class="unit-card-status ${isDone ? "done" : "todo"}">
-              ${isDone ? "✓ Tamamlandı" : `${doneCount}/${u.stops.length} Durak`}
+              ${isDone ? "✓ Tamamlandı" : `${doneCount}/${u.stops.length} Adım`}
             </span>
           </div>
           <div class="unit-card-body">
@@ -2409,8 +3977,8 @@
     modalContent.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div>
-          <h2 style="font-size:21px;font-weight:900;color:#0f172a;">📚 8. Sınıf LGS Matematik — Tüm 12 Ünite (360 Durak)</h2>
-          <p style="font-size:13px;color:#64748b;">Çalışmak istediğin ünite kartına tıklayarak o ünitenin 30 duraklık yol haritasına geçebilirsin.</p>
+          <h2 style="font-size:21px;font-weight:900;color:#0f172a;">📚 8. Sınıf LGS Matematik — Tüm 12 Ünite (${totalStopsAll} Etkileşimli Adım)</h2>
+          <p style="font-size:13px;color:#64748b;">Çalışmak istediğin ünite kartına tıklayarak o ünitenin modüler yol haritasına geçebilirsin.</p>
         </div>
         <button id="closeModalBtn" style="border:none;background:#e2e8f0;padding:8px 14px;border-radius:10px;cursor:pointer;font-weight:800;">Kapat ✕</button>
       </div>
@@ -2664,7 +4232,7 @@
           Tebrikler! "${UNIT.unitNo}. Ünite: ${UNIT.title}" Tamamlandı!
         </h2>
         <p style="font-size:15px;color:#475569;margin-bottom:18px;">
-          Bu ünitedeki 6 kazanımın tamamı ve alttaki 30 durağın hepsi <strong>YEŞİL</strong> oldu!
+          Bu ünitedeki ${UNIT.kazanimlar.length} bölümün tamamı ve tüm ${UNIT.stops.length} adım <strong>YEŞİL</strong> oldu!
         </p>
         <div style="display:flex;gap:12px;justify-content:center;">
           <button id="btnCloseCongrats" class="btn-primary-next" style="background:#334155;">Yol Haritasında Kal</button>
@@ -2683,24 +4251,20 @@
   }
 
   // ==========================================================================
-  // ÖZEL ŞİFRELİ GİRİŞ KAPISI (ÖĞRENCİ & YÖNETİCİ TAM AÇIK MODU)
+  // ÖZEL ŞİFRELİ GİRİŞ KAPISI (ÖĞRENCİ GİRİŞİ & ÖĞRETMEN GİRİŞİ — AYNI ŞİFRE)
   // ==========================================================================
   const AUTH_STORAGE_KEY = "nartes_plus_auth_unlocked_v1";
   const AUTH_ROLE_KEY = "nartes_plus_auth_role_v1";
 
-  // Yönetici şifreleri: giriş yapıldığında tüm 12 ünite ve tüm durakların kilidi otomatik açılır
-  const ADMIN_PASS_HASHES = [
-    "117b7bd219e16", // nartesadmin
-    "600d07e84b09b"  // yonetici2026
-  ];
-
+  // Öğrenci Girişi ve Öğretmen Girişi tamamen AYNI şifrelerle çalışır (şifre değişikliği yok)
   const ALLOWED_PASS_HASHES = [
     "ecf2a0206d7f0",
     "158d55f281293c",
     "8645f7c65e238",
     "e141883f829d6",
     "d8b84bde7f068",
-    ...ADMIN_PASS_HASHES
+    "117b7bd219e16",
+    "600d07e84b09b"
   ];
 
   function hashPass(str) {
@@ -2716,20 +4280,25 @@
     return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
   }
 
-  function applyRoleUnlockState(isAdmin, showBanner) {
-    state.teacherUnlock = Boolean(isAdmin);
+  function applyRoleUnlockState(isTeacher, showBanner) {
+    state.teacherUnlock = Boolean(isTeacher);
+    window.MATFLOW_TEACHER_MODE = state.teacherUnlock;
     const btnTeacher = document.getElementById("btnTeacherMode");
     if (btnTeacher) {
       btnTeacher.textContent = state.teacherUnlock
-        ? "🛡️ Yönetici Modu (Her Şey Açık)"
-        : "🔒 Sıralı Öğrenci Modu";
+        ? "👩‍🏫 Öğretmen Modu (Tüm Bölümler Açık)"
+        : "🎓 Sıralı Öğrenci Modu";
     }
     renderUnitSelector();
     renderSidebar();
     renderRoad();
     renderWindow();
-    if (showBanner && state.teacherUnlock) {
-      showToast("🛡️ Yönetici Girişi Aktif: Tüm 12 ünite ve tüm durakların kilidi açıldı!");
+    if (showBanner) {
+      if (state.teacherUnlock) {
+        showToast("👩‍🏫 Öğretmen Girişi Aktif: Alttaki tüm bölümlere ve 12 üniteye istediğiniz an tıklayabilirsiniz!");
+      } else {
+        showToast("🎓 Öğrenci Girişi Aktif: Adım adım başarı yolculuğuna hoş geldin!");
+      }
     }
   }
 
@@ -2742,12 +4311,69 @@
     const rememberChk = document.getElementById("authRememberChk");
     const errMsg = document.getElementById("authErrorMsg");
     const btnLock = document.getElementById("btnLockApp");
+    const roleStudentBtn = document.getElementById("authRoleStudentBtn");
+    const roleTeacherBtn = document.getElementById("authRoleTeacherBtn");
+    const submitBtn = document.getElementById("authSubmitBtn");
+    const gateBadge = document.getElementById("authGateBadge");
+    const gateDesc = document.getElementById("authGateDesc");
 
-    function unlockNow(isAdmin, fromLoginSubmit) {
-      state.teacherUnlock = Boolean(isAdmin);
+    let selectedRole = (savedRole === "teacher" || savedRole === "admin") ? "teacher" : "student";
+
+    function syncLoginRoleUI(role) {
+      selectedRole = role === "teacher" ? "teacher" : "student";
+      const isTeacher = selectedRole === "teacher";
+
+      if (roleStudentBtn) {
+        roleStudentBtn.classList.toggle("is-active", !isTeacher);
+        roleStudentBtn.setAttribute("aria-selected", !isTeacher ? "true" : "false");
+      }
+      if (roleTeacherBtn) {
+        roleTeacherBtn.classList.toggle("is-active", isTeacher);
+        roleTeacherBtn.setAttribute("aria-selected", isTeacher ? "true" : "false");
+      }
+      if (submitBtn) {
+        submitBtn.classList.toggle("is-teacher-mode", isTeacher);
+        submitBtn.textContent = isTeacher
+          ? "👩‍🏫 Öğretmen Girişi Yap (Tüm Bölümler Açık) →"
+          : "🎓 Öğrenci Girişi Yap ve Kampüsü Aç →";
+      }
+      if (gateBadge) {
+        gateBadge.textContent = isTeacher
+          ? "👩‍🏫 ÖĞRETMEN SERBEST ÖNİZLEME GİRİŞİ"
+          : "🎓 ÖĞRENCİ ÇALIŞMA KAMPÜSÜ GİRİŞİ";
+      }
+      if (gateDesc) {
+        gateDesc.textContent = isTeacher
+          ? "Öğretmen girişinde alttaki tüm duraklar ve 12 ünite açıktır; ilerlemek zorunda kalmadan istediğiniz bölüme tıklayıp anında görebilirsiniz."
+          : "Öğrenci girişinde duraklar adım adım tamamlanarak açılır ve kaldığınız yerden devam edersiniz.";
+      }
+    }
+
+    syncLoginRoleUI(selectedRole);
+
+    if (roleStudentBtn) {
+      roleStudentBtn.addEventListener("click", () => {
+        playTone("click");
+        syncLoginRoleUI("student");
+        if (errMsg) errMsg.hidden = true;
+        if (input) input.focus();
+      });
+    }
+    if (roleTeacherBtn) {
+      roleTeacherBtn.addEventListener("click", () => {
+        playTone("click");
+        syncLoginRoleUI("teacher");
+        if (errMsg) errMsg.hidden = true;
+        if (input) input.focus();
+      });
+    }
+
+    function unlockNow(isTeacher, fromLoginSubmit) {
+      state.teacherUnlock = Boolean(isTeacher);
+      window.MATFLOW_TEACHER_MODE = state.teacherUnlock;
       document.body.classList.remove("auth-locked");
       onUnlocked();
-      applyRoleUnlockState(Boolean(isAdmin), Boolean(fromLoginSubmit));
+      applyRoleUnlockState(Boolean(isTeacher), Boolean(fromLoginSubmit));
     }
 
     if (togglePassBtn && input) {
@@ -2767,8 +4393,9 @@
         localStorage.removeItem(AUTH_ROLE_KEY);
         sessionStorage.removeItem(AUTH_ROLE_KEY);
         state.teacherUnlock = false;
+        window.MATFLOW_TEACHER_MODE = false;
         const btnTeacher = document.getElementById("btnTeacherMode");
-        if (btnTeacher) btnTeacher.textContent = "🔒 Sıralı Öğrenci Modu";
+        if (btnTeacher) btnTeacher.textContent = "🎓 Sıralı Öğrenci Modu";
         document.body.classList.add("auth-locked");
         if (input) {
           input.type = "password";
@@ -2785,8 +4412,8 @@
         const val = input ? input.value : "";
         const h = hashPass(val);
         if (ALLOWED_PASS_HASHES.includes(h)) {
-          const isAdminLogin = ADMIN_PASS_HASHES.includes(h);
-          const roleStr = isAdminLogin ? "admin" : "student";
+          const isTeacherLogin = selectedRole === "teacher";
+          const roleStr = isTeacherLogin ? "teacher" : "student";
           if (errMsg) errMsg.hidden = true;
           if (rememberChk && rememberChk.checked) {
             try {
@@ -2800,7 +4427,7 @@
             } catch (err) {}
           }
           playTone("success");
-          unlockNow(isAdminLogin, true);
+          unlockNow(isTeacherLogin, true);
         } else {
           playTone("error");
           if (errMsg) errMsg.hidden = false;
@@ -2813,7 +4440,7 @@
     }
 
     if (isSaved) {
-      unlockNow(savedRole === "admin", false);
+      unlockNow(savedRole === "teacher" || savedRole === "admin", false);
     }
   }
 
@@ -2825,6 +4452,8 @@
     const onViewportChange = () => {
       syncVisualViewport();
       updateDeviceMode();
+      requestAnimationFrame(drawCubicRoadSvg);
+      setTimeout(drawCubicRoadSvg, 180);
     };
     window.addEventListener("resize", onViewportChange);
     window.addEventListener("orientationchange", onViewportChange);
@@ -2903,6 +4532,7 @@
         } else {
           document.body.classList.toggle("sidebar-collapsed");
         }
+        setTimeout(drawCubicRoadSvg, 280);
       });
     }
     if (sidebarBackdrop) {
@@ -2992,11 +4622,12 @@
     });
 
     const btnVoice = document.getElementById("btnToggleVoice");
-    btnVoice.addEventListener("click", () => {
-      state.voiceEnabled = !state.voiceEnabled;
-      btnVoice.classList.toggle("muted", !state.voiceEnabled);
-      showToast(state.voiceEnabled ? "🗣️ Sesli anlatım açıldı" : "🗣️ Sesli anlatım kapatıldı");
-    });
+    if (btnVoice) {
+      btnVoice.addEventListener("click", () => {
+        state.voiceEnabled = !state.voiceEnabled;
+        btnVoice.classList.toggle("muted", !state.voiceEnabled);
+      });
+    }
 
     document.getElementById("btnResetProgress").addEventListener("click", () => {
       const UNIT = getActiveUnit();
@@ -3013,13 +4644,19 @@
     const btnTeacher = document.getElementById("btnTeacherMode");
     btnTeacher.addEventListener("click", () => {
       state.teacherUnlock = !state.teacherUnlock;
-      btnTeacher.textContent = state.teacherUnlock ? "🔓 Öğretmen Modu (Açık)" : "🔒 Sıralı Öğrenci Modu";
+      window.MATFLOW_TEACHER_MODE = state.teacherUnlock;
+      const roleVal = state.teacherUnlock ? "teacher" : "student";
+      try {
+        if (localStorage.getItem(AUTH_STORAGE_KEY) === "1") localStorage.setItem(AUTH_ROLE_KEY, roleVal);
+        if (sessionStorage.getItem(AUTH_STORAGE_KEY) === "1") sessionStorage.setItem(AUTH_ROLE_KEY, roleVal);
+      } catch (e) {}
+      btnTeacher.textContent = state.teacherUnlock ? "👩‍🏫 Öğretmen Modu (Tüm Bölümler Açık)" : "🎓 Sıralı Öğrenci Modu";
       renderSidebar();
       renderRoad();
       renderWindow();
       showToast(state.teacherUnlock
-        ? "Öğretmen Önizleme Modu: Tüm 12 ünitedeki 360 durağa serbestçe tıklayabilirsiniz."
-        : "Öğrenci Modu: Duraklar sırayla tamamlanarak açılır.");
+        ? "👩‍🏫 Öğretmen Modu: Alttaki tüm bölümlere ve 12 üniteye serbestçe tıklayabilirsiniz."
+        : "🎓 Öğrenci Modu: Duraklar sırayla tamamlanarak açılır.");
     });
 
     const modal = document.getElementById("infoModal");

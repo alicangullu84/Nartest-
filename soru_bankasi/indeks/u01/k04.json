@@ -1,0 +1,410 @@
+{
+  "kazanimId": "k04",
+  "baslik": "En Küçük Ortak Kat (EKOK)",
+  "kod": "M.8.1.1.2",
+  "altin": [
+    "ab-u01-k04-01",
+    "ab-u01-k04-02",
+    "ab-u01-k04-03",
+    "ab-u01-k04-04",
+    "ab-u01-k04-05",
+    "ab-u01-k04-06"
+  ],
+  "anlatim": [
+    "an-u01-k04"
+  ],
+  "etkinlik": [
+    "et-u01-k04-01"
+  ],
+  "durak": 21,
+  "bantlar": [
+    {
+      "bant": "D1",
+      "durak": 15
+    },
+    {
+      "bant": "D2",
+      "durak": 0
+    },
+    {
+      "bant": "D3",
+      "durak": 2
+    },
+    {
+      "bant": "D4",
+      "durak": 2
+    },
+    {
+      "bant": "D5",
+      "durak": 2
+    }
+  ],
+  "liste": [
+    {
+      "tur": "soru",
+      "id": "mw-p025-s1a",
+      "sayfaId": "mw-p025",
+      "no": "1a",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 25,
+      "kok": "EKOK(15, 30) kaçtır?",
+      "cevap": "30",
+      "gorsel": "gorseller/mw/p025.png",
+      "altinBilgiId": [
+        "ab-u01-k04-03"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p025-s1b",
+      "sayfaId": "mw-p025",
+      "no": "1b",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 25,
+      "kok": "EKOK(72, 96) kaçtır?",
+      "cevap": "288",
+      "gorsel": "gorseller/mw/p025.png",
+      "altinBilgiId": [
+        "ab-u01-k04-02"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p025-s1c",
+      "sayfaId": "mw-p025",
+      "no": "1c",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 25,
+      "kok": "EKOK(40, 60) kaçtır?",
+      "cevap": "120",
+      "gorsel": "gorseller/mw/p025.png",
+      "altinBilgiId": [
+        "ab-u01-k04-02"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p025-s1d",
+      "sayfaId": "mw-p025",
+      "no": "1d",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 25,
+      "kok": "EKOK(18, 27) kaçtır?",
+      "cevap": "54",
+      "gorsel": "gorseller/mw/p025.png",
+      "altinBilgiId": [
+        "ab-u01-k04-02"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p025-s1e",
+      "sayfaId": "mw-p025",
+      "no": "1e",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 25,
+      "kok": "EKOK(45, 75) kaçtır?",
+      "cevap": "225",
+      "gorsel": "gorseller/mw/p025.png",
+      "altinBilgiId": [
+        "ab-u01-k04-02"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p025-s1f",
+      "sayfaId": "mw-p025",
+      "no": "1f",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 25,
+      "kok": "EKOK(24, 80) kaçtır?",
+      "cevap": "240",
+      "gorsel": "gorseller/mw/p025.png",
+      "altinBilgiId": [
+        "ab-u01-k04-02"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p025-s2",
+      "sayfaId": "mw-p025",
+      "no": "2",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 25,
+      "kok": "24 ve 42'nin ortak katı olan en küçük sayma sayısı kaçtır?",
+      "cevap": "168",
+      "gorsel": "gorseller/mw/p025.png",
+      "altinBilgiId": [
+        "ab-u01-k04-02"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p025-s3",
+      "sayfaId": "mw-p025",
+      "no": "3",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 25,
+      "kok": "4'er ve 7'şer ritmik saymada 100'den küçük en büyük ortak sayı kaçtır?",
+      "cevap": "84",
+      "gorsel": "gorseller/mw/p025.png",
+      "altinBilgiId": [
+        "ab-u01-k04-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "mw-p025",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 25,
+      "baslik": "EKOK (En Küçük Ortak Kat) Hesaplama — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/mw/p025.png",
+      "altinBilgiId": [
+        "ab-u01-k04-01",
+        "ab-u01-k04-02",
+        "ab-u01-k04-03",
+        "ab-u01-k04-04",
+        "ab-u01-k04-05",
+        "ab-u01-k04-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p026",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 26,
+      "baslik": "EKOK (En Küçük Ortak Kat) Hesaplama",
+      "gorsel": "gorseller/mw/p026.png",
+      "altinBilgiId": [
+        "ab-u01-k04-01",
+        "ab-u01-k04-02",
+        "ab-u01-k04-03",
+        "ab-u01-k04-04",
+        "ab-u01-k04-05",
+        "ab-u01-k04-06"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p029-s1a",
+      "sayfaId": "mw-p029",
+      "no": "1a",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 29,
+      "kok": "Yükseklikleri 10 cm ve 12 cm olan tuğlalarla, boşluksuz örülebilecek en kısa duvar kaç metredir?",
+      "cevap": "0,6",
+      "gorsel": "gorseller/mw/p029.png",
+      "altinBilgiId": [
+        "ab-u01-k04-05"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p029-s2a",
+      "sayfaId": "mw-p029",
+      "no": "2a",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 29,
+      "kok": "Bir kenara 15 m, diğer kenara 12 m aralıkla ve uçlara da fidan dikilirse yol en az kaç metre olur?",
+      "cevap": "60",
+      "gorsel": "gorseller/mw/p029.png",
+      "altinBilgiId": [
+        "ab-u01-k04-05"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p029-s2b",
+      "sayfaId": "mw-p029",
+      "no": "2b",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 29,
+      "kok": "60 metrelik yolun iki kenarına, 15 m ve 12 m aralıkla, başa ve sona da fidan dikilirse toplam en az kaç fidan gerekir?",
+      "cevap": "10",
+      "gorsel": "gorseller/mw/p029.png",
+      "altinBilgiId": [
+        "ab-u01-k04-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "mw-p029",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 29,
+      "baslik": "EKOK (En Küçük Ortak Kat) Problemleri — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/mw/p029.png",
+      "altinBilgiId": [
+        "ab-u01-k04-01",
+        "ab-u01-k04-02",
+        "ab-u01-k04-03",
+        "ab-u01-k04-04",
+        "ab-u01-k04-05",
+        "ab-u01-k04-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p030",
+      "kazanimId": "k04",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 30,
+      "baslik": "EKOK (En Küçük Ortak Kat) Problemleri",
+      "gorsel": "gorseller/mw/p030.png",
+      "altinBilgiId": [
+        "ab-u01-k04-01",
+        "ab-u01-k04-02",
+        "ab-u01-k04-03",
+        "ab-u01-k04-04",
+        "ab-u01-k04-05",
+        "ab-u01-k04-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p027",
+      "kazanimId": "k04",
+      "bant": "D3",
+      "kaynak": "mw",
+      "basiliSayfa": 27,
+      "baslik": "EKOK (En Küçük Ortak Kat) Hesaplama",
+      "gorsel": "gorseller/mw/p027.png",
+      "altinBilgiId": [
+        "ab-u01-k04-01",
+        "ab-u01-k04-02",
+        "ab-u01-k04-03",
+        "ab-u01-k04-04",
+        "ab-u01-k04-05",
+        "ab-u01-k04-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p031",
+      "kazanimId": "k04",
+      "bant": "D3",
+      "kaynak": "mw",
+      "basiliSayfa": 31,
+      "baslik": "EKOK (En Küçük Ortak Kat) Problemleri",
+      "gorsel": "gorseller/mw/p031.png",
+      "altinBilgiId": [
+        "ab-u01-k04-01",
+        "ab-u01-k04-02",
+        "ab-u01-k04-03",
+        "ab-u01-k04-04",
+        "ab-u01-k04-05",
+        "ab-u01-k04-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p028",
+      "kazanimId": "k04",
+      "bant": "D4",
+      "kaynak": "mw",
+      "basiliSayfa": 28,
+      "baslik": "EKOK (En Küçük Ortak Kat) Hesaplama",
+      "gorsel": "gorseller/mw/p028.png",
+      "altinBilgiId": [
+        "ab-u01-k04-01",
+        "ab-u01-k04-02",
+        "ab-u01-k04-03",
+        "ab-u01-k04-04",
+        "ab-u01-k04-05",
+        "ab-u01-k04-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p032",
+      "kazanimId": "k04",
+      "bant": "D4",
+      "kaynak": "mw",
+      "basiliSayfa": 32,
+      "baslik": "EKOK (En Küçük Ortak Kat) Problemleri",
+      "gorsel": "gorseller/mw/p032.png",
+      "altinBilgiId": [
+        "ab-u01-k04-01",
+        "ab-u01-k04-02",
+        "ab-u01-k04-03",
+        "ab-u01-k04-04",
+        "ab-u01-k04-05",
+        "ab-u01-k04-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p025",
+      "kazanimId": "k04",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 25,
+      "baslik": "EKOK hesaplama",
+      "gorsel": "gorseller/sh/p025.png",
+      "altinBilgiId": [
+        "ab-u01-k04-01",
+        "ab-u01-k04-02",
+        "ab-u01-k04-03",
+        "ab-u01-k04-04",
+        "ab-u01-k04-05",
+        "ab-u01-k04-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p026",
+      "kazanimId": "k04",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 26,
+      "baslik": "EKOK hesaplama",
+      "gorsel": "gorseller/sh/p026.png",
+      "altinBilgiId": [
+        "ab-u01-k04-01",
+        "ab-u01-k04-02",
+        "ab-u01-k04-03",
+        "ab-u01-k04-04",
+        "ab-u01-k04-05",
+        "ab-u01-k04-06"
+      ]
+    }
+  ]
+}

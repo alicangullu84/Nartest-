@@ -1,0 +1,29 @@
+{
+  "id": "ab-u01-k04-05",
+  "sira": 5,
+  "kazanimId": "k04",
+  "baslik": "Buluşturma ve döşeme EKOK'tur",
+  "metin": "İki farklı tempo, tur, zil veya sefer aynı anda yeniden buluşacaksa EKOK kullanılır. İki farklı parça, boşluk kalmadan bir bütünü ilk kez dolduracaksa yine EKOK kullanılır. Kesirlerde payda eşitlemek de EKOK'tur.",
+  "ornek": "12 ve 15 dakikada bir kalkan seferler 60 dakikada bir birlikte kalkar. EKOK(12, 15) = 60. Saat 10.40 ise sonraki ortak sefer 11.40'tır.",
+  "yanlis": [
+    {
+      "kod": "ebob-secme",
+      "uyari": "Birlikte yeniden başlama, en kısa bütün veya payda eşitleme EKOK'tur. Parçaya ayırma EBOB'tur."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 29,
+      "yer": "Altın Bilgiler"
+    },
+    {
+      "kod": "sh",
+      "sayfa": 8,
+      "yer": "Ne işe yarar"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

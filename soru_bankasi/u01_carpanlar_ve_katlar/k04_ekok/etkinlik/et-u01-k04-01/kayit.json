@@ -1,0 +1,34 @@
+{
+  "id": "et-u01-k04-01",
+  "kazanimId": "k04",
+  "baslik": "EKOK'u yaz",
+  "yonerge": "İki sayının EKOK'unu yaz.",
+  "altinBilgiId": [
+    "ab-u01-k04-02",
+    "ab-u01-k04-03"
+  ],
+  "maddeler": [
+    {
+      "id": "a",
+      "istem": "12 ve 18",
+      "cevap": "36"
+    },
+    {
+      "id": "b",
+      "istem": "15 ve 30",
+      "cevap": "30"
+    },
+    {
+      "id": "c",
+      "istem": "4 ve 7",
+      "cevap": "28"
+    },
+    {
+      "id": "d",
+      "istem": "18 ve 30",
+      "cevap": "90"
+    }
+  ],
+  "tur": "etkinlik",
+  "uniteId": "u01"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "ab-u01-k01-05",
+  "sira": 5,
+  "kazanimId": "k01",
+  "baslik": "Tam karenin bölen sayısı tektir",
+  "metin": "Tam kare sayıların pozitif bölen sayısı tektir. Tam kare olmayanların bölen sayısı çifttir. 1'den n'e kadar lambalar, kapılar veya günler açılıp kapanıyorsa sonda açık kalanlar tam kare numaralardır.",
+  "ornek": "16'nın bölenleri 1, 2, 4, 8, 16 olmak üzere 5 tanedir. 10'un bölenleri 1, 2, 5, 10 olmak üzere 4 tanedir. 1'den 10'a kadar lambada açık kalanlar 1, 4 ve 9 numaradır: 3 lamba.",
+  "yanlis": [
+    {
+      "kod": "cift-sanma",
+      "uyari": "Tam karede ortadaki bölen bir kez yazılır. 4 hem 2×2'dir hem tek bir çarpandır; onu iki kez sayma, bölen listesinde bir kez durur."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 10,
+      "yer": "Altın Bilgiler"
+    },
+    {
+      "kod": "sh",
+      "sayfa": 8,
+      "yer": "Ne işe yarar"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.1"
+}

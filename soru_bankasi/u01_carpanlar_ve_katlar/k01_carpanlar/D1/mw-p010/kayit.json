@@ -1,0 +1,44 @@
+{
+  "id": "mw-p010",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k01",
+  "bant": "D1",
+  "baslik": "Pozitif Tam Sayıların Pozitif Çarpanları",
+  "kaynak": "mw",
+  "pdfSayfa": 10,
+  "basiliSayfa": 10,
+  "altinVar": true,
+  "sorular": [
+    {
+      "no": "5",
+      "kok": "A6 iki basamaklı sayısının tek sayıda pozitif böleni vardır. A yerine yazılabilecek rakamların toplamı kaçtır?",
+      "cevap": "4",
+      "cozum": "Tek sayıda bölen, sayının tam kare olması demektir. 6 ile biten iki basamaklı tam kareler 16 ve 36'dır. Onlar basamağı 1 ve 3'tür. Toplam 4.",
+      "altinBilgiId": [
+        "ab-u01-k01-05"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "7",
+      "kok": "1'den 10'a kadar kapalı lambalara, her çocuk kendi katlarının düğmesine basıyor. Sonda kaç lamba açık kalır?",
+      "cevap": "3",
+      "cozum": "Her lamba bölen sayısı kadar basılır. Tek sayıda böleni olan tam kareler açık kalır: 1, 4 ve 9. 3 lamba.",
+      "altinBilgiId": [
+        "ab-u01-k01-05"
+      ],
+      "yanlis": {}
+    }
+  ],
+  "altinBilgiId": [
+    "ab-u01-k01-01",
+    "ab-u01-k01-02",
+    "ab-u01-k01-03",
+    "ab-u01-k01-04",
+    "ab-u01-k01-05",
+    "ab-u01-k01-06",
+    "ab-u01-k01-07"
+  ],
+  "gorsel": "gorseller/mw/p010.png"
+}

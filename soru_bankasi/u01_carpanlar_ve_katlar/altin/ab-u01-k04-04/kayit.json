@@ -1,0 +1,29 @@
+{
+  "id": "ab-u01-k04-04",
+  "sira": 4,
+  "kazanimId": "k04",
+  "baslik": "Ortak asal yoksa EKOK çarpımdır",
+  "metin": "Ortak asal çarpanı olmayan sayıların EKOK'u, sayıların çarpımına eşittir. Ardışık sayıların EKOK'u da çarpımlarıdır.",
+  "ornek": "4 ve 7 aralarında asaldır. EKOK(4, 7) = 28. 100'den küçük en büyük ortak kat 84'tür.",
+  "yanlis": [
+    {
+      "kod": "carpimi-ebob-sanma",
+      "uyari": "Çarpım EKOK'tur, EBOB değil. Ortak asal yoksa EBOB 1 kalır."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 25,
+      "yer": "Altın Bilgiler"
+    },
+    {
+      "kod": "mw",
+      "sayfa": 26,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

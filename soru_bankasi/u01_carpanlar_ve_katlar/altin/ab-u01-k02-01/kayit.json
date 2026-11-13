@@ -1,0 +1,28 @@
+{
+  "id": "ab-u01-k02-01",
+  "sira": 1,
+  "kazanimId": "k02",
+  "baslik": "Asal: 1 ve kendisinden başka böleni yok",
+  "metin": "1'den büyük ve 1 ile kendisinden başka pozitif böleni olmayan sayılar asaldır. 1 asal değildir. En küçük asal 2'dir.",
+  "ornek": "2, 3, 5, 7, 11, 13, 17, 19 asaldır. 1, 9, 15, 21, 91 asal değildir.",
+  "yanlis": [
+    {
+      "kod": "biri-asal",
+      "uyari": "1'i asal sayma."
+    },
+    {
+      "kod": "tek-olan-asal",
+      "uyari": "Her tek sayı asal değildir. 9, 15, 21, 25, 27, 91 tek olduğu halde asaldır denemez."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 13,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.1"
+}

@@ -1,0 +1,153 @@
+{
+  "kazanimId": "k02",
+  "baslik": "Asal Sayılar ve Asal Çarpanlar",
+  "kod": "M.8.1.1.1",
+  "altin": [
+    "ab-u01-k02-01",
+    "ab-u01-k02-02",
+    "ab-u01-k02-03",
+    "ab-u01-k02-04",
+    "ab-u01-k02-05",
+    "ab-u01-k02-06"
+  ],
+  "anlatim": [
+    "an-u01-k02"
+  ],
+  "etkinlik": [
+    "et-u01-k02-01"
+  ],
+  "durak": 6,
+  "bantlar": [
+    {
+      "bant": "D1",
+      "durak": 4
+    },
+    {
+      "bant": "D2",
+      "durak": 0
+    },
+    {
+      "bant": "D3",
+      "durak": 1
+    },
+    {
+      "bant": "D4",
+      "durak": 1
+    },
+    {
+      "bant": "D5",
+      "durak": 0
+    }
+  ],
+  "liste": [
+    {
+      "tur": "soru",
+      "id": "mw-p013-s2",
+      "sayfaId": "mw-p013",
+      "no": "2",
+      "kazanimId": "k02",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 13,
+      "kok": "Asal çarpanları tam olarak 3 ve 5 olan, 120'den küçük kaç doğal sayı vardır?",
+      "cevap": "3",
+      "gorsel": "gorseller/mw/p013.png",
+      "altinBilgiId": [
+        "ab-u01-k02-03",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "mw-p013",
+      "kazanimId": "k02",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 13,
+      "baslik": "Asal Çarpanlara Ayırma — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/mw/p013.png",
+      "altinBilgiId": [
+        "ab-u01-k02-01",
+        "ab-u01-k02-02",
+        "ab-u01-k02-03",
+        "ab-u01-k02-04",
+        "ab-u01-k02-05",
+        "ab-u01-k02-06"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p014-s6",
+      "sayfaId": "mw-p014",
+      "no": "6",
+      "kazanimId": "k02",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 14,
+      "kok": "Asal çarpanlarının toplamı 5 olan en büyük iki basamaklı doğal sayı kaçtır?",
+      "cevap": "96",
+      "gorsel": "gorseller/mw/p014.png",
+      "altinBilgiId": [
+        "ab-u01-k02-03"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "mw-p014",
+      "kazanimId": "k02",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 14,
+      "baslik": "Asal Çarpanlara Ayırma — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/mw/p014.png",
+      "altinBilgiId": [
+        "ab-u01-k02-01",
+        "ab-u01-k02-02",
+        "ab-u01-k02-03",
+        "ab-u01-k02-04",
+        "ab-u01-k02-05",
+        "ab-u01-k02-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p015",
+      "kazanimId": "k02",
+      "bant": "D3",
+      "kaynak": "mw",
+      "basiliSayfa": 15,
+      "baslik": "Asal Çarpanlara Ayırma",
+      "gorsel": "gorseller/mw/p015.png",
+      "altinBilgiId": [
+        "ab-u01-k02-01",
+        "ab-u01-k02-02",
+        "ab-u01-k02-03",
+        "ab-u01-k02-04",
+        "ab-u01-k02-05",
+        "ab-u01-k02-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p016",
+      "kazanimId": "k02",
+      "bant": "D4",
+      "kaynak": "mw",
+      "basiliSayfa": 16,
+      "baslik": "Asal Çarpanlara Ayırma",
+      "gorsel": "gorseller/mw/p016.png",
+      "altinBilgiId": [
+        "ab-u01-k02-01",
+        "ab-u01-k02-02",
+        "ab-u01-k02-03",
+        "ab-u01-k02-04",
+        "ab-u01-k02-05",
+        "ab-u01-k02-06"
+      ]
+    }
+  ]
+}

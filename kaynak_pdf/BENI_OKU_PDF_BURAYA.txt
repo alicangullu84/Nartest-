@@ -1,0 +1,13 @@
+NarTES+ PDF Soru Yerleştirme Rehberi
+===================================
+
+Tek PDF dosyanızı (sorular + en arkasındaki cevap anahtarı ile birlikte) doğrudan bu klasöre koyabilirsiniz:
+
+  C:\Users\AliCangUllu-26\Desktop\NartestPlus\kaynak_pdf\
+
+Önerilen dosya adı: sorular.pdf (veya herhangi bir .pdf adı).
+
+PDF dosyasını bu klasöre bıraktıktan sonra sohbete "PDF'i koydum" yazmanız yeterlidir:
+1. Sayfalar scripts\pdf_soru_kesici.ps1 ile yüksek çözünürlükte (220 DPI PNG) işlenecek,
+2. Her alt başlığın Kolay Alıştırma / TEOG & Bursluluk / Zorlayıcı klasörlerine soru görselleri kesilecek,
+3. Arkadaki cevap anahtarı okunup her sorunun adım adım matematiksel çözümü ve Sokratik ipuçları tarafımızdan yazılarak akıllı tahta testlerine bağlanacaktır.

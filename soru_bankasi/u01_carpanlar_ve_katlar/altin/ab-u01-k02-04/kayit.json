@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k02-04",
+  "sira": 4,
+  "kazanimId": "k02",
+  "baslik": "Algoritma küçük asaldan bölünür",
+  "metin": "Sayı, bölünebildiği en küçük asal ile bölünür. Bölüm alta yazılır, asal sağa yazılır. 1 kalınca sağdaki asallar çarpılır. Aynı asal kaç kez yazıldıysa üs o kadardır.",
+  "ornek": "180 = 2² · 3² · 5¹. Üsler 2, 2 ve 1 ise toplamları 5'tir.",
+  "yanlis": [
+    {
+      "kod": "buyukten-bolme",
+      "uyari": "Bölmeye büyük asaldan başlama. Her zaman 2'den, o bölmezse 3'ten, sonra 5'ten ilerle."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 13,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.1"
+}

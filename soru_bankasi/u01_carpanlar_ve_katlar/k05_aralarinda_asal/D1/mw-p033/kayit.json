@@ -1,0 +1,31 @@
+{
+  "id": "mw-p033",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k05",
+  "bant": "D1",
+  "baslik": "Aralarında Asal Sayılar",
+  "kaynak": "mw",
+  "pdfSayfa": 33,
+  "basiliSayfa": 33,
+  "altinVar": true,
+  "sorular": [
+    {
+      "no": "2",
+      "kok": "Çarpımları 48 olan aralarında asal iki sayının toplamlarının en büyüğü a, en küçüğü b ise a+b kaçtır?",
+      "cevap": "68",
+      "cozum": "Aralarında asal ikililer (1, 48) ve (3, 16). Toplamlar 49 ve 19. 2 ile 24 elenir çünkü EBOB 2'dir. a+b = 49+19 = 68.",
+      "altinBilgiId": [
+        "ab-u01-k05-04"
+      ],
+      "yanlis": {}
+    }
+  ],
+  "altinBilgiId": [
+    "ab-u01-k05-01",
+    "ab-u01-k05-02",
+    "ab-u01-k05-03",
+    "ab-u01-k05-04"
+  ],
+  "gorsel": "gorseller/mw/p033.png"
+}

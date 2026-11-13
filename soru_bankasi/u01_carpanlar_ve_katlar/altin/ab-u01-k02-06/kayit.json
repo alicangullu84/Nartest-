@@ -1,0 +1,29 @@
+{
+  "id": "ab-u01-k02-06",
+  "sira": 6,
+  "kazanimId": "k02",
+  "baslik": "121'den küçük sayıda 2, 3, 5, 7 yeter",
+  "metin": "1'den büyük ve 121'den küçük bir sayı 2, 3, 5 ve 7'ye bölünmüyorsa asaldır. Bölünüyorsa asal değildir. Kitaptaki '120'den küçük' ifadesi bu kuraldır; sınır 11² = 121 olduğu için 120'ye kadar güvenlidir.",
+  "ornek": "91, 120'den küçüktür ve 7'ye bölünür: 91 = 7×13. Asal değildir. 97 bu dört asala bölünmez, asaldır.",
+  "yanlis": [
+    {
+      "kod": "yediye-bakmama",
+      "uyari": "2, 3 ve 5'e bakıp durma. 49, 77 ve 91 ancak 7 ile elenir."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "sh",
+      "sayfa": 8,
+      "yer": "Ne işe yarar"
+    },
+    {
+      "kod": "mw",
+      "sayfa": 13,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.1"
+}

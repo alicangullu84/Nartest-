@@ -1,0 +1,33 @@
+{
+  "id": "ab-u01-k03-05",
+  "sira": 5,
+  "kazanimId": "k03",
+  "baslik": "Eşit paylaştırma ve eş parça EBOB'tur",
+  "metin": "İki miktar artmayacak ve karışmayacak şekilde eşit parçalara ayrılacaksa, parça olabildiğince büyükse EBOB kullanılır. Kapalı bir çevrede fidan veya direk köşelere de dikiliyorsa adet, çevrenin EBOB'a bölümüdür. Açık bir doğru parçasında başta ve sonda da nesne varsa aralık sayısına 1 eklenir.",
+  "ornek": "48 m ve 72 m kenarlı bahçede en geniş eşit aralık EBOB(48, 72) = 24 m'dir. Çevre 240 m olduğundan 240 ÷ 24 = 10 fidan gerekir. 60 L ve 72 L yağ, en büyük şişede EBOB(60, 72) = 12 L olur. Şişe sayısı 60/12 + 72/12 = 11.",
+  "yanlis": [
+    {
+      "kod": "ekok-secme",
+      "uyari": "Parça ayırıp artmayacak diyorsa EKOK değil EBOB. EKOK bütünü birleştirir, EBOB parçalar."
+    },
+    {
+      "kod": "kapali-cevreye-bir-ekleme",
+      "uyari": "Bahçe veya karenin çevresinde köşe zaten bir kez sayılır. Çevre ÷ aralık yeter. +1, başı ve sonu ayrı olan düz yolda kullanılır."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 21,
+      "yer": "Altın Bilgiler"
+    },
+    {
+      "kod": "sh",
+      "sayfa": 8,
+      "yer": "Ne işe yarar"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

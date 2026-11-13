@@ -1,0 +1,20 @@
+{
+  "id": "mw-p034",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k05",
+  "bant": "D1",
+  "baslik": "Aralarında Asal Sayılar",
+  "kaynak": "mw",
+  "pdfSayfa": 34,
+  "basiliSayfa": 34,
+  "altinVar": true,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k05-01",
+    "ab-u01-k05-02",
+    "ab-u01-k05-03",
+    "ab-u01-k05-04"
+  ],
+  "gorsel": "gorseller/mw/p034.png"
+}

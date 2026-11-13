@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=20261111c">
+  <link rel="stylesheet" href="css/style.css?v=20261113g">
 </head>
 <body class="auth-locked">
 
@@ -80,12 +80,30 @@
         </div>
       </div>
 
-      <!-- Sağ Şifreli Giriş Formu Alanı -->
+      <!-- Sağ Şifreli Giriş Formu Alanı (Öğrenci Girişi & Öğretmen Girişi) -->
       <div class="auth-gate-card">
         <div class="auth-card-inner">
-          <div class="auth-gate-badge">🔒 ÖZEL YETKİLİ ERİŞİM</div>
+          <div class="auth-gate-badge" id="authGateBadge">🔒 ÖZEL YETKİLİ ERİŞİM</div>
           <h2 class="auth-gate-title">Platforma Hoş Geldiniz</h2>
-          <p class="auth-gate-desc">Çalışma alanına bağlanmak ve kaldığınız duraktan devam etmek için erişim şifrenizi girin.</p>
+          <p class="auth-gate-desc" id="authGateDesc">Giriş türünüzü seçin ve erişim şifrenizi girerek kampüsü açın.</p>
+
+          <!-- İki Ayrı Giriş Seçimi: Öğrenci Girişi & Öğretmen Girişi (Aynı Şifre) -->
+          <div class="auth-role-switch" role="tablist" aria-label="Giriş Türü Seçimi">
+            <button type="button" class="auth-role-btn is-active" id="authRoleStudentBtn" data-role="student" role="tab" aria-selected="true">
+              <span class="auth-role-icon" aria-hidden="true">🎓</span>
+              <span class="auth-role-texts">
+                <strong>Öğrenci Girişi</strong>
+                <small>Adım adım sıralı öğrenme</small>
+              </span>
+            </button>
+            <button type="button" class="auth-role-btn" id="authRoleTeacherBtn" data-role="teacher" role="tab" aria-selected="false">
+              <span class="auth-role-icon" aria-hidden="true">👩‍🏫</span>
+              <span class="auth-role-texts">
+                <strong>Öğretmen Girişi</strong>
+                <small>Tüm bölümler açık • Serbest geçiş</small>
+              </span>
+            </button>
+          </div>
 
           <form id="authGateForm" class="auth-gate-form" autocomplete="off">
             <div class="auth-input-wrap">
@@ -98,7 +116,7 @@
               <span>Bu cihazda (PC / Mac / Tablet) oturumu açık tut</span>
             </label>
             <div class="auth-error-msg" id="authErrorMsg" hidden>Hatalı şifre girdiniz! Lütfen kontrol edip tekrar deneyin.</div>
-            <button type="submit" class="auth-submit-btn">Şifreyi Doğrula ve Kampüsü Aç →</button>
+            <button type="submit" class="auth-submit-btn" id="authSubmitBtn">🎓 Öğrenci Girişi Yap ve Kampüsü Aç →</button>
           </form>
         </div>
       </div>
@@ -203,7 +221,6 @@
         </svg>
       </button>
       <button class="icon-btn" id="btnToggleSound" title="Ses Efektlerini Aç/Kapat">🔊</button>
-      <button class="icon-btn muted" id="btnToggleVoice" title="Sesli Öğretmen Anlatımını Aç/Kapat">🗣️</button>
       <button class="icon-btn" id="btnLockApp" title="Oturumu Kilitle (Şifre Ekranına Dön)">🔒</button>
     </div>
   </header>
@@ -378,11 +395,12 @@
     <div class="modal-card" id="infoModalContent"></div>
   </div>
 
-  <script src="data/carpanlar_katlar_data.js?v=20261111c"></script>
-  <script src="data/lgs_uniteler_2_12.js?v=20261111c"></script>
-  <script src="data/akilli_tahta_sorular.js?v=20261111c"></script>
-  <script src="js/nartes_mentor.js?v=20261111c"></script>
-  <script src="js/smartboard.js?v=20261111c"></script>
-  <script src="js/app.js?v=20261111c"></script>
+  <script src="data/carpanlar_katlar_data.js?v=20261113g"></script>
+  <script src="data/lgs_uniteler_2_12.js?v=20261113g"></script>
+  <script src="data/akilli_tahta_sorular.js?v=20261113g"></script>
+  <script src="js/variant_engine.js?v=20261113g"></script>
+  <script src="js/nartes_mentor.js?v=20261113g"></script>
+  <script src="js/smartboard.js?v=20261113g"></script>
+  <script src="js/app.js?v=20261113g"></script>
 </body>
 </html>

@@ -1,0 +1,43 @@
+{
+  "id": "et-u01-k01-02",
+  "kazanimId": "k01",
+  "baslik": "Bölen sayısı tek mi",
+  "yonerge": "Pozitif bölen sayısı tek olanlara evet, olmayanlara hayır yaz.",
+  "altinBilgiId": [
+    "ab-u01-k01-05"
+  ],
+  "maddeler": [
+    {
+      "id": "a",
+      "istem": "18",
+      "cevap": "hayır"
+    },
+    {
+      "id": "b",
+      "istem": "16",
+      "cevap": "evet"
+    },
+    {
+      "id": "c",
+      "istem": "36",
+      "cevap": "evet"
+    },
+    {
+      "id": "d",
+      "istem": "49",
+      "cevap": "evet"
+    },
+    {
+      "id": "e",
+      "istem": "24",
+      "cevap": "hayır"
+    },
+    {
+      "id": "f",
+      "istem": "81",
+      "cevap": "evet"
+    }
+  ],
+  "tur": "etkinlik",
+  "uniteId": "u01"
+}

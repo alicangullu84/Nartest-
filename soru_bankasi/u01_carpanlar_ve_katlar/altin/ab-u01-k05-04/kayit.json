@@ -1,0 +1,29 @@
+{
+  "id": "ab-u01-k05-04",
+  "sira": 4,
+  "kazanimId": "k05",
+  "baslik": "Aralarında asalsa EKOK çarpımdır, kesir sadeleşmez",
+  "metin": "a ve b aralarında asal ise EBOB(a, b) = 1 ve EKOK(a, b) = a·b. a/b kesri bu durumda daha küçük sayılarla sadeleşmez.",
+  "ornek": "Çarpımları 48 olan aralarında asal ikililer yalnız (1, 48) ve (3, 16). Toplamların en büyüğü 49, en küçüğü 19'dur. 49+19 = 68.",
+  "yanlis": [
+    {
+      "kod": "ortak-carpanli-ikili",
+      "uyari": "2 ile 24'ün çarpımı 48 eder ama EBOB 2'dir. Aralarında asal ikiliye yazma."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 33,
+      "yer": "Altın Bilgiler"
+    },
+    {
+      "kod": "mw",
+      "sayfa": 34,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.3"
+}

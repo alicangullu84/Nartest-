@@ -1,0 +1,54 @@
+{
+  "id": "mw-p021",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k03",
+  "bant": "D1",
+  "baslik": "EBOB (En Büyük Ortak Bölen) Problemleri",
+  "kaynak": "mw",
+  "pdfSayfa": 21,
+  "basiliSayfa": 21,
+  "altinVar": true,
+  "sorular": [
+    {
+      "no": "1a",
+      "kok": "60 L ve 72 L yağ artmadan eşit şişelere konacak. Şişe hacmi en fazla kaç litre olur?",
+      "cevap": "12",
+      "cozum": "En büyük eşit parça EBOB(60, 72) = 12 litredir.",
+      "altinBilgiId": [
+        "ab-u01-k03-05"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "1b",
+      "kok": "60 L ve 72 L yağ 12 litrelik şişelere konursa en az kaç şişe gerekir?",
+      "cevap": "11",
+      "cozum": "60/12 = 5 ve 72/12 = 6. Toplam 11 şişe.",
+      "altinBilgiId": [
+        "ab-u01-k03-05"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "1c",
+      "kok": "60 L ve 72 L için kaç farklı pozitif tam litre şişe kullanılabilir?",
+      "cevap": "6",
+      "cozum": "Farklı parçalar EBOB'un bölenleridir. 12'nin bölenleri 1, 2, 3, 4, 6, 12. 6 çeşit.",
+      "altinBilgiId": [
+        "ab-u01-k03-06"
+      ],
+      "yanlis": {}
+    }
+  ],
+  "altinBilgiId": [
+    "ab-u01-k03-01",
+    "ab-u01-k03-02",
+    "ab-u01-k03-03",
+    "ab-u01-k03-04",
+    "ab-u01-k03-05",
+    "ab-u01-k03-06",
+    "ab-u01-k03-07"
+  ],
+  "gorsel": "gorseller/mw/p021.png"
+}

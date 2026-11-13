@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k04-01",
+  "sira": 1,
+  "kazanimId": "k04",
+  "baslik": "EKOK ortak katların en küçüğüdür",
+  "metin": "İki doğal sayının da katı olan en küçük pozitif sayı EKOK'tur. Gösterim EKOK(a, b) şeklindedir.",
+  "ornek": "12'nin katları 12, 24, 36, 48… 18'in katları 18, 36, 54… İlk ortak kat 36'dır. EKOK(12, 18) = 36.",
+  "yanlis": [
+    {
+      "kod": "buyuk-ortagi",
+      "uyari": "Ortak katların en büyüğü yoktur; katlar sonsuza gider. İstenen en küçük ortak kattır."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 25,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

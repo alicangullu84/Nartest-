@@ -1,0 +1,84 @@
+{
+  "id": "mw-p017",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k03",
+  "bant": "D1",
+  "baslik": "EBOB (En Büyük Ortak Bölen) Hesaplama",
+  "kaynak": "mw",
+  "pdfSayfa": 17,
+  "basiliSayfa": 17,
+  "altinVar": true,
+  "sorular": [
+    {
+      "no": "1a",
+      "kok": "EBOB(20, 35) kaçtır?",
+      "cevap": "5",
+      "cozum": "20 = 2²·5, 35 = 5·7. Ortak asal 5. EBOB = 5.",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "1b",
+      "kok": "EBOB(45, 75) kaçtır?",
+      "cevap": "15",
+      "cozum": "45 = 3²·5, 75 = 3·5². Küçük üsler 3¹·5¹ = 15.",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "1c",
+      "kok": "EBOB(36, 48) kaçtır?",
+      "cevap": "12",
+      "cozum": "36 = 2²·3², 48 = 2⁴·3. Küçük üsler 2²·3 = 12.",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "1d",
+      "kok": "EBOB(120, 160) kaçtır?",
+      "cevap": "40",
+      "cozum": "120 = 2³·3·5, 160 = 2⁵·5. Ortak küçük üsler 2³·5 = 40.",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "1e",
+      "kok": "EBOB(150, 180) kaçtır?",
+      "cevap": "30",
+      "cozum": "150 = 2·3·5², 180 = 2²·3²·5. Ortak 2·3·5 = 30.",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "1f",
+      "kok": "EBOB(240, 360) kaçtır?",
+      "cevap": "120",
+      "cozum": "240 = 2⁴·3·5, 360 = 2³·3²·5. Ortak 2³·3·5 = 120.",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ],
+      "yanlis": {}
+    }
+  ],
+  "altinBilgiId": [
+    "ab-u01-k03-01",
+    "ab-u01-k03-02",
+    "ab-u01-k03-03",
+    "ab-u01-k03-04",
+    "ab-u01-k03-05",
+    "ab-u01-k03-06",
+    "ab-u01-k03-07"
+  ],
+  "gorsel": "gorseller/mw/p017.png"
+}

@@ -1,0 +1,213 @@
+{
+  "kazanimId": "k08",
+  "baslik": "LGS ve beceri temelli sorular",
+  "kod": "LGS",
+  "altin": [],
+  "anlatim": [],
+  "etkinlik": [],
+  "durak": 10,
+  "bantlar": [
+    {
+      "bant": "D1",
+      "durak": 0
+    },
+    {
+      "bant": "D2",
+      "durak": 0
+    },
+    {
+      "bant": "D3",
+      "durak": 0
+    },
+    {
+      "bant": "D4",
+      "durak": 0
+    },
+    {
+      "bant": "D5",
+      "durak": 10
+    }
+  ],
+  "liste": [
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p037",
+      "kazanimId": "k08",
+      "bant": "D5",
+      "kaynak": "mw",
+      "basiliSayfa": 37,
+      "baslik": "Beceri Temelli Sorular",
+      "gorsel": "gorseller/mw/p037.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-06",
+        "ab-u01-k05-04",
+        "ab-u01-k01-05"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p038",
+      "kazanimId": "k08",
+      "bant": "D5",
+      "kaynak": "mw",
+      "basiliSayfa": 38,
+      "baslik": "Beceri Temelli Sorular",
+      "gorsel": "gorseller/mw/p038.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-06",
+        "ab-u01-k05-04",
+        "ab-u01-k01-05"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p039",
+      "kazanimId": "k08",
+      "bant": "D5",
+      "kaynak": "mw",
+      "basiliSayfa": 39,
+      "baslik": "Beceri Temelli Sorular",
+      "gorsel": "gorseller/mw/p039.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-06",
+        "ab-u01-k05-04",
+        "ab-u01-k01-05"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p040",
+      "kazanimId": "k08",
+      "bant": "D5",
+      "kaynak": "mw",
+      "basiliSayfa": 40,
+      "baslik": "Beceri Temelli Sorular",
+      "gorsel": "gorseller/mw/p040.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-06",
+        "ab-u01-k05-04",
+        "ab-u01-k01-05"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p041",
+      "kazanimId": "k08",
+      "bant": "D5",
+      "kaynak": "mw",
+      "basiliSayfa": 41,
+      "baslik": "Beceri Temelli Sorular",
+      "gorsel": "gorseller/mw/p041.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-06",
+        "ab-u01-k05-04",
+        "ab-u01-k01-05"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p042",
+      "kazanimId": "k08",
+      "bant": "D5",
+      "kaynak": "mw",
+      "basiliSayfa": 42,
+      "baslik": "Beceri Temelli Sorular",
+      "gorsel": "gorseller/mw/p042.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-06",
+        "ab-u01-k05-04",
+        "ab-u01-k01-05"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p043",
+      "kazanimId": "k08",
+      "bant": "D5",
+      "kaynak": "mw",
+      "basiliSayfa": 43,
+      "baslik": "Beceri Temelli Sorular",
+      "gorsel": "gorseller/mw/p043.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-06",
+        "ab-u01-k05-04",
+        "ab-u01-k01-05"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p044",
+      "kazanimId": "k08",
+      "bant": "D5",
+      "kaynak": "mw",
+      "basiliSayfa": 44,
+      "baslik": "Beceri Temelli Sorular",
+      "gorsel": "gorseller/mw/p044.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-06",
+        "ab-u01-k05-04",
+        "ab-u01-k01-05"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p041",
+      "kazanimId": "k08",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 41,
+      "baslik": "Açık uçlu sorular",
+      "gorsel": "gorseller/sh/p041.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-06",
+        "ab-u01-k05-04",
+        "ab-u01-k01-05"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p042",
+      "kazanimId": "k08",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 42,
+      "baslik": "Açık uçlu sorular",
+      "gorsel": "gorseller/sh/p042.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-06",
+        "ab-u01-k05-04",
+        "ab-u01-k01-05"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k05-03",
+  "sira": 3,
+  "kazanimId": "k05",
+  "baslik": "Ortak asal çarpan yoksa aralarında asaldır",
+  "metin": "İki sayının asal çarpan kümeleri kesişmiyorsa aralarında asaldırlar. Birinin asalı diğerini bölüyorsa değillerdir.",
+  "ornek": "14 = 2·7 ve 15 = 3·5. Ortak asal yok, aralarında asaldır. 12 = 2²·3 ve 18 = 2·3². 2 ve 3 ortak, değillerdir.",
+  "yanlis": [
+    {
+      "kod": "tum-bolenleri-yazma",
+      "uyari": "Bütün bölenleri dökmeden önce asal çarpanlara bak. Ortak asal varsa iş bitmiştir."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 34,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.3"
+}

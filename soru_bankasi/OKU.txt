@@ -1,0 +1,46 @@
+Nartes+ soru bankası — 1. ünite kurulumu
+
+Bu klasör bir veri tabanıdır. Uygulama soruyu buradan çeker.
+PDF'ler kaynakPDF_MD içinde kalır. Bu klasör onlardan türer.
+
+Omurga
+  Altın kart bir kazanımın değişmeyen kuralıdır.
+  Anlatım ve etkinlik o kartları öğretir.
+  Soru, kartın kimliğine bağlıdır.
+  Çocuk yanlış yapınca yanlis komutu o kartlardan kısa bir onarım sayfası açar.
+  Metaword düzeni her kazanımda aynı sıradır: altın, anlatım, etkinlik, D1'den D5'e soru.
+  Ünite 2-12 bu sırayla kurulur.
+
+Bant
+  D1 Tane Tane ve Metaword öğreten
+  D2 Prestij İlkadım
+  D3 Metaword pekiştiren ve MEB
+  D4 Metaword geliştiren
+  D5 Soru Hazinesi ve beceri temelli
+  Aynı bantta sıra: nt, pr, mb1, mb2, mw, sh. Sonra sayfa numarası.
+
+Klasör
+  u01_carpanlar_ve_katlar/altin/          kartlar
+  u01_carpanlar_ve_katlar/k01_carpanlar/D1/mw-p009/kayit.json
+  indeks/u01/k01.json                     uygulamanın okuduğu çalma listesi
+  icerik/u01.js                           elle yazılan kart, anlatım, etkinlik, çözüm
+  icerik/u01_sayfa.json                   kitaptan ayıklanan sayfa kabukları
+  gorseller/                              sayfa görselleri, depoya girmez
+  _gecici/                                pdftotext artığı, depoya girmez
+
+Komut
+  node soru_bankasi/motor/cli.js kur
+  node soru_bankasi/motor/cli.js liste k03
+  node soru_bankasi/motor/cli.js yanlis mw-p011 1 A
+  node soru_bankasi/motor/cli.js metaword k01
+  node soru_bankasi/motor/cli.js kes mw 9 44 130
+
+Çözüm işlenmiş soru, sayfanın içinde durur ve listede tek tek gelir.
+Aynı sayfanın anahtarı yazılmamış soruları, o sayfanın "kalan" durağındadır.
+Tane Tane, İlkadım ve MEB aralıkları bekleyen klasöründedir.
+Metin katmanı olmayan iki kitabın sayfa sınırı görüntü kesilince işlenecek.
+MEB 1. dönem çarpanlar aralığı sayfa 2-64'tür.
+
+Kart eklemek
+  icerik/u01.js içine altın, anlatım, etkinlik veya cozumlu ekle.
+  Sonra kur komutunu yeniden çalıştır. Klasörler ve indeks baştan yazılır.

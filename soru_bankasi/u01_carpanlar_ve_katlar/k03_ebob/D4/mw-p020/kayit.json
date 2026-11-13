@@ -1,0 +1,23 @@
+{
+  "id": "mw-p020",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k03",
+  "bant": "D4",
+  "baslik": "EBOB (En Büyük Ortak Bölen) Hesaplama",
+  "kaynak": "mw",
+  "pdfSayfa": 20,
+  "basiliSayfa": 20,
+  "altinVar": false,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k03-01",
+    "ab-u01-k03-02",
+    "ab-u01-k03-03",
+    "ab-u01-k03-04",
+    "ab-u01-k03-05",
+    "ab-u01-k03-06",
+    "ab-u01-k03-07"
+  ],
+  "gorsel": "gorseller/mw/p020.png"
+}

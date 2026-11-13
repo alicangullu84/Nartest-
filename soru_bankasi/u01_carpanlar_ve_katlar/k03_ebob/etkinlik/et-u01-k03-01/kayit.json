@@ -1,0 +1,34 @@
+{
+  "id": "et-u01-k03-01",
+  "kazanimId": "k03",
+  "baslik": "EBOB'u yaz",
+  "yonerge": "İki sayının EBOB'unu yaz.",
+  "altinBilgiId": [
+    "ab-u01-k03-02",
+    "ab-u01-k03-03"
+  ],
+  "maddeler": [
+    {
+      "id": "a",
+      "istem": "20 ve 35",
+      "cevap": "5"
+    },
+    {
+      "id": "b",
+      "istem": "45 ve 75",
+      "cevap": "15"
+    },
+    {
+      "id": "c",
+      "istem": "36 ve 48",
+      "cevap": "12"
+    },
+    {
+      "id": "d",
+      "istem": "18 ve 36",
+      "cevap": "18"
+    }
+  ],
+  "tur": "etkinlik",
+  "uniteId": "u01"
+}

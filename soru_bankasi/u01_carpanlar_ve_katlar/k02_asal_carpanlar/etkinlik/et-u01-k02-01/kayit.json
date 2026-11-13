@@ -1,0 +1,44 @@
+{
+  "id": "et-u01-k02-01",
+  "kazanimId": "k02",
+  "baslik": "Asal olanı işaretle",
+  "yonerge": "Asal olana evet, olmayana hayır yaz.",
+  "altinBilgiId": [
+    "ab-u01-k02-01",
+    "ab-u01-k02-06"
+  ],
+  "maddeler": [
+    {
+      "id": "a",
+      "istem": "18",
+      "cevap": "hayır"
+    },
+    {
+      "id": "b",
+      "istem": "47",
+      "cevap": "evet"
+    },
+    {
+      "id": "c",
+      "istem": "91",
+      "cevap": "hayır"
+    },
+    {
+      "id": "d",
+      "istem": "101",
+      "cevap": "evet"
+    },
+    {
+      "id": "e",
+      "istem": "111",
+      "cevap": "hayır"
+    },
+    {
+      "id": "f",
+      "istem": "2",
+      "cevap": "evet"
+    }
+  ],
+  "tur": "etkinlik",
+  "uniteId": "u01"
+}

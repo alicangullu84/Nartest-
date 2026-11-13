@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k04-03",
+  "sira": 3,
+  "kazanimId": "k04",
+  "baslik": "EKOK sayılardan küçük olamaz",
+  "metin": "EKOK her iki sayının katıdır. Bu yüzden sayılardan küçük olamaz. Biri diğerinin katıysa EKOK büyük olan sayıdır. Bu durumda küçük olan EBOB'tur.",
+  "ornek": "30, 15'in katıdır. EKOK(15, 30) = 30 ve EBOB(15, 30) = 15.",
+  "yanlis": [
+    {
+      "kod": "kucugu-yazma",
+      "uyari": "Biri diğerinin katıysa EKOK küçük sayı değildir. Büyük sayı EKOK'tur."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 26,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

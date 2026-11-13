@@ -1,0 +1,23 @@
+{
+  "id": "sh-p007",
+  "tur": "altin_sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k01",
+  "bant": null,
+  "baslik": "Ünite kazanımları",
+  "kaynak": "sh",
+  "pdfSayfa": 7,
+  "basiliSayfa": 7,
+  "altinBilgiId": [
+    "ab-u01-k01-01",
+    "ab-u01-k01-02",
+    "ab-u01-k01-03",
+    "ab-u01-k01-04",
+    "ab-u01-k01-05",
+    "ab-u01-k01-06",
+    "ab-u01-k01-07"
+  ],
+  "not": "Soru yok. Ünitenin altın özeti. Kartlar bu sayfadan damıtıldı.",
+  "sorular": [],
+  "gorsel": "gorseller/sh/p007.png"
+}

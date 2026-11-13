@@ -1,0 +1,123 @@
+{
+  "id": "u01",
+  "baslik": "Çarpanlar ve Katlar",
+  "kazanimlar": [
+    {
+      "id": "k01",
+      "baslik": "Çarpanlar ve Katlar",
+      "altin": 7,
+      "anlatim": 1,
+      "etkinlik": 2,
+      "durak": 24,
+      "cozumlu": 8,
+      "sayfa": 16
+    },
+    {
+      "id": "k02",
+      "baslik": "Asal Sayılar ve Asal Çarpanlar",
+      "altin": 6,
+      "anlatim": 1,
+      "etkinlik": 1,
+      "durak": 6,
+      "cozumlu": 2,
+      "sayfa": 4
+    },
+    {
+      "id": "k03",
+      "baslik": "En Büyük Ortak Bölen (EBOB)",
+      "altin": 7,
+      "anlatim": 1,
+      "etkinlik": 1,
+      "durak": 22,
+      "cozumlu": 10,
+      "sayfa": 12
+    },
+    {
+      "id": "k04",
+      "baslik": "En Küçük Ortak Kat (EKOK)",
+      "altin": 6,
+      "anlatim": 1,
+      "etkinlik": 1,
+      "durak": 21,
+      "cozumlu": 11,
+      "sayfa": 10
+    },
+    {
+      "id": "k05",
+      "baslik": "Aralarında Asal Sayılar",
+      "altin": 4,
+      "anlatim": 1,
+      "etkinlik": 1,
+      "durak": 9,
+      "cozumlu": 1,
+      "sayfa": 8
+    },
+    {
+      "id": "k06",
+      "baslik": "Alıştırma ve karışık pekiştirme",
+      "altin": 1,
+      "anlatim": 1,
+      "etkinlik": 0,
+      "durak": 10,
+      "cozumlu": 0,
+      "sayfa": 10
+    },
+    {
+      "id": "k07",
+      "baslik": "Örnek sorular",
+      "altin": 0,
+      "anlatim": 0,
+      "etkinlik": 0,
+      "durak": 0,
+      "cozumlu": 0,
+      "sayfa": 0
+    },
+    {
+      "id": "k08",
+      "baslik": "LGS ve beceri temelli sorular",
+      "altin": 0,
+      "anlatim": 0,
+      "etkinlik": 0,
+      "durak": 10,
+      "cozumlu": 0,
+      "sayfa": 10
+    }
+  ],
+  "bekleyen": [
+    {
+      "id": "mb1-u01",
+      "tur": "aralik",
+      "uniteId": "u01",
+      "kazanimId": "k07",
+      "kaynak": "mb1",
+      "bant": "D3",
+      "pdfBas": 2,
+      "pdfBit": 64,
+      "durum": "gorsel-kesim-bekliyor",
+      "not": "İçindekilerde Çarpanlar ve Katlar sayfa 2'de başlar, sonraki konu sayfa 65'tedir. Yazı katmanı bozuk olduğu için sayfa sayfa kazanım ayrımı görsel kesimden sonra yapılacak.",
+      "_dosya": "u01_carpanlar_ve_katlar\\bekleyen\\mb1-u01\\kayit.json"
+    },
+    {
+      "id": "nt-u01",
+      "tur": "aralik",
+      "uniteId": "u01",
+      "kazanimId": "k01",
+      "kaynak": "nt",
+      "bant": "D1",
+      "durum": "sayfa-araligi-bekliyor",
+      "not": "Metin katmanı yok. Kitap sırası Tane Tane Öğren, Tane Tane Çöz, sonra çoklu kazanım ve yeni nesil. Sayfa aralığı görüntüden işlenecek. Bant D1 olarak playlistin başına girecek.",
+      "_dosya": "u01_carpanlar_ve_katlar\\bekleyen\\nt-u01\\kayit.json"
+    },
+    {
+      "id": "pr-u01",
+      "tur": "aralik",
+      "uniteId": "u01",
+      "kazanimId": "k01",
+      "kaynak": "pr",
+      "bant": "D2",
+      "durum": "sayfa-araligi-bekliyor",
+      "not": "Metin katmanı yok. 1. ünite kapağı çarpanlar ve üslü ifadeleri birlikte açar. Çarpanlar sayfaları D2 bandına, üslü sayfalar bir sonraki üniteye ayrılacak.",
+      "_dosya": "u01_carpanlar_ve_katlar\\bekleyen\\pr-u01\\kayit.json"
+    }
+  ]
+}

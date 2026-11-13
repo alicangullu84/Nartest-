@@ -1,0 +1,22 @@
+{
+  "id": "sh-p008",
+  "tur": "altin_sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k01",
+  "bant": null,
+  "baslik": "Ne işe yarar",
+  "kaynak": "sh",
+  "pdfSayfa": 8,
+  "basiliSayfa": 8,
+  "altinBilgiId": [
+    "ab-u01-k01-07",
+    "ab-u01-k01-05",
+    "ab-u01-k02-06",
+    "ab-u01-k05-02",
+    "ab-u01-k03-05",
+    "ab-u01-k04-06"
+  ],
+  "not": "Soru yok. Ünitenin altın özeti. Kartlar bu sayfadan damıtıldı.",
+  "sorular": [],
+  "gorsel": "gorseller/sh/p008.png"
+}

@@ -7,3 +7,7 @@ __pycache__/
 arsiv-nartes-plus/
 kaynakPDF_MD/
 yedekler/
+soru_bankasi/_gecici/
+soru_bankasi/gorseller/
+kaynak_pdf/*.pdf
+kaynak_pdf/_sayfalar/

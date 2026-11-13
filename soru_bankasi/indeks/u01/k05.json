@@ -1,0 +1,194 @@
+{
+  "kazanimId": "k05",
+  "baslik": "Aralarında Asal Sayılar",
+  "kod": "M.8.1.1.3",
+  "altin": [
+    "ab-u01-k05-01",
+    "ab-u01-k05-02",
+    "ab-u01-k05-03",
+    "ab-u01-k05-04"
+  ],
+  "anlatim": [
+    "an-u01-k05"
+  ],
+  "etkinlik": [
+    "et-u01-k05-01"
+  ],
+  "durak": 9,
+  "bantlar": [
+    {
+      "bant": "D1",
+      "durak": 3
+    },
+    {
+      "bant": "D2",
+      "durak": 0
+    },
+    {
+      "bant": "D3",
+      "durak": 1
+    },
+    {
+      "bant": "D4",
+      "durak": 1
+    },
+    {
+      "bant": "D5",
+      "durak": 4
+    }
+  ],
+  "liste": [
+    {
+      "tur": "soru",
+      "id": "mw-p033-s2",
+      "sayfaId": "mw-p033",
+      "no": "2",
+      "kazanimId": "k05",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 33,
+      "kok": "Çarpımları 48 olan aralarında asal iki sayının toplamlarının en büyüğü a, en küçüğü b ise a+b kaçtır?",
+      "cevap": "68",
+      "gorsel": "gorseller/mw/p033.png",
+      "altinBilgiId": [
+        "ab-u01-k05-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "mw-p033",
+      "kazanimId": "k05",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 33,
+      "baslik": "Aralarında Asal Sayılar — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/mw/p033.png",
+      "altinBilgiId": [
+        "ab-u01-k05-01",
+        "ab-u01-k05-02",
+        "ab-u01-k05-03",
+        "ab-u01-k05-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p034",
+      "kazanimId": "k05",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 34,
+      "baslik": "Aralarında Asal Sayılar",
+      "gorsel": "gorseller/mw/p034.png",
+      "altinBilgiId": [
+        "ab-u01-k05-01",
+        "ab-u01-k05-02",
+        "ab-u01-k05-03",
+        "ab-u01-k05-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p035",
+      "kazanimId": "k05",
+      "bant": "D3",
+      "kaynak": "mw",
+      "basiliSayfa": 35,
+      "baslik": "Aralarında Asal Sayılar",
+      "gorsel": "gorseller/mw/p035.png",
+      "altinBilgiId": [
+        "ab-u01-k05-01",
+        "ab-u01-k05-02",
+        "ab-u01-k05-03",
+        "ab-u01-k05-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p036",
+      "kazanimId": "k05",
+      "bant": "D4",
+      "kaynak": "mw",
+      "basiliSayfa": 36,
+      "baslik": "Aralarında Asal Sayılar",
+      "gorsel": "gorseller/mw/p036.png",
+      "altinBilgiId": [
+        "ab-u01-k05-01",
+        "ab-u01-k05-02",
+        "ab-u01-k05-03",
+        "ab-u01-k05-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p031",
+      "kazanimId": "k05",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 31,
+      "baslik": "Aralarında asal sayılar",
+      "gorsel": "gorseller/sh/p031.png",
+      "altinBilgiId": [
+        "ab-u01-k05-01",
+        "ab-u01-k05-02",
+        "ab-u01-k05-03",
+        "ab-u01-k05-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p032",
+      "kazanimId": "k05",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 32,
+      "baslik": "Aralarında asal sayılar",
+      "gorsel": "gorseller/sh/p032.png",
+      "altinBilgiId": [
+        "ab-u01-k05-01",
+        "ab-u01-k05-02",
+        "ab-u01-k05-03",
+        "ab-u01-k05-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p033",
+      "kazanimId": "k05",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 33,
+      "baslik": "Aralarında asal sayılar",
+      "gorsel": "gorseller/sh/p033.png",
+      "altinBilgiId": [
+        "ab-u01-k05-01",
+        "ab-u01-k05-02",
+        "ab-u01-k05-03",
+        "ab-u01-k05-04"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p034",
+      "kazanimId": "k05",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 34,
+      "baslik": "Aralarında asal sayılar",
+      "gorsel": "gorseller/sh/p034.png",
+      "altinBilgiId": [
+        "ab-u01-k05-01",
+        "ab-u01-k05-02",
+        "ab-u01-k05-03",
+        "ab-u01-k05-04"
+      ]
+    }
+  ]
+}

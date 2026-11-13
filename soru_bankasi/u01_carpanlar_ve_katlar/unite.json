@@ -1,0 +1,65 @@
+{
+  "id": "u01",
+  "baslik": "Çarpanlar ve Katlar",
+  "kazanimlar": [
+    {
+      "id": "k01",
+      "no": 1,
+      "klasor": "k01_carpanlar",
+      "kod": "M.8.1.1.1",
+      "baslik": "Çarpanlar ve Katlar"
+    },
+    {
+      "id": "k02",
+      "no": 2,
+      "klasor": "k02_asal_carpanlar",
+      "kod": "M.8.1.1.1",
+      "baslik": "Asal Sayılar ve Asal Çarpanlar"
+    },
+    {
+      "id": "k03",
+      "no": 3,
+      "klasor": "k03_ebob",
+      "kod": "M.8.1.1.2",
+      "baslik": "En Büyük Ortak Bölen (EBOB)"
+    },
+    {
+      "id": "k04",
+      "no": 4,
+      "klasor": "k04_ekok",
+      "kod": "M.8.1.1.2",
+      "baslik": "En Küçük Ortak Kat (EKOK)"
+    },
+    {
+      "id": "k05",
+      "no": 5,
+      "klasor": "k05_aralarinda_asal",
+      "kod": "M.8.1.1.3",
+      "baslik": "Aralarında Asal Sayılar"
+    },
+    {
+      "id": "k06",
+      "no": 6,
+      "klasor": "k06_alistirma",
+      "kod": "M.8.1.1",
+      "baslik": "Alıştırma ve karışık pekiştirme",
+      "karisik": true
+    },
+    {
+      "id": "k07",
+      "no": 7,
+      "klasor": "k07_ornek_sorular",
+      "kod": "MEB",
+      "baslik": "Örnek sorular",
+      "karisik": true
+    },
+    {
+      "id": "k08",
+      "no": 8,
+      "klasor": "k08_lgs",
+      "kod": "LGS",
+      "baslik": "LGS ve beceri temelli sorular",
+      "karisik": true
+    }
+  ]
+}

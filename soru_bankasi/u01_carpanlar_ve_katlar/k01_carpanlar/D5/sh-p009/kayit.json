@@ -1,0 +1,54 @@
+{
+  "id": "sh-p009",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k01",
+  "bant": "D5",
+  "baslik": "Pozitif tam sayıların çarpanları",
+  "kaynak": "sh",
+  "pdfSayfa": 9,
+  "basiliSayfa": 9,
+  "sorular": [
+    {
+      "no": "1",
+      "kok": "Hangisi 24'ün çarpanıdır? A) 9  B) 7  C) 5  D) 3",
+      "cevap": "D",
+      "cozum": "24 = 2³·3. 3 böler. 9, 7 ve 5 bölmez.",
+      "altinBilgiId": [
+        "ab-u01-k01-01",
+        "ab-u01-k02-03"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "2",
+      "kok": "12'nin çarpanları 1, 2, 3, 4, A, 12 ise A kaçtır? A) 5  B) 6  C) 8  D) 10",
+      "cevap": "B",
+      "cozum": "12 = 1×12 = 2×6 = 3×4. Eksik olan 6'dır.",
+      "altinBilgiId": [
+        "ab-u01-k01-04"
+      ],
+      "yanlis": {}
+    },
+    {
+      "no": "3",
+      "kok": "18'in bölenleri 1, 2, 3, A, B, 18 ise A+B kaçtır? A) 15  B) 12  C) 9  D) 6",
+      "cevap": "A",
+      "cozum": "Bölenler 1, 2, 3, 6, 9, 18. A+B = 6+9 = 15.",
+      "altinBilgiId": [
+        "ab-u01-k01-04"
+      ],
+      "yanlis": {}
+    }
+  ],
+  "altinBilgiId": [
+    "ab-u01-k01-01",
+    "ab-u01-k01-02",
+    "ab-u01-k01-03",
+    "ab-u01-k01-04",
+    "ab-u01-k01-05",
+    "ab-u01-k01-06",
+    "ab-u01-k01-07"
+  ],
+  "gorsel": "gorseller/sh/p009.png"
+}

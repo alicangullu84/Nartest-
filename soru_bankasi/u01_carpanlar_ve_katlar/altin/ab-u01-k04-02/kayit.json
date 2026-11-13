@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k04-02",
+  "sira": 2,
+  "kazanimId": "k04",
+  "baslik": "EKOK'ta sağdaki bütün asallar çarpılır",
+  "metin": "Ortak algoritmada sağa düşen bütün asallar EKOK için çarpılır. Üslü biçimde her asalın büyük kuvveti alınır. Yalnız bir sayıda olan asal da çarpıma girer.",
+  "ornek": "18 = 2 · 3² ve 30 = 2 · 3 · 5. Büyük üsler: 2¹, 3², 5¹. EKOK(18, 30) = 2 · 9 · 5 = 90.",
+  "yanlis": [
+    {
+      "kod": "ortak-ussu-kucuk",
+      "uyari": "Küçük üssü alırsan EBOB bulursun. EKOK'ta her asalın büyük üssü kalır."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 25,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

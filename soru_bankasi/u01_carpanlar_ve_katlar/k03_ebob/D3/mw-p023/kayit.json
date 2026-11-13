@@ -1,0 +1,23 @@
+{
+  "id": "mw-p023",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k03",
+  "bant": "D3",
+  "baslik": "EBOB (En Büyük Ortak Bölen) Problemleri",
+  "kaynak": "mw",
+  "pdfSayfa": 23,
+  "basiliSayfa": 23,
+  "altinVar": false,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k03-01",
+    "ab-u01-k03-02",
+    "ab-u01-k03-03",
+    "ab-u01-k03-04",
+    "ab-u01-k03-05",
+    "ab-u01-k03-06",
+    "ab-u01-k03-07"
+  ],
+  "gorsel": "gorseller/mw/p023.png"
+}

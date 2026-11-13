@@ -1,0 +1,33 @@
+{
+  "id": "ab-u01-k04-06",
+  "sira": 6,
+  "kazanimId": "k04",
+  "baslik": "Başta ve sonda varsa aralığa 1 eklenir",
+  "metin": "Düz bir yolun başına ve sonuna da nesne dikiliyorsa nesne sayısı, yol uzunluğunun aralığa bölümünün 1 fazlasıdır. İki kenar varsa her kenar ayrı hesaplanır. Kapalı çevrede bu +1 yapılmaz.",
+  "ornek": "Bir kenara 15 m, diğer kenara 12 m aralıkla, başa ve sona da fidan dikilir. En kısa yol EKOK(15, 12) = 60 m. Bir kenar 60/15+1 = 5, diğer kenar 60/12+1 = 5. Toplam 10 fidan.",
+  "yanlis": [
+    {
+      "kod": "arti-bir-unutma",
+      "uyari": "Baş ve son da dikiliyorsa bölüme 1 ekle. Yalnız aralık sayısını yazma."
+    },
+    {
+      "kod": "kapaliya-ekleme",
+      "uyari": "Bu +1 düz yol içindir. Bahçenin çevresine ekleme."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 29,
+      "yer": "Öğreten örnek"
+    },
+    {
+      "kod": "sh",
+      "sayfa": 8,
+      "yer": "Ne işe yarar"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

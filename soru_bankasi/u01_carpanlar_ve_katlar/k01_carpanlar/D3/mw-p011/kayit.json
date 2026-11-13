@@ -1,0 +1,38 @@
+{
+  "id": "mw-p011",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k01",
+  "bant": "D3",
+  "baslik": "Pozitif Tam Sayıların Pozitif Çarpanları",
+  "kaynak": "mw",
+  "pdfSayfa": 11,
+  "basiliSayfa": 11,
+  "altinVar": false,
+  "sorular": [
+    {
+      "no": "1",
+      "kok": "Alanı 20 m² ve kenarları tam sayı olan bahçenin çevresi metre cinsinden hangisi olamaz? A) 42  B) 36  C) 24  D) 18",
+      "cevap": "B",
+      "cozum": "İkililer 1×20, 2×10, 4×5. Çevreler 42, 24 ve 18. 36 bu listede yoktur.",
+      "altinBilgiId": [
+        "ab-u01-k01-04"
+      ],
+      "yanlis": {
+        "A": "olabilir-sannma",
+        "C": "olabilir-sannma",
+        "D": "olabilir-sannma"
+      }
+    }
+  ],
+  "altinBilgiId": [
+    "ab-u01-k01-01",
+    "ab-u01-k01-02",
+    "ab-u01-k01-03",
+    "ab-u01-k01-04",
+    "ab-u01-k01-05",
+    "ab-u01-k01-06",
+    "ab-u01-k01-07"
+  ],
+  "gorsel": "gorseller/mw/p011.png"
+}

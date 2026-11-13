@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k02-05",
+  "sira": 5,
+  "kazanimId": "k02",
+  "baslik": "Ağaç da aynı çarpımı verir",
+  "metin": "Asal çarpan ağacında sayı iki çarpana ayrılır. Asal olmayan her dal yine ayrılır. Uçtaki asallar çarpılınca sayı bulunur. Algoritma ile ağacın sonucu aynıdır.",
+  "ornek": "24 ağaçta 2×12, 12 ise 2×6, 6 ise 2×3. Uçlar 2, 2, 2, 3. 24 = 2³ · 3.",
+  "yanlis": [
+    {
+      "kod": "dali-birakma",
+      "uyari": "Dalın ucu asal değilse durma. 4, 6, 8, 9, 10 gibi uçlar tekrar ayrılır."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 13,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.1"
+}

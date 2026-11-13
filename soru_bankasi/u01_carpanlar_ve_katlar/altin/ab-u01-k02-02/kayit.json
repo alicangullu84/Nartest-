@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k02-02",
+  "sira": 2,
+  "kazanimId": "k02",
+  "baslik": "Çift asal yalnız 2'dir",
+  "metin": "2'den büyük her çift sayı 2'ye bölünür. Bu yüzden 2'den başka çift asal sayı yoktur.",
+  "ornek": "14, 26 ve 100 çift olduğu için asal değildir. 2 asaldır.",
+  "yanlis": [
+    {
+      "kod": "ikiyi-cift-diye-ele",
+      "uyari": "2'yi çift diye eleyemezsin. Çift olup da asal olan tek sayı 2'dir."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 13,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.1"
+}

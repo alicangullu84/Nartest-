@@ -1,0 +1,19 @@
+{
+  "id": "sh-p032",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k05",
+  "bant": "D5",
+  "baslik": "Aralarında asal sayılar",
+  "kaynak": "sh",
+  "pdfSayfa": 32,
+  "basiliSayfa": 32,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k05-01",
+    "ab-u01-k05-02",
+    "ab-u01-k05-03",
+    "ab-u01-k05-04"
+  ],
+  "gorsel": "gorseller/sh/p032.png"
+}

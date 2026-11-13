@@ -1,0 +1,22 @@
+{
+  "id": "an-u01-k03",
+  "kazanimId": "k03",
+  "baslik": "EBOB'ta yalnız ortaklar kalır",
+  "altinBilgiId": [
+    "ab-u01-k03-01",
+    "ab-u01-k03-02",
+    "ab-u01-k03-03",
+    "ab-u01-k03-05"
+  ],
+  "adimlar": [
+    "İki sayıyı aynı çizgide en küçük ortak asaldan böl.",
+    "Sağda yalnız ikisinin de bölündüğü asalları çarp.",
+    "Biri diğerinin katıysa küçük olanı yaz. Parça artmasın diyorsa bu sayıdır."
+  ],
+  "ornek": {
+    "istem": "EBOB(48, 72) kaçtır? Bu aralıkla bahçenin çevresine kaç fidan dikilir?",
+    "cozum": "48 = 2⁴·3, 72 = 2³·3². Ortak küçük üsler 2³·3 = 24. Çevre 2·(48+72) = 240. 240 ÷ 24 = 10 fidan. Çevre kapalı olduğu için 1 eklenmez."
+  },
+  "tur": "anlatim",
+  "uniteId": "u01"
+}

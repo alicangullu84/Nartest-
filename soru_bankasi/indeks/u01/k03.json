@@ -1,0 +1,446 @@
+{
+  "kazanimId": "k03",
+  "baslik": "En Büyük Ortak Bölen (EBOB)",
+  "kod": "M.8.1.1.2",
+  "altin": [
+    "ab-u01-k03-01",
+    "ab-u01-k03-02",
+    "ab-u01-k03-03",
+    "ab-u01-k03-04",
+    "ab-u01-k03-05",
+    "ab-u01-k03-06",
+    "ab-u01-k03-07"
+  ],
+  "anlatim": [
+    "an-u01-k03"
+  ],
+  "etkinlik": [
+    "et-u01-k03-01"
+  ],
+  "durak": 22,
+  "bantlar": [
+    {
+      "bant": "D1",
+      "durak": 14
+    },
+    {
+      "bant": "D2",
+      "durak": 0
+    },
+    {
+      "bant": "D3",
+      "durak": 2
+    },
+    {
+      "bant": "D4",
+      "durak": 2
+    },
+    {
+      "bant": "D5",
+      "durak": 4
+    }
+  ],
+  "liste": [
+    {
+      "tur": "soru",
+      "id": "mw-p017-s1a",
+      "sayfaId": "mw-p017",
+      "no": "1a",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 17,
+      "kok": "EBOB(20, 35) kaçtır?",
+      "cevap": "5",
+      "gorsel": "gorseller/mw/p017.png",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p017-s1b",
+      "sayfaId": "mw-p017",
+      "no": "1b",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 17,
+      "kok": "EBOB(45, 75) kaçtır?",
+      "cevap": "15",
+      "gorsel": "gorseller/mw/p017.png",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p017-s1c",
+      "sayfaId": "mw-p017",
+      "no": "1c",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 17,
+      "kok": "EBOB(36, 48) kaçtır?",
+      "cevap": "12",
+      "gorsel": "gorseller/mw/p017.png",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p017-s1d",
+      "sayfaId": "mw-p017",
+      "no": "1d",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 17,
+      "kok": "EBOB(120, 160) kaçtır?",
+      "cevap": "40",
+      "gorsel": "gorseller/mw/p017.png",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p017-s1e",
+      "sayfaId": "mw-p017",
+      "no": "1e",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 17,
+      "kok": "EBOB(150, 180) kaçtır?",
+      "cevap": "30",
+      "gorsel": "gorseller/mw/p017.png",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p017-s1f",
+      "sayfaId": "mw-p017",
+      "no": "1f",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 17,
+      "kok": "EBOB(240, 360) kaçtır?",
+      "cevap": "120",
+      "gorsel": "gorseller/mw/p017.png",
+      "altinBilgiId": [
+        "ab-u01-k03-02"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "mw-p017",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 17,
+      "baslik": "EBOB (En Büyük Ortak Bölen) Hesaplama — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/mw/p017.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p018-s5",
+      "sayfaId": "mw-p018",
+      "no": "5",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 18,
+      "kok": "İki farklı sayının EBOB'u 24 olduğuna göre bu sayıların toplamı en az kaçtır?",
+      "cevap": "72",
+      "gorsel": "gorseller/mw/p018.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k05-01"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "mw-p018",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 18,
+      "baslik": "EBOB (En Büyük Ortak Bölen) Hesaplama — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/mw/p018.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p021-s1a",
+      "sayfaId": "mw-p021",
+      "no": "1a",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 21,
+      "kok": "60 L ve 72 L yağ artmadan eşit şişelere konacak. Şişe hacmi en fazla kaç litre olur?",
+      "cevap": "12",
+      "gorsel": "gorseller/mw/p021.png",
+      "altinBilgiId": [
+        "ab-u01-k03-05"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p021-s1b",
+      "sayfaId": "mw-p021",
+      "no": "1b",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 21,
+      "kok": "60 L ve 72 L yağ 12 litrelik şişelere konursa en az kaç şişe gerekir?",
+      "cevap": "11",
+      "gorsel": "gorseller/mw/p021.png",
+      "altinBilgiId": [
+        "ab-u01-k03-05"
+      ]
+    },
+    {
+      "tur": "soru",
+      "id": "mw-p021-s1c",
+      "sayfaId": "mw-p021",
+      "no": "1c",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 21,
+      "kok": "60 L ve 72 L için kaç farklı pozitif tam litre şişe kullanılabilir?",
+      "cevap": "6",
+      "gorsel": "gorseller/mw/p021.png",
+      "altinBilgiId": [
+        "ab-u01-k03-06"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "kalan",
+      "id": "mw-p021",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 21,
+      "baslik": "EBOB (En Büyük Ortak Bölen) Problemleri — çözüm anahtarı işlenmemiş sorular",
+      "gorsel": "gorseller/mw/p021.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p022",
+      "kazanimId": "k03",
+      "bant": "D1",
+      "kaynak": "mw",
+      "basiliSayfa": 22,
+      "baslik": "EBOB (En Büyük Ortak Bölen) Problemleri",
+      "gorsel": "gorseller/mw/p022.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p019",
+      "kazanimId": "k03",
+      "bant": "D3",
+      "kaynak": "mw",
+      "basiliSayfa": 19,
+      "baslik": "EBOB (En Büyük Ortak Bölen) Hesaplama",
+      "gorsel": "gorseller/mw/p019.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p023",
+      "kazanimId": "k03",
+      "bant": "D3",
+      "kaynak": "mw",
+      "basiliSayfa": 23,
+      "baslik": "EBOB (En Büyük Ortak Bölen) Problemleri",
+      "gorsel": "gorseller/mw/p023.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p020",
+      "kazanimId": "k03",
+      "bant": "D4",
+      "kaynak": "mw",
+      "basiliSayfa": 20,
+      "baslik": "EBOB (En Büyük Ortak Bölen) Hesaplama",
+      "gorsel": "gorseller/mw/p020.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "mw-p024",
+      "kazanimId": "k03",
+      "bant": "D4",
+      "kaynak": "mw",
+      "basiliSayfa": 24,
+      "baslik": "EBOB (En Büyük Ortak Bölen) Problemleri",
+      "gorsel": "gorseller/mw/p024.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p021",
+      "kazanimId": "k03",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 21,
+      "baslik": "EBOB hesaplama",
+      "gorsel": "gorseller/sh/p021.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p022",
+      "kazanimId": "k03",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 22,
+      "baslik": "EBOB hesaplama",
+      "gorsel": "gorseller/sh/p022.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p023",
+      "kazanimId": "k03",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 23,
+      "baslik": "EBOB hesaplama",
+      "gorsel": "gorseller/sh/p023.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p024",
+      "kazanimId": "k03",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 24,
+      "baslik": "EBOB hesaplama",
+      "gorsel": "gorseller/sh/p024.png",
+      "altinBilgiId": [
+        "ab-u01-k03-01",
+        "ab-u01-k03-02",
+        "ab-u01-k03-03",
+        "ab-u01-k03-04",
+        "ab-u01-k03-05",
+        "ab-u01-k03-06",
+        "ab-u01-k03-07"
+      ]
+    }
+  ]
+}

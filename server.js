@@ -1,8 +1,9 @@
 /**
- * Nartes+ Yerel Web ve Sokratik Yapay Zeka Sunucusu (API Anahtarsız • %100 Lokal)
- * - Port 8080 üzerinden NartestPlus arayüzünü sunar.
- * - Yerel Ollama (nartes-sokratik / qwen2.5) motoruna bağlanarak API anahtarı olmadan
- *   8. Sınıf LGS Matematik müfredatına ve aktif durağa kilitli, özgün Sokratik yanıtlar üretir.
+ * Nartes+ Yerel Web ve Sokratik Yapay Zeka Sunucusu (Gemma 4 E4B Hızlı Sokratik Motor • API Anahtarsız • %100 Lokal)
+ * - Port 8080 üzerinden NartestPlus arayüzünü ve /api/nartes/* Sokratik AI uç noktalarını sunar.
+ * - Yerel Ollama (nartes-sokratik / gemma4:e4b) motoruna bağlanarak API anahtarı olmadan
+ *   8. Sınıf LGS Matematik müfredatına, aktif durağa, şıklara ve gizli öğretmen çözümüne hakim,
+ *   çok turlu hafızaya ve temel işlem hikayesine inen sınırsız Sokratik rehberlik üretir.
  */
 
 "use strict";
@@ -18,7 +19,17 @@ const HOST = process.env.HOST || "127.0.0.1";
 const ROOT_DIR = __dirname;
 const OLLAMA_BASE = process.env.OLLAMA_HOST_URL || "http://127.0.0.1:11434";
 const PRIMARY_MODEL = process.env.NARTES_MODEL || "nartes-sokratik";
-const FALLBACK_MODELS = ["gemma3:4b", "qwen2.5:3b", "qwen2.5:7b"];
+const FALLBACK_MODELS = ["gemma4:e4b", "gemma4:e2b", "gemma4:26b", "gemma3:4b", "qwen2.5:7b", "qwen2.5:3b"];
+
+const SYSTEM_SOCRATIC_PROMPT = [
+  "Sen Nartes+ 8. Sınıf LGS Matematik Sokratik öğretmeni Bilge NarTES'sin.",
+  "KESİN KURALLAR:",
+  "1. EN FAZLA 25 KELİME YAZ (1 veya 2 çok kısa cümle). Asla 25 kelimeyi geçme, uzatma.",
+  "2. Doğru şıkkı (A/B/C/D) veya nihai cevabı ASLA söyleme; [ÖĞRETMEN ÇÖZÜM NOTU] bilgisini sadece kendi zihninde kullan.",
+  "3. Her yanıtta öğrenciyi içten ve sıcak biçimde motive et; elma, pasta, lunapark gibi alakasız hikayeler KURMA.",
+  "4. AKTİF EKRAN BAĞLILIĞI: Sana verilen [AKTİF EKRAN GÖREVİ] bloğundaki sayılar ve soru KESİN GERÇEKTİR. Önceki sayfalardaki başka sayıları (örneğin 36 açıkken 24'ü) ASLA kullanma.",
+  "5. Öğrenci konu dışına çıkarsa kısaca ekrandaki aktif soruya bağla; üst üste hata yaptıkça cümle tekrarlamadan en temel çarpma/bölme/toplama adımını sor."
+].join("\n");
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -43,7 +54,7 @@ const MIME_TYPES = {
 };
 
 // ============================================================================
-// 1. TÜRKÇE METİN YARDIMCILARI VE MÜFREDAT BİLGİ TABANI (RAG İNDEKSİ)
+// 1. TÜRKÇE METİN YARDIMCILARI VE MÜFREDAT BİLGİ TABANI (RAG + SMARTBOARD EŞLEŞME)
 // ============================================================================
 function trLower(str) {
   return String(str || "").toLocaleLowerCase("tr-TR");
@@ -56,6 +67,7 @@ function stripHtmlServer(raw) {
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -72,6 +84,65 @@ const curriculumState = {
   chunks: []
 };
 
+// app.js ile birebir aynı Uygulama Zamanı (Akıllı Tahta) durak enjeksiyonu (Durak numaralarının %100 eşleşmesi için kritik!)
+function injectSmartboardStopsIntoUnits(units, bank) {
+  const sbBank = bank || {};
+  units.forEach(unit => {
+    if (!unit || unit._smartboardInjected) return;
+    const unitBank = sbBank[unit.id];
+    if (!unitBank) return;
+
+    const rebuiltStops = [];
+    (unit.kazanimlar || []).forEach(kaz => {
+      const currentKazStops = (unit.stops || []).filter(s => s.kazanimId === kaz.id);
+      const rawEntry = unitBank[kaz.id];
+      const sbEntries = Array.isArray(rawEntry) ? rawEntry : (rawEntry ? [rawEntry] : []);
+
+      const buildSbStop = (sbEntry, idx) => ({
+        id: 0,
+        kazanimId: kaz.id,
+        boardId: sbEntry.boardId || `${kaz.id}_sb_${idx + 1}`,
+        type: "smartboard",
+        icon: sbEntry.icon || "✏️",
+        roadLabel: sbEntry.roadLabel || "Uygula",
+        typeLabel: sbEntry.typeLabel || "Uygulama Zamanı",
+        title: sbEntry.title || `Uygulama Zamanı: ${kaz.title}`,
+        subtitle: sbEntry.subtitle || "Öğrendiklerini akıllı tahtada kaleminle uygulayarak pekiştir!",
+        variantPacks: sbEntry.variantPacks || null,
+        questions: sbEntry.questions
+      });
+
+      const beforeFinalEntries = sbEntries.filter(e => e && e.insertBeforeFinalGame && Array.isArray(e.questions) && e.questions.length > 0);
+      const endEntries = sbEntries.filter(e => e && !e.insertBeforeFinalGame && Array.isArray(e.questions) && e.questions.length > 0);
+
+      currentKazStops.forEach((s, sIdx) => {
+        const isLastGame = sIdx === currentKazStops.length - 1 && s.type === "game" && beforeFinalEntries.length > 0;
+        if (isLastGame) {
+          beforeFinalEntries.forEach((sbEntry, bIdx) => rebuiltStops.push(buildSbStop(sbEntry, bIdx)));
+        }
+        rebuiltStops.push(s);
+      });
+
+      if (beforeFinalEntries.length > 0 && !(currentKazStops.length > 0 && currentKazStops[currentKazStops.length - 1].type === "game")) {
+        beforeFinalEntries.forEach((sbEntry, bIdx) => rebuiltStops.push(buildSbStop(sbEntry, bIdx)));
+      }
+
+      endEntries.forEach((sbEntry, eIdx) => {
+        rebuiltStops.push(buildSbStop(sbEntry, beforeFinalEntries.length + eIdx));
+      });
+    });
+
+    rebuiltStops.forEach((s, idx) => {
+      s.id = idx + 1;
+    });
+    unit.stops = rebuiltStops;
+    (unit.kazanimlar || []).forEach(kaz => {
+      kaz.stops = rebuiltStops.filter(s => s.kazanimId === kaz.id).map(s => s.id);
+    });
+    unit._smartboardInjected = true;
+  });
+}
+
 function loadPlatformUnitsAndDocs() {
   try {
     const sandbox = { window: {} };
@@ -79,6 +150,7 @@ function loadPlatformUnitsAndDocs() {
 
     const u1Path = path.join(ROOT_DIR, "data", "carpanlar_katlar_data.js");
     const u2Path = path.join(ROOT_DIR, "data", "lgs_uniteler_2_12.js");
+    const sbPath = path.join(ROOT_DIR, "data", "akilli_tahta_sorular.js");
 
     if (fs.existsSync(u1Path)) {
       vm.runInContext(fs.readFileSync(u1Path, "utf8"), sandbox);
@@ -86,12 +158,17 @@ function loadPlatformUnitsAndDocs() {
     if (fs.existsSync(u2Path)) {
       vm.runInContext(fs.readFileSync(u2Path, "utf8"), sandbox);
     }
+    if (fs.existsSync(sbPath)) {
+      vm.runInContext(fs.readFileSync(sbPath, "utf8"), sandbox);
+    }
 
     const allUnits = [];
     if (sandbox.window.MATFLOW_UNIT) allUnits.push(sandbox.window.MATFLOW_UNIT);
     if (Array.isArray(sandbox.window.MATFLOW_UNITS_2_12)) {
       allUnits.push(...sandbox.window.MATFLOW_UNITS_2_12);
     }
+
+    injectSmartboardStopsIntoUnits(allUnits, sandbox.window.NARTES_SMARTBOARD_BANK);
 
     for (const u of allUnits) {
       curriculumState.unitsByNo.set(Number(u.unitNo), u);
@@ -107,7 +184,7 @@ function loadPlatformUnitsAndDocs() {
           curriculumState.chunks.push({
             source: `Ünite ${u.unitNo} Durak ${st.id}`,
             unitNo: Number(u.unitNo),
-            text: bodyParts.slice(0, 650),
+            text: bodyParts.slice(0, 700),
             tokens: new Set(tokenizeTr(bodyParts))
           });
         }
@@ -116,13 +193,12 @@ function loadPlatformUnitsAndDocs() {
 
     // 8. Sınıf Maarif / MEB Markdown kaynaklarını da indeksle
     const mdDirs = [
-      path.join(ROOT_DIR, "kaynakPDF_MD", "03_Maarif_Modeli", "8-sinif"),
-      path.join(ROOT_DIR, "kaynakPDF_MD", "03_Maarif_Modeli", "9-sinif")
+      path.join(ROOT_DIR, "kaynakPDF_MD", "03_Maarif_Modeli", "8-sinif")
     ];
 
     for (const dir of mdDirs) {
       if (!fs.existsSync(dir)) continue;
-      const files = fs.readdirSync(dir).filter(f => f.endsWith(".md") && trLower(f).includes("8") || f.startsWith("Tema-"));
+      const files = fs.readdirSync(dir).filter(f => f.endsWith(".md"));
       for (const file of files) {
         const fullPath = path.join(dir, file);
         const content = fs.readFileSync(fullPath, "utf8");
@@ -131,7 +207,7 @@ function loadPlatformUnitsAndDocs() {
           .map(p => p.replace(/[#>*_`|-]/g, " ").replace(/\s+/g, " ").trim())
           .filter(p => p.length >= 80 && p.length <= 900);
 
-        for (let i = 0; i < Math.min(paragraphs.length, 60); i++) {
+        for (let i = 0; i < Math.min(paragraphs.length, 50); i++) {
           const p = paragraphs[i];
           curriculumState.chunks.push({
             source: file.replace(/\.md$/i, ""),
@@ -149,7 +225,7 @@ function loadPlatformUnitsAndDocs() {
   }
 }
 
-function retrieveRelevantCurriculumNotes(queryText, unitNo, stopTitle, limit = 2) {
+function retrieveRelevantCurriculumNotes(queryText, unitNo, stopTitle, limit = 1) {
   const qTokens = tokenizeTr(`${queryText} ${stopTitle || ""}`);
   if (qTokens.length === 0 || curriculumState.chunks.length === 0) return [];
 
@@ -160,7 +236,7 @@ function retrieveRelevantCurriculumNotes(queryText, unitNo, stopTitle, limit = 2
     for (const qt of qTokens) {
       if (chunk.tokens.has(qt)) score += qt.length >= 5 ? 2.0 : 1.0;
     }
-    if (score >= 3.0) {
+    if (score >= 4.0) {
       scored.push({ score, chunk });
     }
   }
@@ -200,7 +276,7 @@ const EXPLICIT_OFF_TOPIC_PATTERNS = [
 const DIRECT_ANSWER_PATTERNS = [
   /cevab[ıi]\s*(ne|nedir|kaç|söyle|ver|yaz)/i,
   /doğru\s*(şık|cevap|seçenek)\s*(hangisi|ne|nedir)/i,
-  /hangi\s*(şık|seçenek)/i,
+  /hangi\s*(şık|seçenek)\s*doğru/i,
   /direkt\s*(söyle|çöz|ver|cevap|yaz)/i,
   /boşlu(ğa|klara).*?(ne\s*(gelecek|gelir|yaz)|söyle|yaz)/i,
   /ne\s*yazacağımı.*?(söyle|ver)/i,
@@ -208,25 +284,6 @@ const DIRECT_ANSWER_PATTERNS = [
   /sadece\s*cevab/i,
   /uğraştırma.*?(söyle|çöz|ver)/i
 ];
-
-const MATH_AND_LESSON_KEYWORDS = [
-  "sayı", "rakam", "çarpan", "bölen", "bölün", "bölme", "çarpma", "çarpım", "kat", "katı",
-  "asal", "ebob", "ekok", "ortak", "aralarında", "kalan", "kalansız", "tam",
-  "üs", "üslü", "kuvvet", "taban", "bilimsel", "çözümleme", "negatif", "pozitif",
-  "kök", "karekök", "köklü", "tamkare", "yaklaşık", "irrasyonel", "rasyonel", "gerçek",
-  "veri", "grafik", "daire", "sütun", "çizgi", "merkez açı", "olasılık", "olay", "çıktı", "eş olasılık",
-  "cebir", "cebirsel", "terim", "katsayı", "değişken", "özdeşlik", "çarpanlara",
-  "denklem", "bilinmeyen", "koordinat", "eksen", "doğrusal", "eğim", "eşitsizlik",
-  "üçgen", "kenar", "açı", "açıortay", "kenarortay", "yükseklik", "pisagor", "hipotenüs", "eşlik", "benzerlik",
-  "dönüşüm", "öteleme", "yansıma", "simetri", "prizma", "silindir", "piramit", "koni", "hacim", "alan", "çevre", "yüzey",
-  "oran", "orantı", "yüzde", "toplam", "fark", "işlem", "sonuç", "değer", "formül", "kural", "tanım", "kavram",
-  "soru", "şık", "seçenek", "boşluk", "kutu", "adım", "durak", "ünite", "kazanım", "etkinlik", "örnek",
-  "neden", "niye", "niçin", "nasıl", "anlamadım", "anlat", "açıkla", "ipucu", "yardım", "takıldım",
-  "yanlış", "doğru", "hata", "denedim", "seçtim", "olur mu", "olmaz mı", "hangisi", "kaç", "kaçtır",
-  "dikdörtgen", "birimkare", "ağaç", "algoritma", "gökkuşağı", "çift", "tek"
-];
-
-const BRIEF_SOCIAL_PATTERNS = /^(merhaba|selam|selamlar|hey|günaydın|iyi dersler|iyi akşamlar|nasılsın|kimsin|sen kimsin|teşekkürler|teşekkür ederim|sağ ol|anladım|tamam|peki|süper|harika|evet|hayır)[!.,?\s]*$/i;
 
 function hasProfanity(text) {
   const lower = trLower(text);
@@ -236,7 +293,7 @@ function hasProfanity(text) {
   });
 }
 
-function detectScopeAndIntent(questionText, stopInfo) {
+function detectScopeAndIntent(questionText) {
   const clean = String(questionText || "").trim();
   const lower = trLower(clean);
 
@@ -253,45 +310,13 @@ function detectScopeAndIntent(questionText, stopInfo) {
   }
 
   const wantsDirectAnswer = DIRECT_ANSWER_PATTERNS.some(re => re.test(lower));
-  if (wantsDirectAnswer) {
-    return { status: "in_scope", wantsDirectAnswer: true };
-  }
-
-  if (BRIEF_SOCIAL_PATTERNS.test(lower)) {
-    return { status: "in_scope", isSocial: true };
-  }
-
-  // Sayı veya matematiksel sembol içeriyorsa ders bağlamındadır
-  if (/\d|[+\-×÷*/=^%<>]/.test(clean)) {
-    return { status: "in_scope" };
-  }
-
-  // Matematik / soru / öğrenme anahtar kelimesi içeriyorsa ders bağlamındadır
-  if (MATH_AND_LESSON_KEYWORDS.some(kw => lower.includes(kw))) {
-    return { status: "in_scope" };
-  }
-
-  // Aktif durağın başlığındaki veya soru kökündeki kelimelerden biri geçiyorsa ders bağlamındadır
-  const stopContextWords = tokenizeTr(
-    `${stopInfo.unitTitle || ""} ${stopInfo.kazTitle || ""} ${stopInfo.stopTitle || ""} ${stopInfo.problemText || ""}`
-  ).filter(w => w.length >= 4);
-  if (stopContextWords.some(w => lower.includes(w))) {
-    return { status: "in_scope" };
-  }
-
-  // Uzun ama hiçbir matematik/soru bağlamı taşımayan genel sohbet cümlelerini ders dışı say
-  const words = tokenizeTr(clean);
-  if (words.length >= 2) {
-    return { status: "off_topic", reason: "unrelated_general_chat" };
-  }
-
-  return { status: "in_scope" };
+  return { status: "in_scope", wantsDirectAnswer };
 }
 
 // ============================================================================
-// 3. AKTİF DURAK ÇÖZÜMLEYİCİ VE GİZLİ CEVAP KORUMASI
+// 3. AKTİF DURAK ÇÖZÜMLEYİCİ, ÖĞRETMEN ÇÖZÜM REFERANSI VE CEVAP KORUMASI
 // ============================================================================
-function buildAuthoritativeStopContext(clientCtx = {}) {
+function buildAuthoritativeStopContext(clientCtx = {}, payload = {}) {
   const unitNo = Number(clientCtx.unitNo || 1);
   const stopId = Number(clientCtx.stopId || 1);
 
@@ -303,82 +328,250 @@ function buildAuthoritativeStopContext(clientCtx = {}) {
     ? serverUnit.kazanimlar.find(k => k.id === serverStop.kazanimId)
     : null;
 
-  const stop = (clientCtx.stop && clientCtx.stop.stem) ? clientCtx.stop : (serverStop || clientCtx.stop || {});
+  // Canlı Ekrandan Gelen Dinamik Görev (Varyant / Alt Aşama / Aktif Soru) — HER ZAMAN ÖNCELİKLİDİR
+  const liveTask = payload && payload.liveTask && typeof payload.liveTask === "object" ? payload.liveTask : null;
+  if (liveTask && (liveTask.promptText || liveTask.taskTitle || (Array.isArray(liveTask.numbers) && liveTask.numbers.length > 0))) {
+    const unitTitle = (serverUnit && serverUnit.title) || clientCtx.unitTitle || "Çarpanlar ve Katlar";
+    const kazTitle = clientCtx.kazTitle || (serverKaz && serverKaz.title) || "";
+    const stopTitle = liveTask.taskTitle || clientCtx.stopTitle || "Etkinlik";
+    const pLines = [];
+    const tNotes = [];
+    const forbidden = [];
+    const nums = Array.isArray(liveTask.numbers)
+      ? liveTask.numbers.map(Number).filter(n => Number.isFinite(n) && n >= 2 && n <= 5000)
+      : [];
+    if (liveTask.targetNumber) {
+      pLines.push(`Aktif Hedef Sayı: ${liveTask.targetNumber}`);
+    }
+    if (nums.length > 0) {
+      pLines.push(`Ekrandaki Aktif Sayılar: ${nums.join(", ")}`);
+    }
+    if (liveTask.promptText) {
+      pLines.push(`Aktif Soru / Görev: ${stripHtmlServer(liveTask.promptText)}`);
+    }
+    if (Array.isArray(liveTask.options) && liveTask.options.length > 0) {
+      pLines.push(`Seçenekler: ${liveTask.options.map(stripHtmlServer).join(" | ")}`);
+    }
+    if (payload.liveScreen && payload.liveScreen.methodTitle) {
+      pLines.push(`Açık Yöntem: ${payload.liveScreen.methodTitle}${payload.liveScreen.activeSlotLabel ? " — Seçili Kutu: " + payload.liveScreen.activeSlotLabel : ""}`);
+    }
+    if (liveTask.hint) {
+      tNotes.push(`Pedagojik İpucu: ${stripHtmlServer(liveTask.hint)}`);
+    }
+    if (liveTask.solution) {
+      tNotes.push(`Öğretmen Çözüm Notu (CEVABI SÖYLEME): ${stripHtmlServer(liveTask.solution)}`);
+    }
+    if (liveTask.correctAnswer !== undefined && liveTask.correctAnswer !== null && String(liveTask.correctAnswer).trim()) {
+      const ca = stripHtmlServer(String(liveTask.correctAnswer));
+      tNotes.push(`Doğru Yanıt (SÖYLEME): ${ca}`);
+      forbidden.push(ca);
+    }
+    if (Array.isArray(liveTask.missingTargets)) {
+      const mList = liveTask.missingTargets.map(m => m.answer).filter(Boolean);
+      if (mList.length) {
+        tNotes.push(`Eksik Boşlukların Doğrusu (SÖYLEME): ${mList.join(", ")}`);
+        mList.forEach(a => forbidden.push(String(a)));
+      }
+    }
+    return {
+      unitNo,
+      stopId,
+      unitTitle,
+      kazTitle,
+      stopTitle,
+      stopType: clientCtx.stopType || "activity",
+      problemText: pLines.join("\n"),
+      teacherReference: tNotes.join("\n"),
+      forbiddenRevealTokens: forbidden,
+      liveNumbers: nums.length > 0 ? nums : (liveTask.targetNumber ? [Number(liveTask.targetNumber)] : []),
+      liveSignature: liveTask.signature || ""
+    };
+  }
+
+  // Aktif alt soru numarasını hem üst düzeyden hem stop içinden güvenli oku
+  const qIdx = typeof clientCtx.activeQuestionIndex === "number"
+    ? clientCtx.activeQuestionIndex
+    : (clientCtx.stop && typeof clientCtx.stop.activeQuestionIndex === "number" ? clientCtx.stop.activeQuestionIndex : 0);
+
+  // Smartboard, Çoklu Destek Sorusu (questionPack) veya istemciden gelen aktif alt soru varsa birleştir
+  let stop = Object.assign({}, serverStop || {}, clientCtx.stop || {});
+  if (serverStop && serverStop.type === "smartboard" && Array.isArray(serverStop.questions)) {
+    const sbQ = serverStop.questions[qIdx] || serverStop.questions[0];
+    if (sbQ) {
+      stop = Object.assign({}, serverStop, {
+        type: "question",
+        isSmartboard: true,
+        activeQuestionIndex: qIdx,
+        title: `${serverStop.title} (${qIdx + 1}. Soru${sbQ.categoryTag ? " • " + sbQ.categoryTag : ""})`,
+        stem: [sbQ.stem || "", sbQ.questionPrompt || ""].filter(Boolean).join(" "),
+        options: sbQ.options || [],
+        correctLetter: sbQ.correctLetter,
+        hint: sbQ.hint || "",
+        solution: sbQ.solution || ""
+      });
+    }
+  } else if (serverStop && serverStop.type === "question" && Array.isArray(serverStop.questionPack) && serverStop.questionPack.length > 0) {
+    const packQ = serverStop.questionPack[qIdx] || serverStop.questionPack[0];
+    if (packQ) {
+      stop = Object.assign({}, serverStop, packQ, clientCtx.stop || {}, {
+        type: "question",
+        activeQuestionIndex: qIdx,
+        title: `${serverStop.title} (${packQ.badge || `${qIdx + 1}. Destek Sorusu`})`
+      });
+    }
+  }
+
   const unitTitle = (serverUnit && serverUnit.title) || clientCtx.unitTitle || "Çarpanlar ve Katlar";
   const kazTitle = (serverKaz && serverKaz.title) || clientCtx.kazTitle || stop.title || "";
   const stopTitle = stop.title || clientCtx.stopTitle || "Etkinlik";
   const stopType = stop.type || clientCtx.stopType || "concept";
 
-  // Durağın öğrenciye görünen metnini ve gizli doğru cevaplarını çıkar
   const problemLines = [];
+  const teacherNotes = [];
   const forbiddenRevealTokens = [];
 
   if (stop.subtitle) {
-    problemLines.push(`Alt Başlık: ${stripHtmlServer(stop.subtitle)}`);
+    problemLines.push(`Alt Başlık / Yönerge: ${stripHtmlServer(stop.subtitle)}`);
   }
   if (Array.isArray(stop.explanation) && stop.explanation.length > 0) {
-    problemLines.push(`Konu Açıklaması: ${stop.explanation.map(stripHtmlServer).join(" ")}`);
+    problemLines.push(`Konu Özeti: ${stop.explanation.map(stripHtmlServer).join(" ")}`);
   }
+
+  // 1) Concept (Boşluk Doldurma) Durakları
   if (stop.sentenceHtml) {
     let readableSentence = stripHtmlServer(stop.sentenceHtml);
+    const filled = payload.filledBlanks || {};
     if (Array.isArray(stop.blanks)) {
       stop.blanks.forEach((b, idx) => {
-        readableSentence = readableSentence.replace(`{${b.id}}`, `[${idx + 1}. Boşluk — Seçenekler: ${(b.choices || []).join(", ")}]`);
+        const solvedVal = filled[b.id];
+        const slotDesc = solvedVal
+          ? `[${idx + 1}. Boşluk ÇÖZÜLDÜ: "${solvedVal}"]`
+          : `[${idx + 1}. Boşluk — Seçenekler: ${(b.choices || []).join(", ")}]`;
+        readableSentence = readableSentence.replace(`{${b.id}}`, slotDesc);
         if (b.correct !== undefined) {
           forbiddenRevealTokens.push(String(b.correct).trim());
         }
       });
+      const blankKey = stop.blanks.map((b, i) => `${i + 1}. Boşluk = "${b.correct}"`).join(", ");
+      teacherNotes.push(`Doğru Boşluk Değerleri: ${blankKey}`);
     }
-    problemLines.push(`Boşluk Doldurma Cümlesi: ${readableSentence}`);
+    if (payload.activeBlankId !== undefined && payload.activeBlankId !== null) {
+      problemLines.push(`Öğrencinin Şu An Seçtiği Boşluk: ${Number(payload.activeBlankId) + 1}. Boşluk`);
+    }
+    problemLines.push(`Etkinlik Cümlesi: ${readableSentence}`);
   }
+
+  // 2) Çoktan Seçmeli LGS & Akıllı Tahta Soruları
   if (stop.stem) {
-    problemLines.push(`Soru Kökü: ${stripHtmlServer(stop.stem)}`);
+    problemLines.push(`Soru Metni: ${stripHtmlServer(stop.stem)}`);
   }
   if (Array.isArray(stop.options) && stop.options.length > 0) {
     const optsStr = stop.options.map(o => `${o.letter}) ${stripHtmlServer(o.text)}`).join(" | ");
     problemLines.push(`Şıklar: ${optsStr}`);
     if (stop.correctLetter) {
       const cOpt = stop.options.find(o => o.letter === stop.correctLetter);
-      if (cOpt) {
-        forbiddenRevealTokens.push(`${stop.correctLetter} şıkkı`);
-        forbiddenRevealTokens.push(`Cevap ${stop.correctLetter}`);
-      }
+      const cText = cOpt ? stripHtmlServer(cOpt.text) : "";
+      teacherNotes.push(`Doğru Şık (Öğrenciye Söyleme): ${stop.correctLetter}) ${cText}`);
+      forbiddenRevealTokens.push(`${stop.correctLetter} şıkkı`);
+      forbiddenRevealTokens.push(`Cevap ${stop.correctLetter}`);
+      if (cText) forbiddenRevealTokens.push(cText);
     }
+  }
+  if (stop.solution) {
+    teacherNotes.push(`Tam Matematiksel Çözüm Adımları: ${stripHtmlServer(stop.solution)}`);
+  }
+
+  // 3) Video / Animasyonlu Anlatım Durakları
+  if (Array.isArray(stop.steps) && stop.steps.length > 0) {
+    problemLines.push(`Anlatım Adımları: ${stop.steps.map(s => stripHtmlServer(s.text || s)).join(" | ")}`);
   }
   if (stop.quickQuestion) {
-    problemLines.push(`Video Doğrulama Sorusu: ${stripHtmlServer(stop.quickQuestion)}`);
-    if (Array.isArray(stop.quickOptions)) {
-      problemLines.push(`Seçenekler: ${stop.quickOptions.map(stripHtmlServer).join(" | ")}`);
+    problemLines.push(`Doğrulama Sorusu: ${stripHtmlServer(stop.quickQuestion)}`);
+    const qChoices = stop.quickChoices || stop.quickOptions;
+    if (Array.isArray(qChoices)) {
+      problemLines.push(`Seçenekler: ${qChoices.map(stripHtmlServer).join(" | ")}`);
     }
     if (stop.quickCorrect) {
-      forbiddenRevealTokens.push(stripHtmlServer(stop.quickCorrect));
+      const qc = stripHtmlServer(stop.quickCorrect);
+      teacherNotes.push(`Doğru Seçenek (Öğrenciye Söyleme): ${qc}`);
+      forbiddenRevealTokens.push(qc);
     }
   }
-  if (stop.targetNumber) {
+
+  // 4) Etkileşimli Etkinlik (Gökkuşağı, Çok Aşamalı Gökkuşağı, 4/5 Yöntem Atölyesi, Çarpan Ağacı, Kart Sınıflandırma)
+  const liveScreen = payload.liveScreen && typeof payload.liveScreen === "object" ? payload.liveScreen : null;
+  if (stop.activityMode === "factor_methods_lab") {
+    if (liveScreen && liveScreen.methodTitle) {
+      problemLines.push(`Öğrencinin Şu An Ekranda Açtığı Yöntem: ${liveScreen.methodTitle} (Hedef Sayı: ${liveScreen.targetNumber || ""}) — Seçili Kutu: ${liveScreen.activeSlotLabel || ""}`);
+      if (liveScreen.activeSlotHint) {
+        teacherNotes.push(`Aktif Kutu Çözüm İpucu (Sadece Yönlendir, Sayıyı Söyleme): ${stripHtmlServer(liveScreen.activeSlotHint)}`);
+      }
+    } else {
+      problemLines.push("Çarpan Bulma ve Asal Çarpanlara Ayırma Atölyesi (Ekrandaki aktif yöntem adımları).");
+    }
+  } else if (stop.activityMode === "multi_stage_rainbow" && Array.isArray(stop.stages)) {
+    const stIdx = liveScreen && liveScreen.stageIndex ? Math.max(0, liveScreen.stageIndex - 1) : 0;
+    const stObj = stop.stages[stIdx] || stop.stages[0];
+    if (stObj) {
+      problemLines.push(`Aktif Etkinlik Aşaması (${stObj.badge || ""}): ${stripHtmlServer(stObj.prompt || "")} | Dizi: ${(stObj.sequence || []).join(", ")}`);
+      if (Array.isArray(stObj.missingTargets)) {
+        teacherNotes.push(`Eksik Değerler (Söyleme): ${stObj.missingTargets.map(m => `${m.answer} (${m.hint || ""})`).join(" | ")}`);
+        stObj.missingTargets.forEach(m => forbiddenRevealTokens.push(String(m.answer)));
+      }
+    }
+  } else if (stop.activityMode === "rainbow_pairs") {
+    problemLines.push(`Gökkuşağı Çarpan Dizisi (Hedef Sayı ${stop.targetNumber}): ${(stop.sequence || []).join(", ")}`);
+    if (Array.isArray(stop.pool)) problemLines.push(`Seçenek Havuzu: ${stop.pool.join(", ")}`);
+    if (Array.isArray(stop.missingTargets)) {
+      teacherNotes.push(`Eksik Çarpanlar: ${stop.missingTargets.map(m => `${m.answer} (${m.hint || ""})`).join(" | ")}`);
+      stop.missingTargets.forEach(m => forbiddenRevealTokens.push(String(m.answer)));
+    }
+  } else if (stop.activityMode === "factor_tree") {
+    problemLines.push(`Çarpan Ağacı (${stop.rootNumber}): ${stripHtmlServer(stop.treeDescription || "")}`);
+    if (Array.isArray(stop.missingNodes)) {
+      problemLines.push(`Dallar: ${stop.missingNodes.map(n => n.label).join(" | ")}`);
+      teacherNotes.push(`Doğru Dal Değerleri: ${stop.missingNodes.map(n => `${n.label} => ${n.answer}`).join(" | ")}`);
+    }
+  } else if (Array.isArray(stop.items) && stop.items.length > 0) {
+    if (liveScreen && liveScreen.questionText) {
+      problemLines.push(`Öğrencinin Şu An Ekrandaki Kartı (${liveScreen.cardIndex}/${liveScreen.cardTotal}): "${liveScreen.questionText}"`);
+    }
+    problemLines.push(`Sınıflandırma Kartları: ${stop.items.slice(0, 4).map(it => `"${stripHtmlServer(it.text)}"`).join(" | ")}`);
+    teacherNotes.push(`Kart Yanıtları: ${stop.items.slice(0, 4).map(it => `"${stripHtmlServer(it.text)}" => ${it.answer}`).join(" | ")}`);
+  }
+
+  // 5) Mini Oyun Durakları
+  if (stop.type === "game") {
+    if (Array.isArray(stop.levels) && stop.levels.length > 0) {
+      const lv = stop.levels[0];
+      problemLines.push(`Oyun Görevi: ${lv.target} sayısının tüm pozitif tam bölenlerini seçme. Seçenekler: ${(lv.options || []).join(", ")}`);
+      teacherNotes.push(`${lv.target} bölenleri: ${(lv.divisors || []).join(", ")}`);
+    } else if (Array.isArray(stop.targets)) {
+      problemLines.push(`Oyun Görevi: Asal çarpanları (2, 3, 5, 7) çarparak hedef sayıları (${stop.targets.join(", ")}) elde etme.`);
+    } else if (Array.isArray(stop.rounds) || Array.isArray(stop.locks)) {
+      const list = stop.rounds || stop.locks;
+      problemLines.push(`Oyun Etabı Örnekleri: ${JSON.stringify(list.slice(0, 2))}`);
+    } else if (Array.isArray(stop.challenges)) {
+      problemLines.push(`Maraton Soruları: ${stop.challenges.slice(0, 3).map(c => `${stripHtmlServer(c.q)} (Seçenekler: ${(c.choices || []).join(", ")})`).join(" | ")}`);
+      teacherNotes.push(`Maraton Yanıtları: ${stop.challenges.slice(0, 3).map(c => `${stripHtmlServer(c.q)} => ${c.ans}`).join(" | ")}`);
+    }
+  }
+
+  if (stop.targetNumber && !problemLines.some(l => l.includes("Hedef Sayı"))) {
     problemLines.push(`Hedef Sayı: ${stop.targetNumber}`);
   }
   if (stop.hint) {
-    problemLines.push(`Pedagojik İpucu: ${stripHtmlServer(stop.hint)}`);
+    teacherNotes.push(`Pedagojik İpucu: ${stripHtmlServer(stop.hint)}`);
   }
 
-  // Aynı kazanımın temel kavram özeti varsa ekle
-  if (serverUnit && serverStop && (!stop.explanation || stop.explanation.length === 0)) {
+  // Yalnızca kavram (concept) veya keşif adımlarında ve dinamik canlı görev yoksa kazanım özetini ekle
+  if (serverUnit && serverStop && (stopType === "concept") && (!stop.explanation || stop.explanation.length === 0)) {
     const conceptPeer = (serverUnit.stops || []).find(
       s => s.kazanimId === serverStop.kazanimId && s.type === "concept" && Array.isArray(s.explanation)
     );
     if (conceptPeer) {
-      problemLines.push(`Kazanım Temel Bilgisi: ${conceptPeer.explanation.map(stripHtmlServer).join(" ")}`);
+      problemLines.push(`Kazanım Temel Kuralı: ${conceptPeer.explanation.map(stripHtmlServer).join(" ")}`);
     }
-  }
-
-  let secretAnswerSummary = "";
-  if (Array.isArray(stop.blanks) && stop.blanks.length > 0) {
-    secretAnswerSummary = stop.blanks.map((b, i) => `${i + 1}. Boşluk=${b.correct}`).join(", ");
-  } else if (stop.correctLetter && Array.isArray(stop.options)) {
-    const cOpt = stop.options.find(o => o.letter === stop.correctLetter);
-    secretAnswerSummary = `${stop.correctLetter}) ${cOpt ? stripHtmlServer(cOpt.text) : ""}`;
-  } else if (stop.quickCorrect) {
-    secretAnswerSummary = stripHtmlServer(stop.quickCorrect);
   }
 
   return {
@@ -389,7 +582,7 @@ function buildAuthoritativeStopContext(clientCtx = {}) {
     stopTitle,
     stopType,
     problemText: problemLines.join("\n"),
-    secretAnswerSummary,
+    teacherReference: teacherNotes.join("\n"),
     forbiddenRevealTokens
   };
 }
@@ -405,111 +598,189 @@ function gcd(a, b) {
   return x;
 }
 
+function getFactorPairsText(n) {
+  if (n < 2 || n > 2000) return "";
+  const pairs = [];
+  for (let d = 1; d * d <= n; d++) {
+    if (n % d === 0) {
+      pairs.push(`${d}×${n / d}`);
+    }
+  }
+  return pairs.join(", ");
+}
+
 function computeSymbolicMathFacts(questionText, stopInfo) {
   const qNums = (String(questionText || "").match(/\b\d{1,4}\b/g) || [])
     .map(n => parseInt(n, 10))
     .filter(n => n > 0 && n <= 5000);
-  const ctxNums = (String(stopInfo.problemText || "").match(/\b\d{1,4}\b/g) || [])
-    .map(n => parseInt(n, 10))
-    .filter(n => n > 1 && n <= 5000);
+  const liveNums = Array.isArray(stopInfo && stopInfo.liveNumbers) && stopInfo.liveNumbers.length > 0
+    ? stopInfo.liveNumbers.map(Number).filter(n => n > 1 && n <= 5000)
+    : (String(stopInfo.problemText || "").match(/\b\d{1,4}\b/g) || [])
+        .map(n => parseInt(n, 10))
+        .filter(n => n > 1 && n <= 5000);
 
   const uniqueQ = [...new Set(qNums)].slice(0, 3);
-  const uniqueAll = [...new Set([...uniqueQ, ...ctxNums.slice(0, 3)])].slice(0, 4);
-  if (uniqueQ.length === 0 || uniqueAll.length < 2) return "";
-
+  const uniqueAll = [...new Set([...uniqueQ, ...liveNums.slice(0, 4)])].slice(0, 6);
   const facts = [];
+
   for (let i = 0; i < uniqueAll.length; i++) {
     for (let j = i + 1; j < uniqueAll.length; j++) {
       const small = Math.min(uniqueAll[i], uniqueAll[j]);
       const big = Math.max(uniqueAll[i], uniqueAll[j]);
       if (small <= 1 || big === small) continue;
-      if (!uniqueQ.includes(small) && !uniqueQ.includes(big)) continue;
+      if (uniqueQ.length > 0 && !uniqueQ.includes(small) && !uniqueQ.includes(big)) continue;
 
       const rem = big % small;
       if (rem === 0) {
         const q = big / small;
-        facts.push(
-          `${big} ÷ ${small} = ${q} (kalan 0, tam bölünür). Yani küçük sayı olan ${small}, ${big} sayısının bir ÇARPANIDIR (bölenidir); büyük sayı olan ${big} ise ${small} sayısının ${q} KATIDIR.`
-        );
+        facts.push(`${big} ÷ ${small} = ${q} (kalan 0, kalansız bölünür: ${small} çarpan, ${big} ise ${q} katıdır).`);
       } else {
-        facts.push(
-          `${big} ÷ ${small} işleminde bölüm ${Math.floor(big / small)}, kalan ${rem} olur (kalan 0 değildir, kalansız bölünmez; yani ${small}, ${big}'nin çarpanı değildir).`
-        );
+        facts.push(`${big} ÷ ${small} işleminde bölüm ${Math.floor(big / small)}, kalan ${rem} olur (kalansız bölünmez).`);
       }
       if (facts.length >= 2) break;
     }
     if (facts.length >= 2) break;
   }
 
+  if (liveNums.length > 0 && liveNums[0] >= 6 && liveNums[0] <= 400) {
+    const fp = getFactorPairsText(liveNums[0]);
+    if (fp) facts.push(`${liveNums[0]} sayısının tam sayı çarpan çiftleri: ${fp}.`);
+  }
+
   if (uniqueQ.length === 2 && uniqueQ[0] > 1 && uniqueQ[1] > 1) {
     const eb = gcd(uniqueQ[0], uniqueQ[1]);
     const ek = (uniqueQ[0] * uniqueQ[1]) / eb;
     if (ek <= 100000) {
-      facts.push(`EBOB(${uniqueQ[0]}, ${uniqueQ[1]}) = ${eb}, EKOK(${uniqueQ[0]}, ${uniqueQ[1]}) = ${ek}.`);
+      facts.push(`EBOB(${uniqueQ[0]}, ${uniqueQ[1]}) = ${eb}${eb === 1 ? " (aralarında asal)" : ""}, EKOK(${uniqueQ[0]}, ${uniqueQ[1]}) = ${ek}.`);
     }
   }
 
   return facts.join(" ");
 }
 
-function buildSocraticDirectRefusal(stopInfo) {
-  const hintClean = (stopInfo.problemText.match(/Pedagojik İpucu:\s*(.+)/) || [])[1]
-    || "Sayıların birbirini tam bölüp bölmediğine birlikte bakalım.";
-  return `Cevabı hemen söylersem kendi bulma keyfini kaçırırız 😊 İpucu: *${hintClean.slice(0, 125)}* Sence ilk adımda hangi sayıyı denemeliyiz?`;
+const MAX_REPLY_WORDS = 25;
+
+function countWordsSimple(str) {
+  const clean = String(str || "").trim();
+  if (!clean) return 0;
+  return clean.split(/\s+/).filter(Boolean).length;
 }
 
-function enforceConciseKidReply(text) {
-  let clean = String(text || "").replace(/\s+/g, " ").trim();
-  if (!clean) return clean;
-  // Madde işaretlerini düz cümleye çevir
-  clean = clean.replace(/(?:^|\s)[•\-*]\s+/g, " ").replace(/\s+/g, " ").trim();
-  // En fazla 2 anlamlı cümle tut (10-11 yaş için tek bakışta okunur boyut: ~20-40 kelime)
-  const sentences = clean.match(/[^.!?]+[.!?]+|[^.!?]+$/g);
-  if (sentences && sentences.length > 2) {
-    const qSent = sentences.find(s => s.includes("?"));
-    if (qSent && sentences.indexOf(qSent) >= 2) {
-      clean = `${sentences[0].trim()} ${qSent.trim()}`;
-    } else {
-      clean = sentences.slice(0, 2).map(s => s.trim()).join(" ");
+function splitSentencesPreservingMath(text) {
+  const slots = [];
+  const masked = String(text || "").replace(/\$[^$]+\$/g, m => {
+    slots.push(m);
+    return `__MATH_${slots.length - 1}__`;
+  });
+  const parts = masked
+    .replace(/\n+/g, " ")
+    .split(/(?<=[.!?])\s+/)
+    .map(p => p.replace(/__MATH_(\d+)__/g, (_, i) => slots[Number(i)] || "").trim())
+    .filter(Boolean);
+  return parts.length > 0 ? parts : [String(text || "").trim()];
+}
+
+function enforceMaxWordsServer(rawText, maxWords = MAX_REPLY_WORDS) {
+  let text = String(rawText || "").replace(/\s+/g, " ").trim();
+  if (!text) return text;
+  if (countWordsSimple(text) <= maxWords) return text;
+
+  const sentences = splitSentencesPreservingMath(text);
+  if (sentences.length >= 2) {
+    const lastQ = sentences[sentences.length - 1];
+    // Önce son iki cümleyi (matematiksel ipucu + soru) dene
+    const lastTwo = `${sentences[sentences.length - 2]} ${lastQ}`.trim();
+    if (countWordsSimple(lastTwo) <= maxWords) return lastTwo;
+
+    // İlk cümle + son soru cümlesini dene
+    const firstAndLast = `${sentences[0]} ${lastQ}`.trim();
+    if (countWordsSimple(firstAndLast) <= maxWords) return firstAndLast;
+
+    // Sadece ilk cümle sığıyorsa onu al
+    if (countWordsSimple(sentences[0]) <= maxWords && countWordsSimple(sentences[0]) >= 6) {
+      return sentences[0];
+    }
+    if (countWordsSimple(lastQ) <= maxWords && countWordsSimple(lastQ) >= 6) {
+      return lastQ;
     }
   }
-  return clean.trim();
+
+  // Tek uzun cümle ise $...$ matematik bloklarını bölmeden kelime sınırında kes
+  const tokens = text.match(/\$[^$]+\$|\S+/g) || [];
+  const kept = [];
+  let wTotal = 0;
+  for (const tok of tokens) {
+    const w = countWordsSimple(tok);
+    if (wTotal + w > maxWords) break;
+    kept.push(tok);
+    wTotal += w;
+  }
+  let clipped = kept.join(" ").replace(/[,;:\-–—]+$/, "").trim();
+  // Eşleşmemiş ** varsa temizle
+  if ((clipped.match(/\*\*/g) || []).length % 2 === 1) {
+    clipped = clipped.replace(/\*\*(?!.*\*\*)/, "");
+  }
+  if (clipped && !/[.!?]$/.test(clipped)) {
+    clipped += text.includes("?") ? "?" : ".";
+  }
+  return clipped;
+}
+
+function buildSocraticDirectRefusal(stopInfo) {
+  const topic = stopInfo.kazTitle || stopInfo.unitTitle || "bu konu";
+  return enforceMaxWordsServer(
+    `Cevabı doğrudan söylersem öğrenme keyfi kaçar 😊 **${topic}** kuralına göre sorudaki ilk işlemi sen kurar mısın?`,
+    MAX_REPLY_WORDS
+  );
 }
 
 function maskAccidentalAnswerLeak(replyText, stopInfo, scopeCheck) {
-  let out = String(replyText || "").trim();
+  let out = String(replyText || "")
+    .replace(/<thought>[\s\S]*?<\/thought>/gi, "")
+    .trim();
   if (!out) return out;
 
-  // Eğer numaralı boşluk listesi ("1. Boşluğa...", "1. boşluk: ...") veya doğrudan şık ifşası üretildiyse engelle
+  // Numaralı boşluk listesi ("1. Boşluk: çarpanıdır, 2. Boşluk: ...") sızıntısını engelle
   if (
-    /\b\d+\.\s*boşlu(ğa|k)\s*[:=-]?/i.test(out) ||
-    /\bboşluğa\s+\*\*?[a-zğüşıöç0-9]+\*\*?\s+(yaz|gelir|gelecek|koy)/i.test(out)
+    /\b1\.\s*boşlu(ğa|k)\s*[:=-]/i.test(out) &&
+    /\b2\.\s*boşlu(ğa|k)\s*[:=-]/i.test(out)
   ) {
     return buildSocraticDirectRefusal(stopInfo);
   }
 
+  // "Doğru cevap C şıkkıdır" gibi doğrudan şık ifşalarını maskele
+  out = out.replace(
+    /\b(doğru\s*(cevap|şık|seçenek)|cevabımız|cevap)\s*[:=-]?\s*\*\*?([ABCD])\*\*?\s*(şıkkı(dır)?|seçeneği(dir)?)?/gi,
+    "aradığımız doğru seçenek"
+  );
+
   if (scopeCheck && scopeCheck.wantsDirectAnswer && Array.isArray(stopInfo.forbiddenRevealTokens)) {
     const lowerOut = trLower(out);
-    const leakedCount = stopInfo.forbiddenRevealTokens.filter(t => t && t.length >= 3 && lowerOut.includes(trLower(t))).length;
+    const leakedCount = stopInfo.forbiddenRevealTokens
+      .filter(t => t && t.length >= 3 && lowerOut.includes(trLower(t)))
+      .length;
     if (leakedCount >= 2) {
       return buildSocraticDirectRefusal(stopInfo);
     }
   }
 
-  out = out.replace(/\b(doğru\s*(cevap|şık|seçenek)|cevabımız)\s*[:=-]?\s*([ABCD])\s*(şıkkı|seçeneği)?\b/gi, "aradığımız doğru seçenek");
-
   if (stopInfo.stopType === "concept" && Array.isArray(stopInfo.forbiddenRevealTokens)) {
     for (const token of stopInfo.forbiddenRevealTokens) {
       if (!token || token.length < 3) continue;
-      const leakRe = new RegExp(`(boşluğa|boşluk\\s*için|cevap\\s*olarak)\\s*["'*]*${token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["'*]*\\s*(gelir|gelecek|yazmalısın|seçmelisin|olmalıdır|yaz)`, "gi");
+      const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const leakRe = new RegExp(
+        `(boşluğa|boşluk\\s*için|cevap\\s*olarak)\\s*["'*]*${escaped}["'*]*\\s*(gelir|gelecek|yazmalısın|seçmelisin|olmalıdır|yaz)`,
+        "gi"
+      );
       out = out.replace(leakRe, "$1 bu kurala uyan kavram $2");
     }
   }
-  return enforceConciseKidReply(out);
+
+  return enforceMaxWordsServer(out.replace(/\n{2,}/g, " ").trim(), MAX_REPLY_WORDS);
 }
 
 // ============================================================================
-// 4. OLLAMA YÖNETİMİ VE CANLI MODEL ÇAĞRISI
+// 4. OLLAMA (GEMMA 4 26B MoE) YÖNETİMİ VE CANLI MODEL ÇAĞRISI
 // ============================================================================
 let activeModelName = PRIMARY_MODEL;
 let ollamaReady = false;
@@ -523,32 +794,31 @@ function getOllamaExePath() {
 
 async function ensureOllamaReady() {
   try {
-    const resp = await fetch(`${OLLAMA_BASE}/api/tags`, { signal: AbortSignal.timeout(2500) });
+    const resp = await fetch(`${OLLAMA_BASE}/api/tags`, { signal: AbortSignal.timeout(3000) });
     if (resp.ok) {
       const data = await resp.json();
       const names = (data.models || []).map(m => m.name);
-      if (names.some(n => n.startsWith(PRIMARY_MODEL))) {
+      if (names.some(n => n === PRIMARY_MODEL || n.startsWith(`${PRIMARY_MODEL}:`))) {
         activeModelName = PRIMARY_MODEL;
       } else {
-        const foundFallback = FALLBACK_MODELS.find(fm => names.some(n => n.startsWith(fm)));
+        const foundFallback = FALLBACK_MODELS.find(fm => names.some(n => n === fm || n.startsWith(fm)));
         if (foundFallback) activeModelName = foundFallback;
       }
       ollamaReady = true;
       return true;
     }
   } catch (_) {
-    // Ollama çalışmıyorsa arka planda başlatmayı dene
     try {
       const exe = getOllamaExePath();
       const child = spawn(exe, ["serve"], { detached: true, stdio: "ignore", windowsHide: true });
       child.unref();
       await new Promise(r => setTimeout(r, 2000));
-      const retry = await fetch(`${OLLAMA_BASE}/api/tags`, { signal: AbortSignal.timeout(2500) });
+      const retry = await fetch(`${OLLAMA_BASE}/api/tags`, { signal: AbortSignal.timeout(3000) });
       if (retry.ok) {
         ollamaReady = true;
         return true;
       }
-    } catch (e2) {
+    } catch (_) {
       ollamaReady = false;
     }
   }
@@ -565,48 +835,104 @@ async function warmUpModel() {
       body: JSON.stringify({
         model: activeModelName,
         stream: false,
+        think: false,
         keep_alive: "24h",
-        messages: [{ role: "user", content: "Selam" }],
-        options: { num_ctx: 768, num_thread: 14, num_predict: 4 }
+        messages: [{ role: "user", content: "Selam" }]
       }),
-      signal: AbortSignal.timeout(25000)
+      signal: AbortSignal.timeout(60000)
     });
-    console.log(`[NarTES AI] Yerel model '${activeModelName}' belleğe ısındırıldı (keep_alive: 24h).`);
+    console.log(`[NarTES AI] Yerel Sokratik model '${activeModelName}' belleğe ve KV-önbelleğe ısındırıldı (keep_alive: 24h).`);
   } catch (err) {
     console.warn("[NarTES AI] Model ısındırma uyarısı:", err.message);
   }
 }
 
+function buildCompactStaticStopHeader(stopInfo) {
+  // Canlı ekran görevi varsa KV-cache imzasını o görevle eşle; eski durak verisini asla karıştırma
+  const pLines = String(stopInfo.problemText || "")
+    .split("\n")
+    .filter(l => !l.startsWith("Öğrencinin Şu An Seçtiği Boşluk") && !l.startsWith("Kazanım Temel Kuralı:"));
+
+  const hasStem = pLines.some(l => l.startsWith("Soru Metni:") || l.startsWith("Doğrulama Sorusu:") || l.startsWith("Aktif Soru / Görev:"));
+  const filteredProblem = hasStem
+    ? pLines.filter(l => !l.startsWith("Alt Başlık") && !l.startsWith("Konu Özeti:"))
+    : pLines;
+
+  const problemCompact = filteredProblem.join("\n").slice(0, 720);
+  const teacherCompact = String(stopInfo.teacherReference || "").slice(0, 760);
+  const headerTag = stopInfo.liveSignature
+    ? `[AKTİF EKRAN GÖREVİ (${stopInfo.liveSignature}) • ${stopInfo.stopTitle}]`
+    : `[DURAK ${stopInfo.unitNo}.${stopInfo.stopId} - ${stopInfo.stopTitle}]`;
+
+  return [
+    headerTag,
+    problemCompact,
+    teacherCompact ? `[ÖĞRETMEN ÇÖZÜM NOTU — CEVABI/ŞIKKI SÖYLEME] ${teacherCompact}` : ""
+  ].filter(Boolean).join("\n");
+}
+
 function buildMessagesForOllama(payload, stopInfo, scopeCheck) {
   const wrongChoices = Array.isArray(payload.wrongChoices) ? payload.wrongChoices : [];
-  const messages = [];
-
-  // Maksimum hız (~0.6 sn ilk kelime) için özlü ~65 tokenlık durak özeti
+  const rawHistory = Array.isArray(payload.history) ? payload.history : [];
   const verifiedMathFacts = computeSymbolicMathFacts(payload.question, stopInfo);
-  const coreLine = stopInfo.problemText
-    .split("\n")
-    .find(l => l.startsWith("Soru Kökü:") || l.startsWith("Boşluk Doldurma") || l.startsWith("Video Doğrulama") || l.startsWith("Pedagojik İpucu:"))
-    || stopInfo.problemText.split("\n")[0]
-    || stopInfo.stopTitle;
-  const hintLine = stopInfo.problemText
-    .split("\n")
-    .find(l => l.startsWith("Pedagojik İpucu:")) || "";
+  const staticHeader = buildCompactStaticStopHeader(stopInfo);
 
-  const safeCore = scopeCheck.wantsDirectAnswer
-    ? coreLine.replace(/—\s*Seçenekler:[^\]]+/g, "")
-    : coreLine;
+  const messages = [];
+  if (!String(activeModelName).startsWith("nartes-sokratik")) {
+    messages.push({ role: "system", content: SYSTEM_SOCRATIC_PROMPT });
+  }
 
-  const userTurnLines = [
-    `[DURAK] ${stopInfo.stopTitle}: ${safeCore.slice(0, 165)}`,
-    hintLine && hintLine !== coreLine ? hintLine.slice(0, 110) : "",
-    verifiedMathFacts ? `Bilgi: ${verifiedMathFacts.slice(0, 100)}` : "",
-    wrongChoices.length > 0 ? `Yanlış deneme: ${wrongChoices.slice(-2).join(", ")}` : "",
-    `Öğrenci (10-11 yaş): ${String(payload.question || "").trim().slice(0, 140)}`
-  ].filter(Boolean);
+  // Sabit durak başlığı: Aynı duraktaki tüm takip mesajlarında %100 KV-cache eşleşmesi sağlar
+  messages.push({ role: "user", content: staticHeader });
+  messages.push({ role: "assistant", content: "Hazırım." });
+
+  const validHistory = rawHistory
+    .filter(m => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
+    .slice(-6);
+
+  for (const turn of validHistory) {
+    messages.push({
+      role: turn.role,
+      content: turn.content.trim().slice(0, 420)
+    });
+  }
+
+  const wrongCount = Math.max(0, Number(payload.wrongCount || wrongChoices.length || 0));
+  const attemptNo = Math.max(0, Number(payload.attemptNo || wrongCount || 0));
+  const turnDepth = Math.max(attemptNo, wrongCount) + Math.floor(validHistory.length / 2);
+
+  let depthGuidance = "";
+  if (turnDepth <= 1) {
+    depthGuidance = "[Kural: EN FAZLA 22 KELİME. Sıcak bir motivasyonla doğrudan bu sayfadaki sorunun/yöntemin verilerini kullanıp TEK yol gösterici soru sor; cevabı söyleme.]";
+  } else if (turnDepth === 2) {
+    depthGuidance = "[Kural: EN FAZLA 22 KELİME. Önceki cümleni tekrarlamadan yüreklendir; yanlışın sayfadaki hangi şarta uymadığını gösterip tek soru sor.]";
+  } else if (turnDepth === 3) {
+    depthGuidance = "[Kural: EN FAZLA 22 KELİME. Önceki cümleni tekrarlama, alakasız hikaye uydurma; cesaret verip ekrandaki sayılarla ilk küçük işlemi kurdur.]";
+  } else {
+    depthGuidance = `[Kural (${turnDepth}. adım): EN FAZLA 24 KELİME. Cümle tekrarlama! İçtenlikle motive et ve ekrandaki sayılarla en temel çarpma/bölme/toplama adımını sor.]`;
+  }
+
+  const ltNums = payload.liveTask && Array.isArray(payload.liveTask.numbers) && payload.liveTask.numbers.length > 0
+    ? payload.liveTask.numbers.join(", ")
+    : "";
+  const liveNote = payload.liveScreen && payload.liveScreen.methodTitle
+    ? `[Ekranda açık yöntem: ${payload.liveScreen.methodTitle} (Hedef: ${payload.liveScreen.targetNumber || ltNums}) - ${payload.liveScreen.activeSlotLabel || ""}]`
+    : (payload.liveScreen && payload.liveScreen.stageBadge
+      ? `[Ekranda açık aşama: ${payload.liveScreen.stageBadge}${ltNums ? " | Aktif Sayılar: " + ltNums : ""} - ${payload.liveScreen.activeSlotLabel || ""}]`
+      : (ltNums ? `[Ekrandaki aktif sayılar: ${ltNums}]` : ""));
+
+  const currentQ = String(payload.question || "").trim().slice(0, 300);
+  const turnNotes = [
+    liveNote,
+    wrongChoices.length > 0 ? `[Yanlış denemeler (${wrongCount} kez): ${wrongChoices.slice(-3).join(", ")}]` : "",
+    verifiedMathFacts ? `[Matematik: ${verifiedMathFacts.slice(0, 140)}]` : "",
+    depthGuidance,
+    scopeCheck.wantsDirectAnswer ? `[Not: Cevabı/şıkkı söyleme, motive edip ilk adımı sor.]` : ""
+  ].filter(Boolean).join(" ");
 
   messages.push({
     role: "user",
-    content: userTurnLines.join("\n")
+    content: turnNotes ? `${currentQ}\n${turnNotes}` : currentQ
   });
 
   return messages;
@@ -615,26 +941,30 @@ function buildMessagesForOllama(payload, stopInfo, scopeCheck) {
 let guardrailRotateIdx = 0;
 function buildImmediateGuardrailReply(status, stopInfo) {
   guardrailRotateIdx = (guardrailRotateIdx + 1) % 4;
+  const activeTopic = stopInfo.kazTitle || stopInfo.unitTitle || "bu matematik konusu";
+  const numMatch = String(stopInfo.problemText || "").match(/\b\d{1,4}\b/);
+  const keyNum = numMatch ? numMatch[0] : null;
+
   if (status === "empty") {
-    return `Seni dinliyorum! 😊 **${stopInfo.stopTitle}** adımında takıldığın sayıyı kısaca sorabilirsin.`;
+    return enforceMaxWordsServer(`Seni dinliyorum 😊 Ekrandaki **${activeTopic}** sorusunda hangi adımda takıldın?`, MAX_REPLY_WORDS);
   }
   if (status === "profanity") {
-    return `Ben **Bilge NarTES**, senin matematik arkadaşınım; hep güzel ve nazik konuşalım 😊 Şimdi **${stopInfo.stopTitle}** sorusundaki hangi sayıya birlikte bakalım?`;
+    return enforceMaxWordsServer(`Nazik bir dil kullanalım 😊 Şimdi ekrandaki **${activeTopic}** sorusunda ilk hangi işlemi yapalım?`, MAX_REPLY_WORDS);
   }
 
   const offTopicPool = [
-    `Bu konu eğlenceli ama ben sadece **Matematik** rehberinim! 😊 Şu anki **"${stopInfo.stopTitle}"** sorusunda hangi adım kafanı karıştırdı?`,
-    `Ben yalnızca matematik yolculuğunda sana yardım edebiliyorum 🧭 Gel ekrandaki **"${stopInfo.stopTitle}"** sorusunda ilk hangi sayıyı kullanacağımızı bulalım mı?`,
-    `Sohbet güzel ama şimdi hedefimiz bu durağı çözmek! ✨ **"${stopInfo.stopTitle}"** sorusunda sence ilk ipucu hangi sayıda gizli?`,
-    `Benim uzmanlığım sadece matematik soruları 📐 **"${stopInfo.stopTitle}"** etkinliğinde hangi seçeneği birlikte inceleyelim?`
+    `Şimdi konumuz **${activeTopic}** 😊 Ekrandaki soruda${keyNum ? ` **${keyNum}** sayısıyla` : ""} ilk hangi işlemi kurmalıyız?`,
+    `O konuyu teneffüse bırakıp ekrandaki **${activeTopic}** sorumuza dönelim 🧭 İlk adımda neye dikkat etmeliyiz?`,
+    `Burada odağımız **${activeTopic}** ✨ Ekrandaki sayılar arasında hangi matematiksel ilişkiyi görüyorsun?`,
+    `Gel dikkatimizi ekrandaki **${activeTopic}** adımına verelim 📐 Sence çözümü başlatacak ilk işlem hangisi?`
   ];
-  return offTopicPool[guardrailRotateIdx % offTopicPool.length];
+  return enforceMaxWordsServer(offTopicPool[guardrailRotateIdx % offTopicPool.length], MAX_REPLY_WORDS);
 }
 
 // ============================================================================
 // 5. HTTP API VE STATİK DOSYA SUNUCUSU
 // ============================================================================
-function readJsonBody(req, maxBytes = 64 * 1024) {
+function readJsonBody(req, maxBytes = 96 * 1024) {
   return new Promise((resolve, reject) => {
     let total = 0;
     const chunks = [];
@@ -651,7 +981,7 @@ function readJsonBody(req, maxBytes = 64 * 1024) {
       try {
         const raw = Buffer.concat(chunks).toString("utf8");
         resolve(raw ? JSON.parse(raw) : {});
-      } catch (e) {
+      } catch (_) {
         reject(new Error("Geçersiz JSON"));
       }
     });
@@ -670,11 +1000,11 @@ async function handleNartesChat(req, res) {
   }
 
   const question = String(payload.question || "").trim();
-  const stopInfo = buildAuthoritativeStopContext(payload.context || {});
-  const scopeCheck = detectScopeAndIntent(question, stopInfo);
+  const stopInfo = buildAuthoritativeStopContext(payload.context || {}, payload);
+  const scopeCheck = detectScopeAndIntent(question);
   const wantStream = payload.stream !== false;
 
-  // 1) Küfür veya Ders Dışı (Off-Topic) ise modele gitmeden anında ders bağlamına kilitle
+  // 1) Küfür veya Açık Ders Dışı (Off-Topic) ise modele gitmeden anında ders bağlamına kilitle
   if (scopeCheck.status === "empty" || scopeCheck.status === "profanity" || scopeCheck.status === "off_topic") {
     const blockedReply = buildImmediateGuardrailReply(scopeCheck.status, stopInfo);
     if (wantStream) {
@@ -693,7 +1023,7 @@ async function handleNartesChat(req, res) {
     return;
   }
 
-  // 2) Yerel Ollama modelini kontrol et ve Sokratik yanıt üret
+  // 2) Yerel Ollama (Gemma 4 26B MoE) modelini kontrol et ve Sokratik yanıt üret
   const isUp = ollamaReady || (await ensureOllamaReady());
   if (!isUp) {
     res.writeHead(503, { "Content-Type": "application/json; charset=utf-8" });
@@ -710,19 +1040,11 @@ async function handleNartesChat(req, res) {
       body: JSON.stringify({
         model: activeModelName,
         stream: wantStream,
+        think: false,
         keep_alive: "24h",
-        messages,
-        options: {
-          num_ctx: 768,
-          temperature: 0.32,
-          top_p: 0.85,
-          repeat_penalty: 1.15,
-          num_predict: 62,
-          num_thread: 14,
-          stop: ["\n\n", "1. Boşluk", "1. boşluk"]
-        }
+        messages
       }),
-      signal: AbortSignal.timeout(35000)
+      signal: AbortSignal.timeout(55000)
     });
 
     if (!ollamaResp.ok || !ollamaResp.body) {
@@ -767,8 +1089,7 @@ async function handleNartesChat(req, res) {
           const piece = parsed && parsed.message && parsed.message.content ? parsed.message.content : "";
           if (piece) {
             fullText += piece;
-            // Öğrenci doğrudan cevap istediyse olası sızıntıyı önlemek için done aşamasında temizlenmiş metni gönder
-            if (!scopeCheck.wantsDirectAnswer) {
+            if (!scopeCheck.wantsDirectAnswer && countWordsSimple(fullText) <= MAX_REPLY_WORDS) {
               res.write(JSON.stringify({ type: "delta", text: piece }) + "\n");
             }
           }
@@ -839,8 +1160,9 @@ function applyCorsHeaders(req, res) {
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Vary", "Origin");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
   res.setHeader("Access-Control-Allow-Private-Network", "true");
+  res.setHeader("Access-Control-Max-Age", "86400");
 }
 
 const server = http.createServer(async (req, res) => {
@@ -882,7 +1204,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     serveStaticFile(req, res, pathname);
-  } catch (err) {
+  } catch (_) {
     if (!res.headersSent) {
       res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
     }
@@ -892,9 +1214,9 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`=============================================================`);
-  console.log(`🚀 Nartes+ Web & Yerel Yapay Zeka Sunucusu Çalışıyor!`);
+  console.log(`🚀 Nartes+ Web & Gemma 4 Sokratik Yapay Zeka Sunucusu Açık!`);
   console.log(`🌐 Adres: http://localhost:${PORT}`);
-  console.log(`🧠 Yerel AI: ${PRIMARY_MODEL} (API Anahtarsız • %100 Lokal)`);
+  console.log(`🧠 Aktif AI: ${PRIMARY_MODEL} (API Anahtarsız • %100 Lokal)`);
   console.log(`=============================================================`);
   warmUpModel();
 });

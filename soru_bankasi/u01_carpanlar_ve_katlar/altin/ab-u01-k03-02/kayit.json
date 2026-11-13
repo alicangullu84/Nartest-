@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k03-02",
+  "sira": 2,
+  "kazanimId": "k03",
+  "baslik": "EBOB'ta ortak asalların küçük üssü alınır",
+  "metin": "İki sayı birlikte bölünür. Sağda yalnız ikisinin de bölündüğü asallar çarpılır. Üslü biçimde ortak asalların küçük kuvveti alınır. Ortak olmayan asal EBOB'a girmez.",
+  "ornek": "24 = 2³ · 3, 40 = 2³ · 5. Ortak asal 2, küçük üs 3. EBOB(24, 40) = 2³ = 8.",
+  "yanlis": [
+    {
+      "kod": "tum-asallari-carma",
+      "uyari": "Sağdaki bütün asalları çarparsan EKOK bulursun. EBOB'ta yalnız ortak basamaklar kalır."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 17,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

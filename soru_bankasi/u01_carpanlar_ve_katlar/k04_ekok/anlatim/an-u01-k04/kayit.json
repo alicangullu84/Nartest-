@@ -1,0 +1,23 @@
+{
+  "id": "an-u01-k04",
+  "kazanimId": "k04",
+  "baslik": "EKOK'ta bütün asallar kalır",
+  "altinBilgiId": [
+    "ab-u01-k04-01",
+    "ab-u01-k04-02",
+    "ab-u01-k04-03",
+    "ab-u01-k04-05",
+    "ab-u01-k04-06"
+  ],
+  "adimlar": [
+    "Her asalın büyük üssünü al. Yalnız birinde olan asalı atma.",
+    "Biri diğerinin katıysa büyük olan EKOK'tur.",
+    "Buluşturma sorusunda bu süre veya bu uzunluk ilk ortak andır. Düz yolda baş ve son varsa 1 ekle."
+  ],
+  "ornek": {
+    "istem": "12 dakikada bir ve 15 dakikada bir kalkan seferler kaç dakikada bir birlikte kalkar?",
+    "cozum": "12 = 2²·3, 15 = 3·5. EKOK = 2²·3·5 = 60. 60 dakikada bir birlikte kalkarlar."
+  },
+  "tur": "anlatim",
+  "uniteId": "u01"
+}

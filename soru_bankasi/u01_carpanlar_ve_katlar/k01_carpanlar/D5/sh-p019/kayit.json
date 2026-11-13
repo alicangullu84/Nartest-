@@ -1,0 +1,22 @@
+{
+  "id": "sh-p019",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k01",
+  "bant": "D5",
+  "baslik": "Pozitif tam sayıların çarpanları",
+  "kaynak": "sh",
+  "pdfSayfa": 19,
+  "basiliSayfa": 19,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k01-01",
+    "ab-u01-k01-02",
+    "ab-u01-k01-03",
+    "ab-u01-k01-04",
+    "ab-u01-k01-05",
+    "ab-u01-k01-06",
+    "ab-u01-k01-07"
+  ],
+  "gorsel": "gorseller/sh/p019.png"
+}

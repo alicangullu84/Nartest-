@@ -1,0 +1,22 @@
+{
+  "id": "an-u01-k02",
+  "kazanimId": "k02",
+  "baslik": "Algoritmayı 2'den başlat",
+  "altinBilgiId": [
+    "ab-u01-k02-01",
+    "ab-u01-k02-03",
+    "ab-u01-k02-04",
+    "ab-u01-k02-06"
+  ],
+  "adimlar": [
+    "1 asal değildir. Çift aday yalnız 2 olabilir.",
+    "Sayıyı en küçük asaldan böl. Sağ sütunu say, aynı asalı üs yap.",
+    "120'den küçük adayda 2, 3, 5 ve 7'ye bakmak yeter."
+  ],
+  "ornek": {
+    "istem": "84'ü asal çarpanların üslü çarpımı olarak yaz.",
+    "cozum": "84 ÷ 2 = 42, 42 ÷ 2 = 21, 21 ÷ 3 = 7, 7 ÷ 7 = 1. 84 = 2² · 3¹ · 7¹."
+  },
+  "tur": "anlatim",
+  "uniteId": "u01"
+}

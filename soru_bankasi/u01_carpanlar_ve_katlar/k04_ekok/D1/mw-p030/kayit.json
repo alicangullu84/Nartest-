@@ -1,0 +1,22 @@
+{
+  "id": "mw-p030",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k04",
+  "bant": "D1",
+  "baslik": "EKOK (En Küçük Ortak Kat) Problemleri",
+  "kaynak": "mw",
+  "pdfSayfa": 30,
+  "basiliSayfa": 30,
+  "altinVar": false,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k04-01",
+    "ab-u01-k04-02",
+    "ab-u01-k04-03",
+    "ab-u01-k04-04",
+    "ab-u01-k04-05",
+    "ab-u01-k04-06"
+  ],
+  "gorsel": "gorseller/mw/p030.png"
+}

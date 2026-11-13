@@ -1,0 +1,23 @@
+{
+  "id": "mw-p012",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k01",
+  "bant": "D4",
+  "baslik": "Pozitif Tam Sayıların Pozitif Çarpanları",
+  "kaynak": "mw",
+  "pdfSayfa": 12,
+  "basiliSayfa": 12,
+  "altinVar": false,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k01-01",
+    "ab-u01-k01-02",
+    "ab-u01-k01-03",
+    "ab-u01-k01-04",
+    "ab-u01-k01-05",
+    "ab-u01-k01-06",
+    "ab-u01-k01-07"
+  ],
+  "gorsel": "gorseller/mw/p012.png"
+}

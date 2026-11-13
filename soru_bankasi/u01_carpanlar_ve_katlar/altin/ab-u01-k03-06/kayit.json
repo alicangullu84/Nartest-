@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k03-06",
+  "sira": 6,
+  "kazanimId": "k03",
+  "baslik": "Ortak bölenler, EBOB'un bölenleridir",
+  "metin": "İki sayının bütün ortak bölenleri, EBOB'larının bölenleridir. Farklı şişe, farklı aralık veya farklı parça sayısı sorulursa EBOB'un pozitif bölenleri sayılır.",
+  "ornek": "EBOB 12 ise ortak bölenler 1, 2, 3, 4, 6 ve 12'dir. 6 farklı pozitif parça vardır.",
+  "yanlis": [
+    {
+      "kod": "sadece-ebob",
+      "uyari": "'Kaç farklı' sorusunda yalnız EBOB'u yazma. EBOB'un bütün bölenlerini say."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 21,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

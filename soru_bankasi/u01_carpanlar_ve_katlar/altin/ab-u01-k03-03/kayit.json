@@ -1,0 +1,24 @@
+{
+  "id": "ab-u01-k03-03",
+  "sira": 3,
+  "kazanimId": "k03",
+  "baslik": "EBOB sayılardan büyük olamaz",
+  "metin": "EBOB her iki sayının da bölenidir. Bu yüzden sayılardan büyük olamaz. Biri diğerinin katıysa EBOB küçük olan sayıdır.",
+  "ornek": "36, 18'in katıdır. EBOB(18, 36) = 18.",
+  "yanlis": [
+    {
+      "kod": "buyuk-olani-yazma",
+      "uyari": "Biri diğerinin katıysa büyük olanı EBOB yazma. Küçük olan EBOB'tur."
+    }
+  ],
+  "kaynak": [
+    {
+      "kod": "mw",
+      "sayfa": 18,
+      "yer": "Altın Bilgiler"
+    }
+  ],
+  "tur": "altin",
+  "uniteId": "u01",
+  "kazanimKodu": "M.8.1.1.2"
+}

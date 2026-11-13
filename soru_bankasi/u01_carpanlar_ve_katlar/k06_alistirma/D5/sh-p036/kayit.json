@@ -1,0 +1,20 @@
+{
+  "id": "sh-p036",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k06",
+  "bant": "D5",
+  "baslik": "Konu değerlendirme",
+  "kaynak": "sh",
+  "pdfSayfa": 36,
+  "basiliSayfa": 36,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k06-01",
+    "ab-u01-k03-05",
+    "ab-u01-k04-05",
+    "ab-u01-k05-01",
+    "ab-u01-k01-07"
+  ],
+  "gorsel": "gorseller/sh/p036.png"
+}

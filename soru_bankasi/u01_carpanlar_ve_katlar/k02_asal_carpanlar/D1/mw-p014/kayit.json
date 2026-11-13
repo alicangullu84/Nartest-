@@ -1,0 +1,33 @@
+{
+  "id": "mw-p014",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k02",
+  "bant": "D1",
+  "baslik": "Asal Çarpanlara Ayırma",
+  "kaynak": "mw",
+  "pdfSayfa": 14,
+  "basiliSayfa": 14,
+  "altinVar": false,
+  "sorular": [
+    {
+      "no": "6",
+      "kok": "Asal çarpanlarının toplamı 5 olan en büyük iki basamaklı doğal sayı kaçtır?",
+      "cevap": "96",
+      "cozum": "Farklı asal çarpanların toplamı 5 ise asallar 2 ve 3'tür. 2^a·3^b biçimindeki en büyük iki basamaklı sayı 32×3 = 96'dır.",
+      "altinBilgiId": [
+        "ab-u01-k02-03"
+      ],
+      "yanlis": {}
+    }
+  ],
+  "altinBilgiId": [
+    "ab-u01-k02-01",
+    "ab-u01-k02-02",
+    "ab-u01-k02-03",
+    "ab-u01-k02-04",
+    "ab-u01-k02-05",
+    "ab-u01-k02-06"
+  ],
+  "gorsel": "gorseller/mw/p014.png"
+}

@@ -1,0 +1,217 @@
+{
+  "kazanimId": "k06",
+  "baslik": "Alıştırma ve karışık pekiştirme",
+  "kod": "M.8.1.1",
+  "altin": [
+    "ab-u01-k06-01"
+  ],
+  "anlatim": [
+    "an-u01-k06"
+  ],
+  "etkinlik": [],
+  "durak": 10,
+  "bantlar": [
+    {
+      "bant": "D1",
+      "durak": 0
+    },
+    {
+      "bant": "D2",
+      "durak": 0
+    },
+    {
+      "bant": "D3",
+      "durak": 0
+    },
+    {
+      "bant": "D4",
+      "durak": 0
+    },
+    {
+      "bant": "D5",
+      "durak": 10
+    }
+  ],
+  "liste": [
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p027",
+      "kazanimId": "k06",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 27,
+      "baslik": "EBOB ve EKOK birlikte",
+      "gorsel": "gorseller/sh/p027.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-05",
+        "ab-u01-k05-01",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p028",
+      "kazanimId": "k06",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 28,
+      "baslik": "EBOB ve EKOK birlikte",
+      "gorsel": "gorseller/sh/p028.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-05",
+        "ab-u01-k05-01",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p029",
+      "kazanimId": "k06",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 29,
+      "baslik": "EBOB ve EKOK birlikte",
+      "gorsel": "gorseller/sh/p029.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-05",
+        "ab-u01-k05-01",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p030",
+      "kazanimId": "k06",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 30,
+      "baslik": "EBOB ve EKOK birlikte",
+      "gorsel": "gorseller/sh/p030.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-05",
+        "ab-u01-k05-01",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p035",
+      "kazanimId": "k06",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 35,
+      "baslik": "Konu değerlendirme",
+      "gorsel": "gorseller/sh/p035.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-05",
+        "ab-u01-k05-01",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p036",
+      "kazanimId": "k06",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 36,
+      "baslik": "Konu değerlendirme",
+      "gorsel": "gorseller/sh/p036.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-05",
+        "ab-u01-k05-01",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p037",
+      "kazanimId": "k06",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 37,
+      "baslik": "Konu değerlendirme",
+      "gorsel": "gorseller/sh/p037.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-05",
+        "ab-u01-k05-01",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p038",
+      "kazanimId": "k06",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 38,
+      "baslik": "Konu değerlendirme",
+      "gorsel": "gorseller/sh/p038.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-05",
+        "ab-u01-k05-01",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p039",
+      "kazanimId": "k06",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 39,
+      "baslik": "Konu değerlendirme",
+      "gorsel": "gorseller/sh/p039.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-05",
+        "ab-u01-k05-01",
+        "ab-u01-k01-07"
+      ]
+    },
+    {
+      "tur": "sayfa",
+      "rol": "tam",
+      "id": "sh-p040",
+      "kazanimId": "k06",
+      "bant": "D5",
+      "kaynak": "sh",
+      "basiliSayfa": 40,
+      "baslik": "Konu değerlendirme",
+      "gorsel": "gorseller/sh/p040.png",
+      "altinBilgiId": [
+        "ab-u01-k06-01",
+        "ab-u01-k03-05",
+        "ab-u01-k04-05",
+        "ab-u01-k05-01",
+        "ab-u01-k01-07"
+      ]
+    }
+  ]
+}

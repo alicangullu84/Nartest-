@@ -1,0 +1,21 @@
+{
+  "id": "mw-p037",
+  "tur": "sayfa",
+  "uniteId": "u01",
+  "kazanimId": "k08",
+  "bant": "D5",
+  "baslik": "Beceri Temelli Sorular",
+  "kaynak": "mw",
+  "pdfSayfa": 37,
+  "basiliSayfa": 37,
+  "altinVar": false,
+  "sorular": [],
+  "altinBilgiId": [
+    "ab-u01-k06-01",
+    "ab-u01-k03-05",
+    "ab-u01-k04-06",
+    "ab-u01-k05-04",
+    "ab-u01-k01-05"
+  ],
+  "gorsel": "gorseller/mw/p037.png"
+}
