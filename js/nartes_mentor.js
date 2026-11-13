@@ -12,6 +12,40 @@
   // ==========================================================================
 
   const VOICE_PREF_KEY = "nartes_mentor_voice_enabled_v1";
+  const SOCIAL_SESSION_KEY = "nartes_student_social_v1";
+
+  function loadSocialState() {
+    try {
+      const raw = window.sessionStorage && window.sessionStorage.getItem(SOCIAL_SESSION_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (parsed && typeof parsed === "object") {
+        return {
+          studentName: typeof parsed.studentName === "string" ? parsed.studentName : "",
+          lastSocialStage: typeof parsed.lastSocialStage === "string" ? parsed.lastSocialStage : "",
+          cursors: parsed.cursors && typeof parsed.cursors === "object" ? parsed.cursors : {}
+        };
+      }
+    } catch (_) {}
+    return { studentName: "", lastSocialStage: "", cursors: {} };
+  }
+
+  let socialState = loadSocialState();
+
+  function saveSocialState() {
+    try {
+      if (window.sessionStorage) {
+        window.sessionStorage.setItem(SOCIAL_SESSION_KEY, JSON.stringify(socialState));
+      }
+    } catch (_) {}
+  }
+
+  function pickSocialVariant(key, list) {
+    if (!Array.isArray(list) || !list.length) return "";
+    const cur = Number(socialState.cursors[key] || 0);
+    socialState.cursors[key] = cur + 1;
+    saveSocialState();
+    return list[cur % list.length];
+  }
 
   // ==========================================================================
   // 1. ÖZGÜN ÇİZGİ KARAKTER MASKOTU (SVG): "BİLGE NARTES"
@@ -1045,6 +1079,7 @@
               activeBlankId: studentTrace.activeBlankId,
               liveScreen: studentTrace.liveScreen || null,
               liveTask: studentTrace.liveTask || null,
+              studentName: socialState.studentName || "",
               history: studentTrace.chatHistory.slice(-6)
             })
           });
@@ -1114,6 +1149,230 @@
     return x;
   }
 
+  function matchFriendlySocialTurn(rawText, ctx) {
+    const clean = String(rawText || "").trim();
+    if (!clean) return null;
+    const lower = clean.toLocaleLowerCase("tr-TR");
+
+    // Mesajda gerçek matematik içeriği (sayı, şık veya konu terimi) varsa doğrudan Sokratik matematik motoruna geç
+    if (
+      /\d/.test(lower) ||
+      /(?:^|\s)[abcd]\s*(?:şıkkı|seçeneği|olur\s*mu|m[ıiuü]|doğru)/i.test(lower) ||
+      /\b(çarpan|bölen|katı|katlar|asal|ebob|ekok|üslü|karekök|denklem|olasılık|üçgen|tablo|ağaç|gökkuşağı|boşluk|şık|seçenek|ipucu|çözüm|işlem|bölme|çarpma|toplama|çıkarma|formül|kural|nasıl\s*çöz|neden\s*yanlış|niye\s*yanlış)\b/i.test(lower)
+    ) {
+      return null;
+    }
+
+    const kaz = (ctx && ctx.kaz) || {};
+    const unit = (ctx && ctx.unit) || {};
+    const stop = (ctx && ctx.stop) || {};
+    const liveTask = studentTrace && studentTrace.liveTask ? studentTrace.liveTask : null;
+    const rawTopic = kaz.title || unit.title || "matematik";
+    const shortTopic = String(rawTopic).replace(/^\d+\.\s*/, "").trim() || "matematik";
+    const activeHint = (liveTask && liveTask.hint) || stop.hint;
+
+    const NON_NAME_WORDS = new Set([
+      "de", "da", "iyiyim", "iyi", "kötüyüm", "kötü", "harikayım", "harika",
+      "süperim", "süper", "bomba", "fena", "idare", "yorgunum", "yorgun",
+      "sıkıldım", "hazırım", "hazır", "başlayalım", "tamam", "olur", "evet",
+      "hayır", "yok", "var", "anlamadım", "anladım", "bilmiyorum", "biliyorum",
+      "yapamadım", "yapamıyorum", "çözemedim", "geldim", "buradayım",
+      "öğrenciyim", "öğrenci", "merhaba", "merhabalar", "selam", "selamlar",
+      "slm", "mrb", "hey", "günaydın", "naber", "nasılsın", "nasılsınız",
+      "teşekkürler", "teşekkür", "sağol", "eyvallah", "matematik", "soru",
+      "ipucu", "yardım", "biraz", "çok", "hiç", "pek", "gayet", "bugün",
+      "şimdi", "sen", "peki", "kimsin", "lütfen"
+    ]);
+
+    function formatPersonName(rawWord) {
+      const w = String(rawWord || "").trim();
+      if (!w) return "";
+      const lw = w.toLocaleLowerCase("tr-TR");
+      if (NON_NAME_WORDS.has(lw)) return "";
+      return w.charAt(0).toLocaleUpperCase("tr-TR") + lw.slice(1);
+    }
+
+    function extractStudentName() {
+      let m = clean.match(/(?:benim\s+ad[ıi]m|ad[ıi]m|ismim)\s+([a-zçğıöşü]{2,16})\b/i);
+      if (m && m[1]) {
+        const cand = formatPersonName(m[1]);
+        if (cand) return cand;
+      }
+      m = clean.match(/^ben\s+([a-zçğıöşü]{2,16})[!.,?\s]*$/i);
+      if (m && m[1]) {
+        const cand = formatPersonName(m[1]);
+        if (cand) return cand;
+      }
+      if (socialState.lastSocialStage === "greeted_ask_name") {
+        const single = clean.match(/^([a-zçğıöşü]{2,15})[!.?]*$/i);
+        if (single && single[1]) {
+          const cand = formatPersonName(single[1]);
+          if (cand) return cand;
+        }
+      }
+      return "";
+    }
+
+    const curName = socialState.studentName ? ` **${socialState.studentName}**` : "";
+    const hasMoodWord = /\b(iyiyim|harikayım|süperim|çok iyiyim|bomba gibiyim|fena değil(?:im)?)\b/i.test(lower);
+    const hasAskBack = /\b(sen\s*nasılsın|ya\s*sen|peki\s*sen|sen\s*iyi\s*misin|sen\s*naber)\b/i.test(lower);
+
+    // 1. Birleşik Hal + Karşı Soru ("İyiyim, sen nasılsın?")
+    if (hasMoodWord && hasAskBack) {
+      socialState.lastSocialStage = "ready_bridge";
+      saveSocialState();
+      return {
+        intent: "both_mood_and_ask",
+        mood: "praise",
+        reply: pickSocialVariant("both_mood_and_ask", [
+          `Ben de çok iyiyim, teşekkür ederim${curName}! 😄 Enerjin harika; hazırsan **${shortTopic}** çalışmamıza keyifle başlayalım mı?`,
+          `İyi olmana çok sevindim${curName}, ben de harikayım! 🌟 Bu güzel enerjiyle bugünkü matematik keşfimize geçelim mi?`,
+          `Ben de süperim, çok sağ ol${curName}! 😊 İkimizin de keyfi yerindeyken ekrandaki adıma birlikte bakalım mı?`,
+          `Harika, ben de çok iyiyim${curName}! ✨ Seninle matematik çalışmak çok keyifli olacak, başlayalım mı?`
+        ])
+      };
+    }
+
+    // 2. Hal Hatır Sorma ("Nasılsın?", "İyi misin?", "Naber?")
+    if (/\b(nasılsın|nasılsınız|iyi\s*misin|naber|ne\s*haber|nasıl\s*gidiyor|keyifler\s*nasıl|halin\s*nasıl)\b/i.test(lower)) {
+      socialState.lastSocialStage = "asked_how_are_you";
+      saveSocialState();
+      return {
+        intent: "how_are_you",
+        mood: "praise",
+        reply: pickSocialVariant("how_are_you", [
+          `İyiyim, teşekkür ederim; sen nasılsın? 😊 Seninle bugün keyifle matematik keşifleri yapacağımız için çok heyecanlıyım!`,
+          `Çok iyiyim, sen nasılsın? 🌟 Birlikte adım adım ilerleyince **${shortTopic}** çalışmak gerçekten çok eğlenceli oluyor!`,
+          `Harikayım, sorduğun için teşekkürler; peki sen nasılsın? 😊 Bugün matematiği hiç acele etmeden, severek öğreneceğiz!`,
+          `İyiyim, sen nasılsın bakalım? 😄 Birlikte düşündüğümüzde her matematik adımının ne kadar kolaylaştığını göreceksin!`,
+          `Enerjim süper, iyiyim; sen nasılsın? ✨ Bugün **${shortTopic}** konusunda sana yol arkadaşı olmak çok güzel!`,
+          `Çok iyiyim, iyi ki geldin! Sen nasılsın? 😊 Bugün güzel bir enerjiyle harika matematik çalışmaları yapacağız.`
+        ])
+      };
+    }
+
+    // 3. İsimle Tanışma ("Ben Zeynep", "Adım Ali")
+    const extractedName = extractStudentName();
+    if (extractedName) {
+      socialState.studentName = extractedName;
+      socialState.lastSocialStage = "ready_bridge";
+      saveSocialState();
+      return {
+        intent: "intro_name",
+        mood: "praise",
+        reply: pickSocialVariant("intro_name", [
+          `Tanıştığımıza çok sevindim **${extractedName}**! 😊 Seninle harika bir matematik ekibi olacağız; **${shortTopic}** keşfimize başlayalım mı?`,
+          `Memnun oldum **${extractedName}**! 👋 Çok güzel bir enerjin var. Bugün matematiği birlikte severek öğrenmeye hazır mısın?`,
+          `Hoş geldin **${extractedName}**! 🌟 Takıldığın her anda yanındayım; ekrandaki **${shortTopic}** adımına birlikte bakalım mı?`,
+          `Ne güzel tanışmak **${extractedName}**! 😊 Birlikte adım adım ilerleyerek bugünkü matematik çalışmamızı keyifle tamamlayacağız!`
+        ])
+      };
+    }
+
+    // 4. Saf Selamlaşma ("Merhaba", "Selam", "Günaydın")
+    if (/^(merhaba|merhabalar|selam|selamlar|slm|mrb|hey|günaydın|iyi\s*günler|iyi\s*akşamlar|iyi\s*dersler|hoş\s*bulduk)[!.,?\s]*$/i.test(lower)) {
+      if (!socialState.studentName) {
+        socialState.lastSocialStage = "greeted_ask_name";
+        saveSocialState();
+        return {
+          intent: "greeting",
+          mood: "praise",
+          reply: pickSocialVariant("greeting_new", [
+            `Merhaba, nasılsın? 😊 Ben Bilge NarTES! Seninle tanışmayı çok isterim, ismin ne?`,
+            `Merhaba, hoş geldin! 👋 Ben Bilge NarTES. Bugün nasılsın, tanışalım mı?`,
+            `Selam, nasılsın bakalım? 😊 Ben senin matematik dostun Bilge NarTES. Adın ne?`,
+            `Merhaba! 🌟 Seni gördüğüme çok sevindim, nasılsın? İstersen önce tanışalım!`,
+            `Hoş geldin, merhaba! 😊 Nasılsın bugün? Ben yol arkadaşın Bilge NarTES!`
+          ])
+        };
+      }
+      socialState.lastSocialStage = "asked_how_are_you";
+      saveSocialState();
+      return {
+        intent: "greeting_known",
+        mood: "praise",
+        reply: pickSocialVariant("greeting_known", [
+          `Merhaba **${socialState.studentName}**, nasılsın? 😊 Seni yeniden görmek çok güzel!`,
+          `Selam **${socialState.studentName}**! 👋 Tekrar hoş geldin, bugün nasılsın bakalım?`,
+          `Merhaba **${socialState.studentName}**! 🌟 Bugün keyifler nasıl, nasılsın?`
+        ])
+      };
+    }
+
+    // 5. Kimsin / Kendini Tanıt
+    if (/\b(sen\s*kimsin|kimsin\s*sen|adın\s*ne|ismin\s*ne|nesin\s*sen|robot\s*musun|yapay\s*zeka\s*mısın)\b/i.test(lower)) {
+      return {
+        intent: "who_are_you",
+        mood: "guide",
+        reply: pickSocialVariant("who_are_you", [
+          `Ben Bilge NarTES! 🦉 Senin samimi matematik dostunum; cevabı direkt söylemem ama doğruyu bulman için hep yanındayım!`,
+          `Adım Bilge NarTES 😊 Matematik çalışırken seninle sohbet eden ve takıldığın adımlarda ipucu veren yol arkadaşınım!`,
+          `Ben dijital matematik rehberin Bilge NarTES'im! ✨ Birlikte keşfetmeyi çok severim. Peki sen nasılsın?`
+        ])
+      };
+    }
+
+    // 6. Olumsuz / Yorgun / Sıkılmış Ruh Hali
+    if (/\b(kötüyüm|pek\s*iyi\s*değilim|iyi\s*değilim|yorgunum|çok\s*yoruldum|uykum\s*var|sıkıldım|canım\s*sıkkın|moralim\s*bozuk|matematik\s*çok\s*zor|matematik\s*zor|matematiği\s*sevmiyorum|korkuyorum|yapamıyorum\s*hiç)\b/i.test(lower)) {
+      socialState.lastSocialStage = "ready_bridge";
+      saveSocialState();
+      return {
+        intent: "mood_tired",
+        mood: "encourage",
+        reply: pickSocialVariant("mood_tired", [
+          `Seni çok iyi anlıyorum${curName}, bazen yorulmak çok normal 😊 Acele etmeden, küçük ve kolay adımlarla ilerleyelim mi?`,
+          `Hiç canını sıkma${curName}, yalnız değilsin 🤗 Birlikte ipuçlarıyla gidince matematiğin ne kadar keyifli olduğunu göreceksin!`,
+          `Moralini bozma${curName}, ben tam bunun için yanındayım 😊 İstersen ekrandaki adımı en basit yerinden birlikte başlatalım?`,
+          `Derin bir nefes alalım${curName}, hiç acelemiz yok 😊 Hazır olduğunda ekrandaki görevi beraberce kolayca çözeceğiz!`
+        ])
+      };
+    }
+
+    // 7. Olumlu Ruh Hali Yanıtı ("İyiyim", "Harikayım")
+    if (/^(ben\s*de\s*)?(çok\s*)?(iyiyim|harikayım|süperim|bomba\s*gibiyim|gayet\s*iyiyim|fena\s*değil|fena\s*değilim|idare\s*eder|güzel|çok\s*şükür|şükür|iyidir)[!.,?\s]*(teşekkürler|teşekkür\s*ederim|sağ\s*ol|sağol)?[!.,?\s]*$/i.test(lower)) {
+      socialState.lastSocialStage = "ready_bridge";
+      saveSocialState();
+      return {
+        intent: "mood_positive",
+        mood: "praise",
+        reply: pickSocialVariant("mood_positive", [
+          `İyi olmana çok sevindim${curName}! 😄 Enerjin yerindeyken ekrandaki **${shortTopic}** adımına birlikte göz atalım mı?`,
+          `Harika, bu güzel enerjin bana da geçti${curName}! 🌟 Hazırsan ekrandaki adımı keyifle incelemeye başlayalım mı?`,
+          `Hep böyle iyi ol${curName}! 😊 Hadi bu güzel motivasyonla bugünkü matematik keşfimize birlikte başlayalım!`,
+          `Bunu duyduğuma çok mutlu oldum${curName}! ✨ Hazır hissettiğinde ekrandaki görevde birlikte adım adım ilerleyebiliriz.`
+        ])
+      };
+    }
+
+    // 8. Teşekkür
+    if (/^(çok\s*)?(teşekkürler|teşekkür\s*ederim|sağ\s*ol|sağol|eyvallah|harikasın|süpersin|çok\s*iyi\s*anlattın)[!.,?\s]*$/i.test(lower)) {
+      return {
+        intent: "thanks",
+        mood: "praise",
+        reply: pickSocialVariant("thanks", [
+          `Rica ederim${curName}, ne demek! 😊 Senin gayretin çok güzel; ekrandaki adımda devam etmeye hazır mısın?`,
+          `Ben teşekkür ederim${curName}! 🌟 Merak edip sorman harika; hadi bu güzel tempoyla sıradaki adıma bakalım!`,
+          `Ne mutlu bana${curName}! 😄 Birlikte çalışmak çok keyifli, ekrandaki görevde devam edelim mi?`
+        ])
+      };
+    }
+
+    // 9. Derse Başlama Onayı ("Hazırım", "Başlayalım", "Evet")
+    if (/^(hazırım|evet\s*hazırım|başlayalım|hadi\s*başlayalım|hadi|olur|olur\s*başlayalım|tamam|tamam\s*başlayalım|evet|bakalım|geçelim)[!.,?\s]*$/i.test(lower)) {
+      socialState.lastSocialStage = "in_lesson";
+      saveSocialState();
+      const firstHint = buildProgressiveSocraticHint({ customHint: activeHint }, ctx, 1);
+      const hintBody = firstHint && firstHint.body ? firstHint.body : `**${shortTopic}** adımında ilk hangi sayıları inceleyelim?`;
+      return {
+        intent: "ready_start",
+        mood: "guide",
+        reply: enforceMax25WordsClient(`Harika${curName}! 🚀 ${hintBody}`, MAX_MENTOR_WORDS)
+      };
+    }
+
+    return null;
+  }
+
   function generateOfflineFallbackReply(rawText, ctx) {
     const text = String(rawText || "").trim();
     const lower = text.toLocaleLowerCase("tr-TR");
@@ -1136,8 +1395,9 @@
     if (OFF_TOPIC_LIST.some(w => lower.includes(w))) {
       return enforceMax25WordsClient(`Şimdi konumuz **${topicName}** 😊 Ekrandaki soruda verilen sayılarla ilk hangi işlemi kurmalıyız?`);
     }
-    if (/^(merhaba|selam|selamlar|günaydın|iyi dersler|nasılsın)[!.,?\s]*$/i.test(lower)) {
-      return enforceMax25WordsClient(`Merhaba! 😊 Ekrandaki **${topicName}** sorusunda takıldığın adımı veya denediğin şıkkı sorabilirsin.`);
+    const socialHit = matchFriendlySocialTurn(text, ctx);
+    if (socialHit) {
+      return enforceMax25WordsClient(socialHit.reply, MAX_MENTOR_WORDS);
     }
     if (GIVE_ANSWER_PATTERNS.some(re => re.test(lower))) {
       const cleanH = sanitizeHintWithoutAnswer(activeHint, stop);
@@ -1378,7 +1638,7 @@
             type="text"
             id="nartesChatInput"
             class="nartes-chat-input"
-            placeholder="Takıldığın yeri kendi cümlelerinle sor..."
+            placeholder="Merhaba yaz, tanışalım ya da takıldığın adımı sor..."
             maxlength="280"
           />
           <button type="submit" class="nartes-chat-send" id="nartesChatSendBtn" title="Gönder">Sor ✨</button>
@@ -1420,8 +1680,16 @@
         const msgBox = document.getElementById("nartesChatMessages");
         if (msgBox && msgBox.children.length === 0) {
           const stopTitle = (currentContext.stop && currentContext.stop.title) || "Çarpanlar ve Katlar";
-          const welcome = enforceMax25WordsClient(`Selam! 👋 Ekrandaki **${stopTitle}** adımında takıldığın yeri veya denediğin şıkkı sor, birlikte çözelim!`);
-          appendMessage("bot", welcome, true, "guide");
+          let welcome;
+          if (socialState.studentName) {
+            welcome = `Tekrar merhaba **${socialState.studentName}**! 😊 Bugün nasılsın? Ekrandaki **${stopTitle}** adımına birlikte bakalım mı?`;
+            socialState.lastSocialStage = "asked_how_are_you";
+          } else {
+            welcome = `Merhaba, hoş geldin! 👋 Ben Bilge NarTES. Bugün nasılsın? İstersen önce tanışabilir ya da ekrandaki adıma başlayabiliriz!`;
+            socialState.lastSocialStage = "greeted_ask_name";
+          }
+          saveSocialState();
+          appendMessage("bot", enforceMax25WordsClient(welcome, MAX_MENTOR_WORDS), true, "praise");
         }
         setTimeout(() => input && input.focus(), 60);
       }
@@ -1703,19 +1971,29 @@
     const bubbleEl = streamItem.querySelector(".nartes-msg-bubble");
     const avatarEl = streamItem.querySelector(".nartes-msg-avatar");
 
-    let finalReply = await streamFromLocalServerAI(cleanQ, currentContext, (partialText) => {
-      if (!bubbleEl) return;
-      renderStreamingBubbleMath(bubbleEl, partialText);
-      if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
-    });
+    const socialHit = matchFriendlySocialTurn(cleanQ, currentContext);
+    let finalReply = null;
+    let replyMood = "guide";
 
-    if (!finalReply) {
-      finalReply = generateOfflineFallbackReply(cleanQ, currentContext);
+    if (socialHit) {
+      await new Promise(resolve => setTimeout(resolve, 180));
+      finalReply = socialHit.reply;
+      replyMood = socialHit.mood || "praise";
+    } else {
+      finalReply = await streamFromLocalServerAI(cleanQ, currentContext, (partialText) => {
+        if (!bubbleEl) return;
+        renderStreamingBubbleMath(bubbleEl, partialText);
+        if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
+      });
+
+      if (!finalReply) {
+        finalReply = generateOfflineFallbackReply(cleanQ, currentContext);
+      }
     }
     finalReply = enforceMax25WordsClient(finalReply, MAX_MENTOR_WORDS);
 
     streamItem.classList.remove("is-streaming");
-    if (avatarEl) avatarEl.innerHTML = getAvatarHtml("nartes-avatar-sm", "guide");
+    if (avatarEl) avatarEl.innerHTML = getAvatarHtml("nartes-avatar-sm", replyMood);
     if (bubbleEl) {
       bubbleEl.innerHTML = formatMarkdownAndMath(finalReply);
       renderMathInside(bubbleEl);
@@ -1729,7 +2007,7 @@
       studentTrace.chatHistory = studentTrace.chatHistory.slice(-12);
     }
 
-    setHeaderMascotMood("guide");
+    setHeaderMascotMood(replyMood);
     speakMentorMessage(finalReply);
   }
 

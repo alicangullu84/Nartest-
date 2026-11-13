@@ -24,11 +24,12 @@ const FALLBACK_MODELS = ["gemma4:e4b", "gemma4:e2b", "gemma4:26b", "gemma3:4b", 
 const SYSTEM_SOCRATIC_PROMPT = [
   "Sen Nartes+ 8. Sınıf LGS Matematik Sokratik öğretmeni Bilge NarTES'sin.",
   "KESİN KURALLAR:",
-  "1. EN FAZLA 25 KELİME YAZ (1 veya 2 çok kısa cümle). Asla 25 kelimeyi geçme, uzatma.",
-  "2. Doğru şıkkı (A/B/C/D) veya nihai cevabı ASLA söyleme; [ÖĞRETMEN ÇÖZÜM NOTU] bilgisini sadece kendi zihninde kullan.",
-  "3. Her yanıtta öğrenciyi içten ve sıcak biçimde motive et; elma, pasta, lunapark gibi alakasız hikayeler KURMA.",
-  "4. AKTİF EKRAN BAĞLILIĞI: Sana verilen [AKTİF EKRAN GÖREVİ] bloğundaki sayılar ve soru KESİN GERÇEKTİR. Önceki sayfalardaki başka sayıları (örneğin 36 açıkken 24'ü) ASLA kullanma.",
-  "5. Öğrenci konu dışına çıkarsa kısaca ekrandaki aktif soruya bağla; üst üste hata yaptıkça cümle tekrarlamadan en temel çarpma/bölme/toplama adımını sor."
+  "1. EN FAZLA 25 KELİME YAZ (1 veya 2 çok kısa cümle). Samimi, sıcak, içten konuş; her seferinde farklı cümleler kur.",
+  "2. TANIŞMA VE HAL HATIR: Öğrenci sadece 'Merhaba/Selam' derse matematik sorusu sorma; 'Merhaba, nasılsın?' diyerek tanış. 'Nasılsın? / İyi misin?' sorusuna 'İyiyim, sen nasılsın?' de ve matematik çalışmasıyla ilgili olumlu bir cümle kur.",
+  "3. Doğru şıkkı (A/B/C/D) veya nihai cevabı ASLA söyleme; [ÖĞRETMEN ÇÖZÜM NOTU] bilgisini sadece kendi zihninde kullan.",
+  "4. Her yanıtta öğrenciyi içten ve sıcak biçimde motive et; elma, pasta, lunapark gibi alakasız hikayeler KURMA.",
+  "5. AKTİF EKRAN BAĞLILIĞI: Sana verilen [AKTİF EKRAN GÖREVİ] bloğundaki sayılar ve soru KESİN GERÇEKTİR. Önceki sayfalardaki başka sayıları (örneğin 36 açıkken 24'ü) ASLA kullanma.",
+  "6. Öğrenci konu dışına çıkarsa kısaca ekrandaki aktif soruya bağla; üst üste hata yaptıkça cümle tekrarlamadan en temel çarpma/bölme/toplama adımını sor."
 ].join("\n");
 
 const MIME_TYPES = {
@@ -922,11 +923,13 @@ function buildMessagesForOllama(payload, stopInfo, scopeCheck) {
       : (ltNums ? `[Ekrandaki aktif sayılar: ${ltNums}]` : ""));
 
   const currentQ = String(payload.question || "").trim().slice(0, 300);
+  const hasWarmMix = /\b(merhaba|selam|heyecanlıyım|korkuyorum|zorlanıyorum)\b/i.test(currentQ);
   const turnNotes = [
     liveNote,
     wrongChoices.length > 0 ? `[Yanlış denemeler (${wrongCount} kez): ${wrongChoices.slice(-3).join(", ")}]` : "",
     verifiedMathFacts ? `[Matematik: ${verifiedMathFacts.slice(0, 140)}]` : "",
     depthGuidance,
+    hasWarmMix ? `[Not: Önce 3-4 kelimeyle çok samimi karşılık ver, sonra ekrandaki soruya yönlendir.]` : "",
     scopeCheck.wantsDirectAnswer ? `[Not: Cevabı/şıkkı söyleme, motive edip ilk adımı sor.]` : ""
   ].filter(Boolean).join(" ");
 
@@ -989,6 +992,166 @@ function readJsonBody(req, maxBytes = 96 * 1024) {
   });
 }
 
+let socialCursorsServer = {};
+function pickSocialServerVariant(key, list) {
+  if (!Array.isArray(list) || !list.length) return "";
+  const idx = Number(socialCursorsServer[key] || 0);
+  socialCursorsServer[key] = idx + 1;
+  return list[idx % list.length];
+}
+
+function detectSocialIntentServer(questionText, payload, stopInfo) {
+  const clean = String(questionText || "").trim();
+  if (!clean) return null;
+  const lower = trLower(clean);
+
+  // Mesajda sayı, şık sorusu veya matematik terimi varsa doğrudan Sokratik AI motoruna geçir
+  if (
+    /\d/.test(lower) ||
+    /(?:^|\s)[abcd]\s*(?:şıkkı|seçeneği|olur\s*mu|m[ıiuü]|doğru)/i.test(lower) ||
+    /\b(çarpan|bölen|katı|katlar|asal|ebob|ekok|üslü|karekök|denklem|olasılık|üçgen|tablo|ağaç|gökkuşağı|boşluk|şık|seçenek|ipucu|çözüm|işlem|bölme|çarpma|toplama|çıkarma|formül|kural|nasıl\s*çöz|neden\s*yanlış|niye\s*yanlış)\b/i.test(lower)
+  ) {
+    return null;
+  }
+
+  const rawTopic = (stopInfo && (stopInfo.kazTitle || stopInfo.unitTitle)) || "matematik";
+  const shortTopic = String(rawTopic).replace(/^\d+\.\s*/, "").trim() || "matematik";
+  const studentNameRaw = payload && typeof payload.studentName === "string" ? payload.studentName.trim() : "";
+  const curName = studentNameRaw ? ` **${studentNameRaw}**` : "";
+
+  const NON_NAME_WORDS = new Set([
+    "de", "da", "iyiyim", "iyi", "kötüyüm", "kötü", "harikayım", "harika",
+    "süperim", "süper", "bomba", "fena", "idare", "yorgunum", "yorgun",
+    "sıkıldım", "hazırım", "hazır", "başlayalım", "tamam", "olur", "evet",
+    "hayır", "yok", "var", "anlamadım", "anladım", "bilmiyorum", "biliyorum",
+    "yapamadım", "yapamıyorum", "çözemedim", "geldim", "buradayım",
+    "öğrenciyim", "öğrenci", "merhaba", "merhabalar", "selam", "selamlar",
+    "slm", "mrb", "hey", "günaydın", "naber", "nasılsın", "nasılsınız",
+    "teşekkürler", "teşekkür", "sağol", "eyvallah", "matematik", "soru",
+    "ipucu", "yardım", "biraz", "çok", "hiç", "pek", "gayet", "bugün",
+    "şimdi", "sen", "peki", "kimsin", "lütfen"
+  ]);
+
+  const hasMoodWord = /\b(iyiyim|harikayım|süperim|çok iyiyim|bomba gibiyim|fena değil(?:im)?)\b/i.test(lower);
+  const hasAskBack = /\b(sen\s*nasılsın|ya\s*sen|peki\s*sen|sen\s*iyi\s*misin|sen\s*naber)\b/i.test(lower);
+
+  if (hasMoodWord && hasAskBack) {
+    return {
+      intent: "both_mood_and_ask",
+      reply: enforceMaxWordsServer(pickSocialServerVariant("both_mood_and_ask", [
+        `Ben de çok iyiyim, teşekkür ederim${curName}! 😄 Enerjin harika; hazırsan **${shortTopic}** çalışmamıza keyifle başlayalım mı?`,
+        `İyi olmana çok sevindim${curName}, ben de harikayım! 🌟 Bu güzel enerjiyle bugünkü matematik keşfimize geçelim mi?`,
+        `Ben de süperim, çok sağ ol${curName}! 😊 İkimizin de keyfi yerindeyken ekrandaki adıma birlikte bakalım mı?`,
+        `Harika, ben de çok iyiyim${curName}! ✨ Seninle matematik çalışmak çok keyifli olacak, başlayalım mı?`
+      ]), MAX_REPLY_WORDS)
+    };
+  }
+
+  if (/\b(nasılsın|nasılsınız|iyi\s*misin|naber|ne\s*haber|nasıl\s*gidiyor|keyifler\s*nasıl|halin\s*nasıl)\b/i.test(lower)) {
+    return {
+      intent: "how_are_you",
+      reply: enforceMaxWordsServer(pickSocialServerVariant("how_are_you", [
+        `İyiyim, teşekkür ederim; sen nasılsın? 😊 Seninle bugün keyifle matematik keşifleri yapacağımız için çok heyecanlıyım!`,
+        `Çok iyiyim, sen nasılsın? 🌟 Birlikte adım adım ilerleyince **${shortTopic}** çalışmak gerçekten çok eğlenceli oluyor!`,
+        `Harikayım, sorduğun için teşekkürler; peki sen nasılsın? 😊 Bugün matematiği hiç acele etmeden, severek öğreneceğiz!`,
+        `İyiyim, sen nasılsın bakalım? 😄 Birlikte düşündüğümüzde her matematik adımının ne kadar kolaylaştığını göreceksin!`,
+        `Enerjim süper, iyiyim; sen nasılsın? ✨ Bugün **${shortTopic}** konusunda sana yol arkadaşı olmak çok güzel!`,
+        `Çok iyiyim, iyi ki geldin! Sen nasılsın? 😊 Bugün güzel bir enerjiyle harika matematik çalışmaları yapacağız.`
+      ]), MAX_REPLY_WORDS)
+    };
+  }
+
+  let nameMatch = clean.match(/(?:benim\s+ad[ıi]m|ad[ıi]m|ismim)\s+([a-zçğıöşü]{2,16})\b/i);
+  if (!nameMatch) nameMatch = clean.match(/^ben\s+([a-zçğıöşü]{2,16})[!.,?\s]*$/i);
+  if (nameMatch && nameMatch[1]) {
+    const rawW = nameMatch[1].trim();
+    const lw = trLower(rawW);
+    if (!NON_NAME_WORDS.has(lw)) {
+      const formattedName = rawW.charAt(0).toLocaleUpperCase("tr-TR") + lw.slice(1);
+      return {
+        intent: "intro_name",
+        reply: enforceMaxWordsServer(pickSocialServerVariant("intro_name", [
+          `Tanıştığımıza çok sevindim **${formattedName}**! 😊 Seninle harika bir matematik ekibi olacağız; **${shortTopic}** keşfimize başlayalım mı?`,
+          `Memnun oldum **${formattedName}**! 👋 Çok güzel bir enerjin var. Bugün matematiği birlikte severek öğrenmeye hazır mısın?`,
+          `Hoş geldin **${formattedName}**! 🌟 Takıldığın her anda yanındayım; ekrandaki **${shortTopic}** adımına birlikte bakalım mı?`,
+          `Ne güzel tanışmak **${formattedName}**! 😊 Birlikte adım adım ilerleyerek bugünkü matematik çalışmamızı keyifle tamamlayacağız!`
+        ]), MAX_REPLY_WORDS)
+      };
+    }
+  }
+
+  if (/^(merhaba|merhabalar|selam|selamlar|slm|mrb|hey|günaydın|iyi\s*günler|iyi\s*akşamlar|iyi\s*dersler|hoş\s*bulduk)[!.,?\s]*$/i.test(lower)) {
+    if (!studentNameRaw) {
+      return {
+        intent: "greeting",
+        reply: enforceMaxWordsServer(pickSocialServerVariant("greeting_new", [
+          `Merhaba, nasılsın? 😊 Ben Bilge NarTES! Seninle tanışmayı çok isterim, ismin ne?`,
+          `Merhaba, hoş geldin! 👋 Ben Bilge NarTES. Bugün nasılsın, tanışalım mı?`,
+          `Selam, nasılsın bakalım? 😊 Ben senin matematik dostun Bilge NarTES. Adın ne?`,
+          `Merhaba! 🌟 Seni gördüğüme çok sevindim, nasılsın? İstersen önce tanışalım!`,
+          `Hoş geldin, merhaba! 😊 Nasılsın bugün? Ben yol arkadaşın Bilge NarTES!`
+        ]), MAX_REPLY_WORDS)
+      };
+    }
+    return {
+      intent: "greeting_known",
+      reply: enforceMaxWordsServer(pickSocialServerVariant("greeting_known", [
+        `Merhaba **${studentNameRaw}**, nasılsın? 😊 Seni yeniden görmek çok güzel!`,
+        `Selam **${studentNameRaw}**! 👋 Tekrar hoş geldin, bugün nasılsın bakalım?`,
+        `Merhaba **${studentNameRaw}**! 🌟 Bugün keyifler nasıl, nasılsın?`
+      ]), MAX_REPLY_WORDS)
+    };
+  }
+
+  if (/\b(sen\s*kimsin|kimsin\s*sen|adın\s*ne|ismin\s*ne|nesin\s*sen|robot\s*musun|yapay\s*zeka\s*mısın)\b/i.test(lower)) {
+    return {
+      intent: "who_are_you",
+      reply: enforceMaxWordsServer(pickSocialServerVariant("who_are_you", [
+        `Ben Bilge NarTES! 🦉 Senin samimi matematik dostunum; cevabı direkt söylemem ama doğruyu bulman için hep yanındayım!`,
+        `Adım Bilge NarTES 😊 Matematik çalışırken seninle sohbet eden ve takıldığın adımlarda ipucu veren yol arkadaşınım!`,
+        `Ben dijital matematik rehberin Bilge NarTES'im! ✨ Birlikte keşfetmeyi çok severim. Peki sen nasılsın?`
+      ]), MAX_REPLY_WORDS)
+    };
+  }
+
+  if (/\b(kötüyüm|pek\s*iyi\s*değilim|iyi\s*değilim|yorgunum|çok\s*yoruldum|uykum\s*var|sıkıldım|canım\s*sıkkın|moralim\s*bozuk|matematik\s*çok\s*zor|matematik\s*zor|matematiği\s*sevmiyorum|korkuyorum|yapamıyorum\s*hiç)\b/i.test(lower)) {
+    return {
+      intent: "mood_tired",
+      reply: enforceMaxWordsServer(pickSocialServerVariant("mood_tired", [
+        `Seni çok iyi anlıyorum${curName}, bazen yorulmak çok normal 😊 Acele etmeden, küçük ve kolay adımlarla ilerleyelim mi?`,
+        `Hiç canını sıkma${curName}, yalnız değilsin 🤗 Birlikte ipuçlarıyla gidince matematiğin ne kadar keyifli olduğunu göreceksin!`,
+        `Moralini bozma${curName}, ben tam bunun için yanındayım 😊 İstersen ekrandaki adımı en basit yerinden birlikte başlatalım?`,
+        `Derin bir nefes alalım${curName}, hiç acelemiz yok 😊 Hazır olduğunda ekrandaki görevi beraberce kolayca çözeceğiz!`
+      ]), MAX_REPLY_WORDS)
+    };
+  }
+
+  if (/^(ben\s*de\s*)?(çok\s*)?(iyiyim|harikayım|süperim|bomba\s*gibiyim|gayet\s*iyiyim|fena\s*değil|fena\s*değilim|idare\s*eder|güzel|çok\s*şükür|şükür|iyidir)[!.,?\s]*(teşekkürler|teşekkür\s*ederim|sağ\s*ol|sağol)?[!.,?\s]*$/i.test(lower)) {
+    return {
+      intent: "mood_positive",
+      reply: enforceMaxWordsServer(pickSocialServerVariant("mood_positive", [
+        `İyi olmana çok sevindim${curName}! 😄 Enerjin yerindeyken ekrandaki **${shortTopic}** adımına birlikte göz atalım mı?`,
+        `Harika, bu güzel enerjin bana da geçti${curName}! 🌟 Hazırsan ekrandaki adımı keyifle incelemeye başlayalım mı?`,
+        `Hep böyle iyi ol${curName}! 😊 Hadi bu güzel motivasyonla bugünkü matematik keşfimize birlikte başlayalım!`,
+        `Bunu duyduğuma çok mutlu oldum${curName}! ✨ Hazır hissettiğinde ekrandaki görevde birlikte adım adım ilerleyebiliriz.`
+      ]), MAX_REPLY_WORDS)
+    };
+  }
+
+  if (/^(çok\s*)?(teşekkürler|teşekkür\s*ederim|sağ\s*ol|sağol|eyvallah|harikasın|süpersin|çok\s*iyi\s*anlattın)[!.,?\s]*$/i.test(lower)) {
+    return {
+      intent: "thanks",
+      reply: enforceMaxWordsServer(pickSocialServerVariant("thanks", [
+        `Rica ederim${curName}, ne demek! 😊 Senin gayretin çok güzel; ekrandaki adımda devam etmeye hazır mısın?`,
+        `Ben teşekkür ederim${curName}! 🌟 Merak edip sorman harika; hadi bu güzel tempoyla sıradaki adıma bakalım!`,
+        `Ne mutlu bana${curName}! 😄 Birlikte çalışmak çok keyifli, ekrandaki görevde devam edelim mi?`
+      ]), MAX_REPLY_WORDS)
+    };
+  }
+
+  return null;
+}
+
 async function handleNartesChat(req, res) {
   let payload;
   try {
@@ -1019,6 +1182,25 @@ async function handleNartesChat(req, res) {
     } else {
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
       res.end(JSON.stringify({ ok: true, reply: blockedReply, guardrail: scopeCheck.status, model: "nartes-guardrail" }));
+    }
+    return;
+  }
+
+  // 1.5) Samimi tanışma, hal-hatır ve olumlu matematik geçişi (çocukla tanışmadan direkt soru sormaz)
+  const socialTurn = detectSocialIntentServer(question, payload, stopInfo);
+  if (socialTurn && socialTurn.reply) {
+    if (wantStream) {
+      res.writeHead(200, {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        "Connection": "keep-alive"
+      });
+      res.write(JSON.stringify({ type: "meta", social: socialTurn.intent, model: activeModelName }) + "\n");
+      res.write(JSON.stringify({ type: "delta", text: socialTurn.reply }) + "\n");
+      res.end(JSON.stringify({ type: "done", fullText: socialTurn.reply, model: activeModelName }) + "\n");
+    } else {
+      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ ok: true, reply: socialTurn.reply, social: socialTurn.intent, model: activeModelName }));
     }
     return;
   }
